@@ -4,5 +4,5 @@ services:
       context: .
     image: ghostfolio-rebalancer:latest
     extends:
-      file: docker-compose.yml
+      file: docker-compose.dev.yml
       service: rebalancer

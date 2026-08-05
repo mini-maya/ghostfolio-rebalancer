@@ -1,6 +1,6 @@
 services:
   rebalancer:
-    image: ghcr.io/mini-maya/ghostfolio-rebalancer:latest
+    image: ghostfolio-rebalancer:latest
     container_name: ghostfolio-balancer
     env_file:
       - .env

@@ -15,10 +15,12 @@ No build step required – pull the ready-made image directly from the GitHub
 Container Registry:
 
 ```bash
-docker run --rm -p 8080:80 \
+docker run -d -p 8080:80 \
+  --name ghostfolio-balancer \
+  --restart unless-stopped \
   -e BASE_URL="https://ghostfolio.example.com" \
   -e ACCESS_TOKEN="your-access-token" \
-  -e ALLOCATIONS_TEXT="EXV1.DE,40;IS3N.DE,60" \
+  -e ALLOCATIONS_TEXT="SPPW.DE,80;IUSN.DE,10;IS3N.DE,10" \
   ghcr.io/mini-maya/ghostfolio-rebalancer:latest
 ```
 
@@ -28,7 +30,7 @@ Then open **http://localhost:8080** in your browser.
 |---|---|---|
 | `BASE_URL` | URL of your Ghostfolio instance | `https://ghostfolio.lan` |
 | `ACCESS_TOKEN` | Ghostfolio account access token | `abc123` |
-| `ALLOCATIONS_TEXT` | Target allocations (`SYMBOL,PERCENT` pairs separated by `;`) | `EXV1.DE,40;IS3N.DE,60` |
+| `ALLOCATIONS_TEXT` | Target allocations (`SYMBOL,PERCENT` pairs separated by `;`) | `SPPW.DE,80;IUSN.DE,10;IS3N.DE,10` |
 
 All three variables are optional – they pre-fill the **Advanced settings** section
 and can be changed at any time in the UI without restarting the container.
@@ -41,12 +43,14 @@ Create a `docker-compose.yml`:
 services:
   ghostfolio-rebalancer:
     image: ghcr.io/mini-maya/ghostfolio-rebalancer:latest
+    container_name: ghostfolio-balancer
     ports:
       - "8080:80"
+    restart: unless-stopped
     environment:
       BASE_URL: "https://ghostfolio.example.com"
       ACCESS_TOKEN: "your-access-token"
-      ALLOCATIONS_TEXT: "EXV1.DE,40;IS3N.DE,60"
+      ALLOCATIONS_TEXT: "SPPW.DE,80;IUSN.DE,10;IS3N.DE,10"
 ```
 
 Then start with:
@@ -89,7 +93,7 @@ docker build -t ghostfolio-rebalancer .
 docker run --rm -p 8080:80 \
   -e BASE_URL="https://ghostfolio.lan" \
   -e ACCESS_TOKEN="your-access-token" \
-  -e ALLOCATIONS_TEXT="EXV1.DE,40;IS3N.DE,60" \
+  -e ALLOCATIONS_TEXT="SPPW.DE,80;IUSN.DE,10;IS3N.DE,10" \
   ghostfolio-rebalancer
 ```
 
