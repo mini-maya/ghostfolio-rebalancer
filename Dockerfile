@@ -10,6 +10,8 @@ RUN npm run build
 
 FROM nginx:1.29-alpine
 
+LABEL org.opencontainers.image.source=https://github.com/mini-maya/ghostfolio-rebalancer
+
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker-entrypoint.d/40-runtime-env.sh /docker-entrypoint.d/40-runtime-env.sh
 RUN chmod +x /docker-entrypoint.d/40-runtime-env.sh
