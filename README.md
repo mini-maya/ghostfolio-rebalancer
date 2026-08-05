@@ -3,6 +3,12 @@
 Standalone Angular web app for loading holdings from a remote Ghostfolio instance
 and calculating a contribution-based rebalancing plan.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_light.png">
+  <img alt="Screenshot" src="screenshot_light.png">
+</picture>
+
 ## Quick Start (pre-built image)
 
 No build step required – pull the ready-made image directly from the GitHub
