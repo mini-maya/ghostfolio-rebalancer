@@ -103,10 +103,12 @@ For Docker Compose:
 
 ```bash
 docker compose -f docker-compose.build.yml up --build
-docker compose up
+```
+```bash
+docker compose -f docker-compose.dev.yml up
 ```
 
-`docker-compose.build.yml` builds the image, while `docker-compose.yml` only
+`docker-compose.build.yml` builds the image, while `docker-compose.dev.yml` only
 starts an existing `ghostfolio-rebalancer:latest` image.
 
 The checked-in `.env` file is used by default; `.env.example` is provided as a
