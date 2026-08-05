@@ -3,6 +3,57 @@
 Standalone Angular web app for loading holdings from a remote Ghostfolio instance
 and calculating a contribution-based rebalancing plan.
 
+## Quick Start (pre-built image)
+
+No build step required – pull the ready-made image directly from the GitHub
+Container Registry:
+
+```bash
+docker run --rm -p 8080:80 \
+  -e BASE_URL="https://ghostfolio.example.com" \
+  -e ACCESS_TOKEN="your-access-token" \
+  -e ALLOCATIONS_TEXT="EXV1.DE,40;IS3N.DE,60" \
+  ghcr.io/mini-maya/ghostfolio-rebalancer:latest
+```
+
+Then open **http://localhost:8080** in your browser.
+
+| Environment variable | Description | Example |
+|---|---|---|
+| `BASE_URL` | URL of your Ghostfolio instance | `https://ghostfolio.lan` |
+| `ACCESS_TOKEN` | Ghostfolio account access token | `abc123` |
+| `ALLOCATIONS_TEXT` | Target allocations (`SYMBOL,PERCENT` pairs separated by `;`) | `EXV1.DE,40;IS3N.DE,60` |
+
+All three variables are optional – they pre-fill the **Advanced settings** section
+and can be changed at any time in the UI without restarting the container.
+
+### Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+services:
+  ghostfolio-rebalancer:
+    image: ghcr.io/mini-maya/ghostfolio-rebalancer:latest
+    ports:
+      - "8080:80"
+    environment:
+      BASE_URL: "https://ghostfolio.example.com"
+      ACCESS_TOKEN: "your-access-token"
+      ALLOCATIONS_TEXT: "EXV1.DE,40;IS3N.DE,60"
+```
+
+Then start with:
+
+```bash
+docker compose up
+```
+
+> **Note:** `ACCESS_TOKEN` is delivered to the browser as part of the runtime
+> configuration. Use this only in a trusted/internal network.
+
+---
+
 ## Local development
 
 ```bash
@@ -25,7 +76,7 @@ must allow the necessary CORS requests.
 npm run build
 ```
 
-## Docker
+## Docker (build from source)
 
 ```bash
 docker build -t ghostfolio-rebalancer .
@@ -34,10 +85,6 @@ docker run --rm -p 8080:80 \
   -e ACCESS_TOKEN="your-access-token" \
   -e ALLOCATIONS_TEXT="EXV1.DE,40;IS3N.DE,60" \
   ghostfolio-rebalancer
-```
-
-```bash
-docker compose -f docker-compose.build.yml up --build
 ```
 
 Then open `http://localhost:8080`.
