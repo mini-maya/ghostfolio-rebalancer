@@ -1,0 +1,8 @@
+services:
+  rebalancer:
+    image: ghostfolio-rebalancer:latest
+    env_file:
+      - .env
+    ports:
+      - "8080:80"
+    restart: unless-stopped

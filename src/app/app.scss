@@ -1,0 +1,57 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.app-toolbar {
+  align-items: center;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin: 1.5rem auto 0;
+  max-width: 1280px;
+  padding: 1.1rem 1.5rem;
+}
+
+.toolbar-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.eyebrow {
+  color: var(--app-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.toolbar-copy strong {
+  color: var(--app-text);
+  font-size: 1.05rem;
+}
+
+.theme-picker {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.75rem;
+}
+
+.theme-picker span {
+  color: var(--app-muted-text);
+  font-weight: 600;
+}
+
+.theme-picker select {
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-border-strong);
+  border-radius: 0.75rem;
+  color: var(--app-text);
+  font: inherit;
+  padding: 0.65rem 0.85rem;
+}

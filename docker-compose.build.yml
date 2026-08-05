@@ -1,0 +1,8 @@
+services:
+  rebalancer:
+    build:
+      context: .
+    image: ghostfolio-rebalancer:latest
+    extends:
+      file: docker-compose.yml
+      service: rebalancer

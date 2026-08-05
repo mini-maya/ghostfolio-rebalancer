@@ -1,0 +1,303 @@
+<main class="page">
+
+  <section class="card">
+    <div class="section-header">
+      <h2>Rebalancing</h2>
+      <p>Only configured symbols are shown. Totals use the full fetched portfolio.</p>
+    </div>
+
+    @if (!holdings().length) {
+      <p class="empty-state">
+        No holdings loaded yet. Enter connection details and load the remote
+        Ghostfolio portfolio.
+      </p>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-sticky-1">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('name')"
+                  (click)="sortBy('name')"
+                >
+                  Name <span>{{ sortIndicator('name') }}</span>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('symbol')"
+                  (click)="sortBy('symbol')"
+                >
+                  Symbol <span>{{ sortIndicator('symbol') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('quantity')"
+                  (click)="sortBy('quantity')"
+                >
+                  Quantity <span>{{ sortIndicator('quantity') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('marketPrice')"
+                  (click)="sortBy('marketPrice')"
+                >
+                  Unit price <span>{{ sortIndicator('marketPrice') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('currentValue')"
+                  (click)="sortBy('currentValue')"
+                >
+                  Current value <span>{{ sortIndicator('currentValue') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('currentAllocationPercentage')"
+                  (click)="sortBy('currentAllocationPercentage')"
+                >
+                  Current % <span>{{ sortIndicator('currentAllocationPercentage') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('targetAllocationPercentage')"
+                  (click)="sortBy('targetAllocationPercentage')"
+                >
+                  Target % <span>{{ sortIndicator('targetAllocationPercentage') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('targetGap')"
+                  (click)="sortBy('targetGap')"
+                >
+                  Target gap <span>{{ sortIndicator('targetGap') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('buyAmount')"
+                  (click)="sortBy('buyAmount')"
+                >
+                  Buy amount <span>{{ sortIndicator('buyAmount') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('buyRoundedAmount')"
+                  (click)="sortBy('buyRoundedAmount')"
+                >
+                  Buy rounded <span>{{ sortIndicator('buyRoundedAmount') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('newValue')"
+                  (click)="sortBy('newValue')"
+                >
+                  New value <span>{{ sortIndicator('newValue') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isSortColumn('newAllocationPercentage')"
+                  (click)="sortBy('newAllocationPercentage')"
+                >
+                  New % <span>{{ sortIndicator('newAllocationPercentage') }}</span>
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.symbol) {
+              <tr>
+                <td class="col-sticky-1 strong-cell">{{ row.name }}</td>
+                <td class="strong-cell">{{ row.symbol }}</td>
+                <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}</td>
+                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">
+                  {{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                </td>
+                <td class="numeric">
+                  {{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                </td>
+                <td class="numeric">{{ row.targetGap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric strong-cell">
+                  {{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                </td>
+                <td class="numeric">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">
+                  {{ row.newAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <section class="stats">
+      <article class="card stat">
+        <span>Loaded from</span>
+        <strong>{{ lastLoadedUrl() || 'Not loaded yet' }}</strong>
+      </article>
+      <article class="card stat">
+        <span>Current portfolio value</span>
+        <strong>{{ portfolioTotal() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
+      </article>
+      <article class="card stat">
+        <span>Value after planned contribution</span>
+        <strong>{{ plannedPortfolioTotal() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
+      </article>
+    </section>
+  </section>
+
+  <section class="card">
+    <div class="section-header section-header-stack">
+      <div>
+        <h2>Load holdings</h2>
+        <p>Use your monthly contribution and load the configured Ghostfolio portfolio.</p>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <label class="field monthly-rate-field">
+        <span>Monthly rate</span>
+        <input
+          type="number"
+          min="0"
+          step="10"
+          [value]="savingsRate()"
+          (input)="updateSavingsRate($event)"
+        />
+      </label>
+
+      <label class="field minimum-buy-field">
+        <span>Minimum buy amount</span>
+        <input
+          type="number"
+          min="0"
+          step="5"
+          [value]="minimumBuyAmount()"
+          (input)="updateMinimumBuyAmount($event)"
+        />
+      </label>
+
+      <label class="field rounding-step-field">
+        <span>Rounding step</span>
+        <input
+          type="number"
+          min="0"
+          step="5"
+          [value]="roundingStep()"
+          (input)="updateRoundingStep($event)"
+        />
+      </label>
+
+      <button
+        class="primary-button"
+        type="button"
+        [disabled]="isLoading()"
+        (click)="loadHoldings()"
+      >
+        {{ isLoading() ? 'Loading...' : 'Load holdings' }}
+      </button>
+    </div>
+
+    <details class="advanced-settings">
+      <summary>
+        Advanced settings
+        @if (hasAdvancedDefaults) {
+          <span class="summary-tag">defaults loaded</span>
+        }
+      </summary>
+
+      <div class="form-grid advanced-settings-grid">
+        <label class="field">
+          <span>Ghostfolio URL</span>
+          <input
+            type="url"
+            placeholder="https://demo.ghostfol.io"
+            [value]="baseUrl()"
+            (input)="updateBaseUrl($event)"
+          />
+        </label>
+
+        <label class="field field-full">
+          <span>Account access token</span>
+          <input
+            type="password"
+            [value]="accessToken()"
+            (input)="updateAccessToken($event)"
+          />
+        </label>
+
+        <label class="field field-full">
+          <span>Target allocations</span>
+          <textarea
+            rows="6"
+            placeholder="IS3N.DE,60;..."
+            [value]="allocationsText()"
+            (input)="updateAllocationsText($event)"
+          ></textarea>
+          <small>Use <code>SYMBOL,PERCENT;SYMBOL,PERCENT</code>, for example <code>EXV1.DE,40;IS3N.DE,60</code>.</small>
+        </label>
+      </div>
+    </details>
+
+    @if (errorMessage()) {
+      <p class="message message-error">{{ errorMessage() }}</p>
+    }
+
+    @if (infoMessage()) {
+      <p class="message message-info">{{ infoMessage() }}</p>
+    }
+
+    @if (allocationState().errors.length) {
+      <div class="message message-error">
+        @for (error of allocationState().errors; track error) {
+          <p>{{ error }}</p>
+        }
+      </div>
+    }
+
+    @if (!allocationTotalIsValid()) {
+      <p class="message message-warning">
+        Target allocations currently add up to {{ allocationState().total }}%.
+        They should sum to 100%.
+      </p>
+    }
+  </section>
+</main>

@@ -1,0 +1,17 @@
+<header class="app-toolbar card">
+  <div class="toolbar-copy">
+    <p class="eyebrow">A Standalone Ghostfolio tool</p>
+    <strong>Ghostfolio Rebalancer</strong>
+  </div>
+
+  <label class="theme-picker">
+    <span>Theme</span>
+    <select [value]="themeMode()" (change)="updateThemeMode($event)">
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  </label>
+</header>
+
+<router-outlet></router-outlet>
