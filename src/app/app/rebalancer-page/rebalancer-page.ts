@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AuthService } from '../auth/auth.service';
 import { getRuntimeConfig } from '../runtime-config';
 import { GhostfolioApi, type Holding } from '../services/ghostfolio-api';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
@@ -56,12 +57,11 @@ type SortDirection = 'asc' | 'desc';
   styleUrl: './rebalancer-page.scss'
 })
 export class RebalancerPage {
+  private readonly authService = inject(AuthService);
   private readonly ghostfolioApi = inject(GhostfolioApi);
   private readonly runtimeConfig = getRuntimeConfig();
 
-  protected readonly accessToken = signal(this.runtimeConfig.accessToken);
   protected readonly allocationsText = signal(this.runtimeConfig.allocationsText);
-  protected readonly baseUrl = signal(this.runtimeConfig.baseUrl);
   protected readonly errorMessage = signal('');
   protected readonly holdings = signal<Holding[]>([]);
   protected readonly infoMessage = signal(
@@ -128,7 +128,7 @@ export class RebalancerPage {
     return Math.abs(this.allocationState().total - 100) <= 0.001;
   });
 
-  protected readonly hasAdvancedDefaults = this.runtimeConfig.hasInjectedDefaults;
+  protected readonly hasAdvancedDefaults = Boolean(this.runtimeConfig.allocationsText);
 
   protected readonly rows = computed<RebalancingRow[]>(() => {
     const holdingsBySymbol = new Map(
@@ -214,16 +214,8 @@ export class RebalancerPage {
       .map(({ _index, ...row }) => row);
   });
 
-  protected updateAccessToken(event: Event) {
-    this.accessToken.set(readInputValue(event));
-  }
-
   protected updateAllocationsText(event: Event) {
     this.allocationsText.set(readInputValue(event));
-  }
-
-  protected updateBaseUrl(event: Event) {
-    this.baseUrl.set(readInputValue(event));
   }
 
   protected updateSavingsRate(event: Event) {
@@ -267,36 +259,22 @@ export class RebalancerPage {
     this.errorMessage.set('');
     this.infoMessage.set('');
 
-    if (!this.baseUrl().trim()) {
-      this.errorMessage.set('Please enter a Ghostfolio base URL.');
-      return;
-    }
-
-    if (!this.accessToken().trim()) {
-      this.errorMessage.set('Please enter an account access token.');
-      return;
-    }
-
     this.isLoading.set(true);
 
     try {
-      const normalizedBaseUrl = this.ghostfolioApi.normalizeBaseUrl(
-        this.baseUrl().trim()
-      );
+      const baseUrl = this.authService.baseUrl();
+      const accessToken = this.authService.accessToken();
       const bearerToken = await firstValueFrom(
-        this.ghostfolioApi.authenticate(
-          normalizedBaseUrl,
-          this.accessToken().trim()
-        )
+        this.ghostfolioApi.authenticate(baseUrl, accessToken)
       );
       const holdings = await firstValueFrom(
-        this.ghostfolioApi.fetchHoldings(normalizedBaseUrl, bearerToken)
+        this.ghostfolioApi.fetchHoldings(baseUrl, bearerToken)
       );
 
       this.holdings.set(holdings);
-      this.lastLoadedUrl.set(normalizedBaseUrl);
+      this.lastLoadedUrl.set(baseUrl);
       this.infoMessage.set(
-        `Loaded ${holdings.length} holdings from ${normalizedBaseUrl}.`
+        `Loaded ${holdings.length} holdings from ${baseUrl}.`
       );
     } catch (error) {
       this.holdings.set([]);

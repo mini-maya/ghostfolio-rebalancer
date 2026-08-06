@@ -245,25 +245,6 @@
       </summary>
 
       <div class="form-grid advanced-settings-grid">
-        <label class="field">
-          <span>Ghostfolio URL</span>
-          <input
-            type="url"
-            placeholder="https://demo.ghostfol.io"
-            [value]="baseUrl()"
-            (input)="updateBaseUrl($event)"
-          />
-        </label>
-
-        <label class="field field-full">
-          <span>Account access token</span>
-          <input
-            type="password"
-            [value]="accessToken()"
-            (input)="updateAccessToken($event)"
-          />
-        </label>
-
         <label class="field field-full">
           <span>Target allocations</span>
           <textarea

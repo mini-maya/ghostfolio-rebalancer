@@ -1,0 +1,46 @@
+<main class="login-page">
+  <section class="login-card card">
+    <div class="login-header">
+      <h2>Connect to Ghostfolio</h2>
+      <p>Enter your Ghostfolio instance URL and account access token to continue.</p>
+    </div>
+
+    <form class="login-form" (submit)="submit($event)">
+      <label class="field">
+        <span>Ghostfolio URL</span>
+        <input
+          type="url"
+          placeholder="https://demo.ghostfol.io"
+          autocomplete="url"
+          [value]="baseUrl()"
+          [disabled]="isLoading()"
+          (input)="updateBaseUrl($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Account access token</span>
+        <input
+          type="password"
+          placeholder="Your access token"
+          autocomplete="current-password"
+          [value]="accessToken()"
+          [disabled]="isLoading()"
+          (input)="updateAccessToken($event)"
+        />
+      </label>
+
+      @if (errorMessage()) {
+        <p class="message message-error">{{ errorMessage() }}</p>
+      }
+
+      <button
+        class="primary-button"
+        type="submit"
+        [disabled]="isLoading()"
+      >
+        {{ isLoading() ? 'Connecting…' : 'Connect' }}
+      </button>
+    </form>
+  </section>
+</main>
