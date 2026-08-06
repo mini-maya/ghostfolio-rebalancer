@@ -15,6 +15,31 @@
   margin: 1.5rem auto 0;
   max-width: 1280px;
   padding: 1.1rem 1.5rem;
+  position: relative;
+  z-index: 20;
+}
+
+.toolbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.9rem;
+}
+
+.ghostfolio-link-button {
+  background: var(--app-primary);
+  border: 0;
+  border-radius: 0.75rem;
+  color: var(--app-surface);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.65rem 0.95rem;
+}
+
+.ghostfolio-link-button:disabled {
+  color: var(--app-muted-text);
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
 .toolbar-copy {
@@ -54,4 +79,25 @@
   color: var(--app-text);
   font: inherit;
   padding: 0.65rem 0.85rem;
+}
+
+.app-toolbar-message {
+  background: var(--app-error-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  color: var(--app-error-text);
+  margin: 0.75rem auto 0;
+  max-width: 1280px;
+  padding: 0.75rem 1rem;
+}
+
+@media (max-width: 960px) {
+  .app-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-end;
+    width: 100%;
+  }
 }

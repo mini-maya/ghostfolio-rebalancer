@@ -4,14 +4,31 @@
     <strong>Ghostfolio Rebalancer</strong>
   </div>
 
-  <label class="theme-picker">
-    <span>Theme</span>
-    <select [value]="themeMode()" (change)="updateThemeMode($event)">
-      <option value="system">System</option>
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-    </select>
-  </label>
+  <div class="toolbar-actions">
+    @if (showGhostfolioButton()) {
+      <button
+        class="ghostfolio-link-button"
+        type="button"
+        [disabled]="!canOpenGhostfolio()"
+        (click)="openGhostfolio()"
+      >
+        {{ isGhostfolioLoading() ? 'Opening Ghostfolio...' : 'Ghostfolio' }}
+      </button>
+    }
+
+    <label class="theme-picker">
+      <span>Theme</span>
+      <select [value]="themeMode()" (change)="updateThemeMode($event)">
+        <option value="system">System</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </label>
+  </div>
 </header>
+
+@if (ghostfolioErrorMessage()) {
+  <p class="app-toolbar-message">{{ ghostfolioErrorMessage() }}</p>
+}
 
 <router-outlet></router-outlet>
