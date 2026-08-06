@@ -274,11 +274,73 @@
       </div>
     }
 
-    @if (!allocationTotalIsValid()) {
+    @if (allocationState().items.length && !allocationTotalIsValid()) {
       <p class="message message-warning">
         Target allocations currently add up to {{ allocationState().total }}%.
         They should sum to 100%.
       </p>
     }
   </section>
+
+  @if (isAllocationDialogOpen()) {
+    <div class="allocation-dialog-backdrop">
+      <section class="allocation-dialog" [class.allocation-dialog-valid]="allocationDialogTotalIsValid()">
+        <div class="allocation-dialog-header">
+          <h3>Set target allocations</h3>
+          <p>No target allocations were configured. Review and confirm the generated values.</p>
+        </div>
+
+        <div class="allocation-dialog-table-wrapper">
+          <table class="allocation-dialog-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Symbol</th>
+                <th class="numeric">Current %</th>
+                <th class="numeric">Target %</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of allocationDialogRows(); track row.symbol) {
+                <tr>
+                  <td class="strong-cell">{{ row.name }}</td>
+                  <td class="strong-cell">{{ row.symbol }}</td>
+                  <td class="numeric">{{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</td>
+                  <td class="numeric">
+                    <input
+                      class="allocation-target-input"
+                      type="number"
+                      min="0"
+                      step="5"
+                      [value]="row.targetAllocationPercentage"
+                      (input)="updateAllocationDialogTarget(row.symbol, $event)"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="allocation-dialog-footer">
+          <p
+            class="allocation-dialog-total"
+            [class.allocation-dialog-total-accent]="!allocationDialogTotalIsValid()"
+          >
+            Sum target allocation:
+            <strong>{{ allocationDialogTotal() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</strong>
+          </p>
+
+          <button
+            class="primary-button"
+            type="button"
+            [disabled]="!allocationDialogTotalIsValid()"
+            (click)="confirmAllocationDialog()"
+          >
+            Confirm target allocations
+          </button>
+        </div>
+      </section>
+    </div>
+  }
 </main>

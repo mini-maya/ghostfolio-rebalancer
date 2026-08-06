@@ -19,6 +19,13 @@ interface AllocationState {
   total: number;
 }
 
+interface AllocationDialogRow {
+  currentAllocationPercentage: number;
+  name: string;
+  symbol: string;
+  targetAllocationPercentage: number;
+}
+
 interface RebalancingRow {
   buyAmount: number;
   buyRoundedAmount: number;
@@ -70,6 +77,8 @@ export class RebalancerPage {
   protected readonly isLoading = signal(false);
   protected readonly lastLoadedUrl = signal('');
   protected readonly minimumBuyAmount = signal(10);
+  protected readonly allocationDialogRows = signal<AllocationDialogRow[]>([]);
+  protected readonly isAllocationDialogOpen = signal(false);
   protected readonly sortColumn = signal<SortColumn>('name');
   protected readonly sortDirection = signal<SortDirection>('asc');
   protected readonly roundingStep = signal(10);
@@ -129,6 +138,16 @@ export class RebalancerPage {
   });
 
   protected readonly hasAdvancedDefaults = Boolean(this.runtimeConfig.allocationsText);
+  protected readonly allocationDialogTotal = computed(() => {
+    return roundToTwo(
+      this.allocationDialogRows().reduce((sum, row) => {
+        return sum + row.targetAllocationPercentage;
+      }, 0)
+    );
+  });
+  protected readonly allocationDialogTotalIsValid = computed(() => {
+    return Math.abs(this.allocationDialogTotal() - 100) <= 0.001;
+  });
 
   protected readonly rows = computed<RebalancingRow[]>(() => {
     const holdingsBySymbol = new Map(
@@ -218,6 +237,41 @@ export class RebalancerPage {
     this.allocationsText.set(readInputValue(event));
   }
 
+  protected updateAllocationDialogTarget(symbol: string, event: Event) {
+    const value = Number(readInputValue(event));
+    const targetAllocationPercentage =
+      Number.isFinite(value) && value >= 0 ? roundToTwo(value) : 0;
+
+    this.allocationDialogRows.update((rows) => {
+      return rows.map((row) => {
+        if (row.symbol !== symbol) {
+          return row;
+        }
+
+        return {
+          ...row,
+          targetAllocationPercentage
+        };
+      });
+    });
+  }
+
+  protected confirmAllocationDialog() {
+    if (!this.allocationDialogTotalIsValid()) {
+      return;
+    }
+
+    const nextAllocationsText = this.allocationDialogRows()
+      .map(({ symbol, targetAllocationPercentage }) => {
+        return `${symbol},${formatAllocationPercentage(targetAllocationPercentage)}`;
+      })
+      .join(';');
+
+    this.allocationsText.set(nextAllocationsText);
+    this.isAllocationDialogOpen.set(false);
+    this.infoMessage.set('Target allocations were generated from current holdings.');
+  }
+
   protected updateSavingsRate(event: Event) {
     const value = Number(readInputValue(event));
     this.savingsRate.set(Number.isFinite(value) && value > 0 ? value : 0);
@@ -276,12 +330,34 @@ export class RebalancerPage {
       this.infoMessage.set(
         `Loaded ${holdings.length} holdings from ${baseUrl}.`
       );
+
+      if (!this.allocationsText().trim()) {
+        this.openAllocationDialog(holdings);
+      }
     } catch (error) {
       this.holdings.set([]);
       this.errorMessage.set(this.getErrorMessage(error));
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private openAllocationDialog(holdings: Holding[]) {
+    const rows = holdings.map((holding) => {
+      const currentAllocationPercentage = roundToTwo(
+        normalizeAllocationPercentage(holding.allocationInPercentage)
+      );
+
+      return {
+        currentAllocationPercentage,
+        name: holding.name,
+        symbol: holding.symbol,
+        targetAllocationPercentage: currentAllocationPercentage
+      };
+    });
+
+    this.allocationDialogRows.set(rows);
+    this.isAllocationDialogOpen.set(rows.length > 0);
   }
 
   private getErrorMessage(error: unknown): string {
@@ -313,6 +389,26 @@ function readInputValue(event: Event): string {
 
 function roundToTwo(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function formatAllocationPercentage(value: number): string {
+  const roundedValue = roundToTwo(value);
+
+  if (Number.isInteger(roundedValue)) {
+    return roundedValue.toString();
+  }
+
+  return roundedValue.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function normalizeAllocationPercentage(value: number): number {
+  const nonNegativeValue = Math.max(value, 0);
+
+  if (nonNegativeValue <= 1) {
+    return nonNegativeValue * 100;
+  }
+
+  return nonNegativeValue;
 }
 
 function distributeMonthlyRate({

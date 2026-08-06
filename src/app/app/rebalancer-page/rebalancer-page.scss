@@ -296,6 +296,93 @@ code {
   padding: 0.1rem 0.3rem;
 }
 
+.allocation-dialog-backdrop {
+  align-items: center;
+  background: rgb(0 0 0 / 55%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 30;
+}
+
+.allocation-dialog {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow);
+  display: grid;
+  gap: 1rem;
+  max-height: 85vh;
+  max-width: 900px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.allocation-dialog-header {
+  border-bottom: 1px solid var(--app-border);
+  padding: 1.25rem 1.25rem 0.9rem;
+}
+
+.allocation-dialog-header h3 {
+  margin: 0 0 0.35rem;
+}
+
+.allocation-dialog-header p {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+.allocation-dialog-table-wrapper {
+  overflow: auto;
+  padding: 0 1.25rem;
+}
+
+.allocation-dialog-table {
+  min-width: 560px;
+  width: 100%;
+}
+
+.allocation-target-input {
+  max-width: 140px;
+  text-align: right;
+}
+
+.allocation-dialog-valid .allocation-target-input {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 1px var(--app-primary);
+}
+
+.allocation-dialog-footer {
+  align-items: center;
+  border-top: 1px solid var(--app-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem 1.25rem;
+}
+
+.allocation-dialog-total {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+.allocation-dialog-total strong {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.allocation-dialog-total-accent {
+  color: var(--app-primary);
+  font-weight: 700;
+}
+
+.allocation-dialog-footer .primary-button:disabled {
+  cursor: not-allowed;
+}
+
 @media (max-width: 960px) {
   .hero,
   .stats,
@@ -307,5 +394,9 @@ code {
   .section-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .allocation-dialog-table {
+    min-width: 0;
   }
 }
