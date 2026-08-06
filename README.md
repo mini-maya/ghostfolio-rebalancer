@@ -32,8 +32,10 @@ Then open **http://localhost:8080** in your browser.
 | `ACCESS_TOKEN` | Ghostfolio account access token | `abc123` |
 | `ALLOCATIONS_TEXT` | Target allocations (`SYMBOL,PERCENT` pairs separated by `;`) | `SPPW.DE,80;IUSN.DE,10;IS3N.DE,10` |
 
-All three variables are optional – they pre-fill the **Advanced settings** section
-and can be changed at any time in the UI without restarting the container.
+All three variables are optional and can be changed at any time in the UI without
+restarting the container. `BASE_URL` and `ACCESS_TOKEN` pre-fill the login form
+(with automatic connect when both are present), while `ALLOCATIONS_TEXT` pre-fills
+the **Target allocations** field in **Advanced settings**.
 
 ### Docker Compose
 
@@ -71,14 +73,26 @@ npm install
 npm start
 ```
 
-The app expects:
+To calculate a rebalancing plan, the app needs:
 
 1. A Ghostfolio base URL
 2. An account access token
-3. A target-allocation list in the format `SYMBOL,PERCENT;SYMBOL,PERCENT`
+3. Optional target allocations in the format `SYMBOL,PERCENT;SYMBOL,PERCENT`
 
 The browser calls the remote Ghostfolio instance directly, so the target instance
 must allow the necessary CORS requests.
+
+### Dialogs
+
+**Login page dialog (`login-page`)**: The app opens a dedicated connect dialog for
+Ghostfolio URL and account access token. If `BASE_URL` and `ACCESS_TOKEN` are
+provided via ENV/runtime config, both fields are pre-filled and the app tries to
+connect automatically.
+
+**Allocation dialog**: After loading holdings, this dialog opens when no target
+allocations are configured yet. It starts with generated values from current
+holdings, lets you edit each target, and only allows confirmation when the total is
+exactly 100%.
 
 ## Production build
 
@@ -114,10 +128,13 @@ starts an existing `ghostfolio-rebalancer:latest` image.
 The checked-in `.env` file is used by default; `.env.example` is provided as a
 template if you want to recreate it.
 
-The values from `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are loaded as
-editable defaults into the collapsed **Advanced settings** section. The main view
-shows **Monthly rate**, **Minimum buy amount**, **Rounding step**, and
-**Load holdings** directly.
+The values from `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are optional
+runtime defaults. `BASE_URL` and `ACCESS_TOKEN` are used on the login page, while
+`ALLOCATIONS_TEXT` is loaded as editable default in **Advanced settings**.
+
+The main view directly shows **Monthly rate**, **Minimum buy amount**, **Rounding
+step**, and **Load holdings**. The collapsed **Advanced settings** area contains
+the editable **Target allocations** field.
 
 `ALLOCATIONS_TEXT` and the visible text field both expect the compact format
 `SYMBOL,PERCENT;SYMBOL,PERCENT`.
