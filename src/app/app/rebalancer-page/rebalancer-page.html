@@ -26,16 +26,6 @@
                   Name <span>{{ sortIndicator('name') }}</span>
                 </button>
               </th>
-              <th>
-                <button
-                  class="sort-button"
-                  type="button"
-                  [class.sort-button-active]="isSortColumn('symbol')"
-                  (click)="sortBy('symbol')"
-                >
-                  Symbol <span>{{ sortIndicator('symbol') }}</span>
-                </button>
-              </th>
               <th class="numeric">
                 <button
                   class="sort-button"
@@ -141,8 +131,10 @@
           <tbody>
             @for (row of rows(); track row.symbol) {
               <tr>
-                <td class="col-sticky-1 strong-cell">{{ row.name }}</td>
-                <td class="strong-cell">{{ row.symbol }}</td>
+                <td class="col-sticky-1">
+                  <strong>{{ row.symbol }}</strong><br />
+                  <span class="name-secondary">{{ row.name }}</span>
+                </td>
                 <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
                 <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                 <td class="numeric">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
@@ -219,7 +211,7 @@
                 [class.sort-button-active]="isMetricsSortColumn('entryPrice')"
                 (click)="sortMetricsBy('entryPrice')"
               >
-                Entry price <span>{{ metricsSortIndicator('entryPrice') }}</span>
+                Entry <br />price <span>{{ metricsSortIndicator('entryPrice') }}</span>
               </button>
               <button
                 class="sort-button metrics-header-cell numeric"
@@ -227,7 +219,7 @@
                 [class.sort-button-active]="isMetricsSortColumn('positionPrice')"
                 (click)="sortMetricsBy('positionPrice')"
               >
-                Position price <span>{{ metricsSortIndicator('positionPrice') }}</span>
+                Position <br />price <span>{{ metricsSortIndicator('positionPrice') }}</span>
               </button>
               <button
                 class="sort-button metrics-header-cell numeric"
@@ -235,7 +227,7 @@
                 [class.sort-button-active]="isMetricsSortColumn('gain')"
                 (click)="sortMetricsBy('gain')"
               >
-                Gain % <span>{{ metricsSortIndicator('gain') }}</span>
+                Gain <br />% <span>{{ metricsSortIndicator('gain') }}</span>
               </button>
               <button
                 class="sort-button metrics-header-cell numeric"
@@ -243,7 +235,7 @@
                 [class.sort-button-active]="isMetricsSortColumn('realized')"
                 (click)="sortMetricsBy('realized')"
               >
-                Realized % <span>{{ metricsSortIndicator('realized') }}</span>
+                Realized <br />% <span>{{ metricsSortIndicator('realized') }}</span>
               </button>
               <button
                 class="sort-button metrics-header-cell numeric"
@@ -251,7 +243,7 @@
                 [class.sort-button-active]="isMetricsSortColumn('allocation')"
                 (click)="sortMetricsBy('allocation')"
               >
-                Allocation <span>{{ metricsSortIndicator('allocation') }}</span>
+                Allocation % <span>{{ metricsSortIndicator('allocation') }}</span>
               </button>
             </div>
 
@@ -307,7 +299,12 @@
                     <tbody>
                       @for (entry of symbolGroup.entries; track $index) {
                         <tr>
-                          <td>{{ entry.type }}</td>
+                          <td
+                            [class.activity-type-buy]="entry.type === 'BUY'"
+                            [class.activity-type-sell]="entry.type === 'SELL'"
+                          >
+                            {{ entry.type }}
+                          </td>
                           <td>
                             @if (entry.date) {
                               {{ entry.date | date: 'yyyy-MM-dd' }}
@@ -326,7 +323,13 @@
                           <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                           <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                           <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                          <td class="numeric strong-cell">{{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                          <td
+                            class="numeric strong-cell"
+                            [class.activity-type-buy]="entry.type === 'BUY'"
+                            [class.activity-type-sell]="entry.type === 'SELL'"
+                          >
+                            {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                          </td>
                         </tr>
                       }
                     </tbody>
@@ -451,7 +454,6 @@
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Symbol</th>
                 <th class="numeric">Current %</th>
                 <th class="numeric">Target %</th>
               </tr>
@@ -459,8 +461,10 @@
             <tbody>
               @for (row of allocationDialogRows(); track row.symbol) {
                 <tr>
-                  <td class="strong-cell">{{ row.name }}</td>
-                  <td class="strong-cell">{{ row.symbol }}</td>
+                  <td>
+                    <strong>{{ row.symbol }}</strong><br />
+                    <span class="name-secondary">{{ row.name }}</span>
+                  </td>
                   <td class="numeric">{{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</td>
                   <td class="numeric">
                     <input

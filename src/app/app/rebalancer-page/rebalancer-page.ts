@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
@@ -135,6 +135,19 @@ export class RebalancerPage {
   protected readonly metricsSortDirection = signal<SortDirection>('asc');
   protected readonly roundingStep = signal(10);
   protected readonly savingsRate = signal(1750);
+
+  constructor() {
+    effect(() => {
+      if (
+        this.authService.isAuthenticated() &&
+        this.allocationTotalIsValid() &&
+        !this.isLoading() &&
+        !this.lastLoadedUrl()
+      ) {
+        this.loadHoldings();
+      }
+    });
+  }
 
   protected readonly allocationState = computed<AllocationState>(() => {
     const errors: string[] = [];

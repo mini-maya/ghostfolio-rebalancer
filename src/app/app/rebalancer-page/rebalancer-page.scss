@@ -235,7 +235,9 @@ textarea {
 }
 
 .metrics-grid-header {
+  color: var(--app-muted-text);
   margin-bottom: 0.35rem;
+  font-weight: 600;
 }
 
 .metrics-header-cell {
@@ -303,7 +305,8 @@ textarea {
   transform: rotate(90deg);
 }
 
-.metrics-name-cell > span {
+.metrics-name-cell > span,
+.name-secondary {
   color: var(--app-muted-text);
 }
 
@@ -366,6 +369,17 @@ tbody tr:last-child td {
 }
 
 .strong-cell {
+  color: var(--app-primary-text);
+  font-weight: 700;
+}
+
+.activity-type-buy {
+  color: var(--app-primary-text);
+  font-weight: 700;
+}
+
+.activity-type-sell {
+  color: var(--app-error-text);
   font-weight: 700;
 }
 
