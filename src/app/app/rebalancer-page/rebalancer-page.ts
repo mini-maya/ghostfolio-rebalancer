@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { getRuntimeConfig } from '../runtime-config';
-import { GhostfolioApi, type Holding } from '../services/ghostfolio-api';
+import { GhostfolioApi, type Activity, type Holding } from '../services/ghostfolio-api';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 
 interface AllocationItem {
@@ -41,6 +41,47 @@ interface RebalancingRow {
   targetGap: number;
 }
 
+interface ActivityDetailRow {
+  date: Date | null;
+  fee: number;
+  quantity: number;
+  totalValue: number;
+  totalWithFee: number;
+  type: string;
+  unitPrice: number;
+}
+
+interface ActivitySymbolMetrics {
+  allocationPercentage: number;
+  currency: string;
+  entryPriceAmount: number;
+  entryPricePerUnit: number;
+  gainAmount: number;
+  gainPercentage: number;
+  positionPriceAmount: number;
+  positionPricePerUnit: number;
+  positionQuantity: number;
+  realizedAmount: number;
+  realizedPercentage: number;
+}
+
+interface ActivitySymbolGroup {
+  entries: ActivityDetailRow[];
+  metrics: ActivitySymbolMetrics;
+  name: string;
+  symbol: string;
+}
+
+interface ActivitySubClassGroup {
+  subClass: string;
+  symbols: ActivitySymbolGroup[];
+}
+
+interface ActivityClassGroup {
+  assetClass: string;
+  subClasses: ActivitySubClassGroup[];
+}
+
 type SortColumn =
   | 'symbol'
   | 'name'
@@ -69,6 +110,7 @@ export class RebalancerPage {
   private readonly runtimeConfig = getRuntimeConfig();
 
   protected readonly allocationsText = signal(this.runtimeConfig.allocationsText);
+  protected readonly activities = signal<Activity[]>([]);
   protected readonly errorMessage = signal('');
   protected readonly holdings = signal<Holding[]>([]);
   protected readonly infoMessage = signal(
@@ -233,6 +275,102 @@ export class RebalancerPage {
       .map(({ _index, ...row }) => row);
   });
 
+  protected readonly activityClassGroups = computed<ActivityClassGroup[]>(() => {
+    const holdingsBySymbol = new Map(
+      this.holdings().map((holding) => [holding.symbol.trim().toUpperCase(), holding] as const)
+    );
+    const portfolioTotal = this.portfolioTotal();
+    const activityGroupsByClass = new Map<string, Map<string, Map<string, Activity[]>>>();
+
+    for (const activity of this.activities()) {
+      const assetClass = activity.assetClass.trim().toUpperCase() || 'UNKNOWN';
+      const assetSubClass = activity.assetSubClass.trim().toUpperCase() || 'UNKNOWN';
+      const symbol = activity.symbol.trim().toUpperCase() || 'UNKNOWN';
+      const subClassesByClass = activityGroupsByClass.get(assetClass) ?? new Map<
+        string,
+        Map<string, Activity[]>
+      >();
+      const symbolsBySubClass = subClassesByClass.get(assetSubClass) ?? new Map<string, Activity[]>();
+      const activitiesBySymbol = symbolsBySubClass.get(symbol) ?? [];
+
+      activitiesBySymbol.push(activity);
+      symbolsBySubClass.set(symbol, activitiesBySymbol);
+      subClassesByClass.set(assetSubClass, symbolsBySubClass);
+      activityGroupsByClass.set(assetClass, subClassesByClass);
+    }
+
+    return [...activityGroupsByClass.entries()]
+      .sort(([leftClass], [rightClass]) => {
+        return leftClass.localeCompare(rightClass, undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        });
+      })
+      .map(([assetClass, subClassesByClass]) => {
+        const subClasses = [...subClassesByClass.entries()]
+          .sort(([leftSubClass], [rightSubClass]) => {
+            return leftSubClass.localeCompare(rightSubClass, undefined, {
+              numeric: true,
+              sensitivity: 'base'
+            });
+          })
+          .map(([subClass, symbolsBySubClass]) => {
+            const symbols = [...symbolsBySubClass.entries()]
+              .sort(([leftSymbol], [rightSymbol]) => {
+                return leftSymbol.localeCompare(rightSymbol, undefined, {
+                  numeric: true,
+                  sensitivity: 'base'
+                });
+              })
+              .map(([symbol, activities]) => {
+                const name =
+                  activities.find((activity) => activity.name.trim())?.name.trim() || symbol;
+                const metrics = calculateActivitySymbolMetrics({
+                  activities,
+                  holding: holdingsBySymbol.get(symbol),
+                  portfolioTotal
+                });
+                const entries = [...activities]
+                  .sort((leftActivity, rightActivity) => {
+                    return (
+                      getActivityTimestamp(leftActivity.date) - getActivityTimestamp(rightActivity.date)
+                    );
+                  })
+                  .map((activity) => {
+                    const totalValue = roundToTwo(activity.quantity * activity.unitPrice);
+
+                    return {
+                      date: activity.date,
+                      fee: roundToTwo(activity.fee),
+                      quantity: roundToTwo(activity.quantity),
+                      totalValue,
+                      totalWithFee: roundToTwo(totalValue + activity.fee),
+                      type: activity.type.trim().toUpperCase() || 'UNKNOWN',
+                      unitPrice: roundToTwo(activity.unitPrice)
+                    };
+                  });
+
+                return {
+                  entries,
+                  metrics,
+                  name,
+                  symbol
+                };
+              });
+
+            return {
+              subClass,
+              symbols
+            };
+          });
+
+        return {
+          assetClass,
+          subClasses
+        };
+      });
+  });
+
   protected updateAllocationsText(event: Event) {
     this.allocationsText.set(readInputValue(event));
   }
@@ -309,6 +447,10 @@ export class RebalancerPage {
     return this.sortDirection() === 'asc' ? '▲' : '▼';
   }
 
+  protected absolute(value: number): number {
+    return Math.abs(value);
+  }
+
   protected async loadHoldings() {
     this.errorMessage.set('');
     this.infoMessage.set('');
@@ -321,20 +463,23 @@ export class RebalancerPage {
       const bearerToken = await firstValueFrom(
         this.ghostfolioApi.authenticate(baseUrl, accessToken)
       );
-      const holdings = await firstValueFrom(
-        this.ghostfolioApi.fetchHoldings(baseUrl, bearerToken)
-      );
+      const [holdings, activities] = await Promise.all([
+        firstValueFrom(this.ghostfolioApi.fetchHoldings(baseUrl, bearerToken)),
+        firstValueFrom(this.ghostfolioApi.fetchActivities(baseUrl, bearerToken))
+      ]);
 
       this.holdings.set(holdings);
+      this.activities.set(activities);
       this.lastLoadedUrl.set(baseUrl);
       this.infoMessage.set(
-        `Loaded ${holdings.length} holdings from ${baseUrl}.`
+        `Loaded ${holdings.length} holdings and ${activities.length} activities from ${baseUrl}.`
       );
 
       if (!this.allocationsText().trim()) {
         this.openAllocationDialog(holdings);
       }
     } catch (error) {
+      this.activities.set([]);
       this.holdings.set([]);
       this.errorMessage.set(this.getErrorMessage(error));
     } finally {
@@ -409,6 +554,109 @@ function normalizeAllocationPercentage(value: number): number {
   }
 
   return nonNegativeValue;
+}
+
+interface FifoLot {
+  quantity: number;
+  unitCost: number;
+}
+
+function calculateActivitySymbolMetrics({
+  activities,
+  holding,
+  portfolioTotal
+}: {
+  activities: Activity[];
+  holding: Holding | undefined;
+  portfolioTotal: number;
+}): ActivitySymbolMetrics {
+  const lots: FifoLot[] = [];
+  let realizedAmount = 0;
+  let realizedCostBasis = 0;
+
+  const sortedActivities = [...activities].sort((left, right) => {
+    return getActivityTimestamp(left.date) - getActivityTimestamp(right.date);
+  });
+
+  for (const activity of sortedActivities) {
+    const type = activity.type.trim().toUpperCase();
+    const quantity = Math.max(activity.quantity, 0);
+
+    if (quantity <= 0) {
+      continue;
+    }
+
+    if (type === 'BUY') {
+      const totalCost = quantity * activity.unitPrice + activity.fee;
+      lots.push({
+        quantity,
+        unitCost: totalCost / quantity
+      });
+      continue;
+    }
+
+    if (type !== 'SELL') {
+      continue;
+    }
+
+    let remainingToMatch = quantity;
+    let matchedQuantity = 0;
+    let matchedCostBasis = 0;
+
+    while (remainingToMatch > 0 && lots.length > 0) {
+      const firstLot = lots[0];
+      const matchedFromLot = Math.min(firstLot.quantity, remainingToMatch);
+
+      matchedQuantity += matchedFromLot;
+      matchedCostBasis += matchedFromLot * firstLot.unitCost;
+      firstLot.quantity -= matchedFromLot;
+      remainingToMatch -= matchedFromLot;
+
+      if (firstLot.quantity <= 0) {
+        lots.shift();
+      }
+    }
+
+    if (matchedQuantity <= 0) {
+      continue;
+    }
+
+    const matchedRatio = matchedQuantity / quantity;
+    const matchedProceeds = (quantity * activity.unitPrice - activity.fee) * matchedRatio;
+
+    realizedAmount += matchedProceeds - matchedCostBasis;
+    realizedCostBasis += matchedCostBasis;
+  }
+
+  const openQuantity = lots.reduce((sum, lot) => sum + lot.quantity, 0);
+  const entryPriceAmount = lots.reduce((sum, lot) => sum + lot.quantity * lot.unitCost, 0);
+  const entryPricePerUnit = openQuantity > 0 ? entryPriceAmount / openQuantity : 0;
+  const positionQuantity = holding?.quantity ?? openQuantity;
+  const positionPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
+  const positionPriceAmount = holding?.valueInBaseCurrency ?? positionQuantity * positionPricePerUnit;
+  const gainAmount = positionPriceAmount - entryPriceAmount;
+  const gainPercentage = entryPriceAmount > 0 ? (gainAmount / entryPriceAmount) * 100 : 0;
+  const realizedPercentage = realizedCostBasis > 0 ? (realizedAmount / realizedCostBasis) * 100 : 0;
+  const allocationPercentage = holding
+    ? portfolioTotal > 0
+      ? (holding.valueInBaseCurrency / portfolioTotal) * 100
+      : normalizeAllocationPercentage(holding.allocationInPercentage)
+    : 0;
+  const currency = sortedActivities.find((activity) => activity.currency.trim())?.currency.trim() || 'EUR';
+
+  return {
+    allocationPercentage: roundToTwo(allocationPercentage),
+    currency,
+    entryPriceAmount: roundToTwo(entryPriceAmount),
+    entryPricePerUnit: roundToTwo(entryPricePerUnit),
+    gainAmount: roundToTwo(gainAmount),
+    gainPercentage: roundToTwo(gainPercentage),
+    positionPriceAmount: roundToTwo(positionPriceAmount),
+    positionPricePerUnit: roundToTwo(positionPricePerUnit),
+    positionQuantity: roundToTwo(positionQuantity),
+    realizedAmount: roundToTwo(realizedAmount),
+    realizedPercentage: roundToTwo(realizedPercentage)
+  };
 }
 
 function distributeMonthlyRate({
@@ -701,4 +949,12 @@ function normalizeAmountsToExactTotal(amounts: number[], targetTotal: number): n
   }
 
   return normalizedCents.map((value) => value / 100);
+}
+
+function getActivityTimestamp(date: Date | null): number {
+  if (!date) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return date.getTime();
 }

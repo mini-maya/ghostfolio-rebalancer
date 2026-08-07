@@ -185,6 +185,125 @@
   </section>
 
   <section class="card">
+    <div class="section-header">
+      <h2>Activities by asset class</h2>
+      <p>Activities are grouped by asset class and subclass, then by symbol.</p>
+    </div>
+
+    @if (!activities().length) {
+      <p class="empty-state">No activities loaded yet.</p>
+    } @else {
+      @for (classGroup of activityClassGroups(); track classGroup.assetClass) {
+        <section class="activity-type-group">
+          <div class="section-header section-header-stack">
+            <div>
+              <h3>{{ classGroup.assetClass }}</h3>
+            </div>
+          </div>
+
+          @for (subClassGroup of classGroup.subClasses; track subClassGroup.subClass) {
+            <h4>{{ subClassGroup.subClass }}</h4>
+
+            <div class="table-wrapper">
+              <table class="subclass-header-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Entry<br />Price</th>
+                    <th>Position<br />Price</th>
+                    <th>Gain<br />%</th>
+                    <th>Realized<br />%</th>
+                    <th>Allocation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (symbolGroup of subClassGroup.symbols; track symbolGroup.symbol) {
+                    <tr>
+                      <td>
+                        <strong>{{ symbolGroup.symbol }}</strong><br />
+                        <span>{{ symbolGroup.name }}</span>
+                      </td>
+                      <td class="numeric">
+                        {{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ symbolGroup.metrics.currency }}<br />
+                        {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ symbolGroup.metrics.currency }}
+                      </td>
+                      <td class="numeric">
+                        {{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ symbolGroup.metrics.currency }}<br />
+                        {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}
+                        x
+                        {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ symbolGroup.metrics.currency }}
+                      </td>
+                      <td class="numeric">
+                        {{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ symbolGroup.metrics.currency }}<br />
+                        {{ symbolGroup.metrics.gainPercentage > 0 ? '+' : symbolGroup.metrics.gainPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      </td>
+                      <td class="numeric">
+                        {{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ symbolGroup.metrics.currency }}<br />
+                        {{ symbolGroup.metrics.realizedPercentage > 0 ? '+' : symbolGroup.metrics.realizedPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      </td>
+                      <td class="numeric">
+                        {{ symbolGroup.metrics.allocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @for (symbolGroup of subClassGroup.symbols; track symbolGroup.symbol) {
+              <h5 class="activity-symbol-heading">
+                <strong>{{ symbolGroup.symbol }}</strong>
+                <span>{{ symbolGroup.name }}</span>
+              </h5>
+
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Date</th>
+                      <th class="numeric">Quantity</th>
+                      <th class="numeric">Unit price</th>
+                      <th class="numeric">Total value</th>
+                      <th class="numeric">Fee</th>
+                      <th class="numeric">Total with fee</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (entry of symbolGroup.entries; track $index) {
+                      <tr>
+                        <td>{{ entry.type }}</td>
+                        <td>
+                          @if (entry.date) {
+                            {{ entry.date | date: 'yyyy-MM-dd' }}
+                          } @else {
+                            -
+                          }
+                        </td>
+                        <td class="numeric">{{ entry.quantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}</td>
+                        <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                        <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                        <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                        <td class="numeric strong-cell">{{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+        </section>
+      }
+    }
+  </section>
+
+  <section class="card">
     <div class="section-header section-header-stack">
       <div>
         <h2>Load holdings</h2>

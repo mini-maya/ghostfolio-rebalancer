@@ -228,6 +228,32 @@ textarea {
   overflow-x: auto;
 }
 
+.activity-symbol-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 1.1rem 0 0.65rem;
+}
+
+.activity-symbol-heading span {
+  color: var(--app-muted-text);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.subclass-header-table {
+  margin-bottom: 0.9rem;
+  min-width: 760px;
+}
+
+.subclass-header-table th {
+  white-space: nowrap;
+}
+
+.subclass-header-table td span {
+  color: var(--app-muted-text);
+}
+
 table {
   border-collapse: collapse;
   min-width: 1080px;
