@@ -45,6 +45,7 @@ interface ActivityDetailRow {
   date: Date | null;
   fee: number;
   quantity: number;
+  soldQuantity: number | null;
   totalValue: number;
   totalWithFee: number;
   type: string;
@@ -330,11 +331,12 @@ export class RebalancerPage {
               .map(([symbol, activities]) => {
                 const name =
                   activities.find((activity) => activity.name.trim())?.name.trim() || symbol;
-                const metrics = calculateActivitySymbolMetrics({
+                const { metrics, soldQuantityByBuyIndex } = calculateActivitySymbolMetrics({
                   activities,
                   holding: holdingsBySymbol.get(symbol),
                   portfolioTotal
                 });
+                let buyIndex = 0;
                 const entries = [...activities]
                   .sort((leftActivity, rightActivity) => {
                     return (
@@ -342,15 +344,19 @@ export class RebalancerPage {
                     );
                   })
                   .map((activity) => {
+                    const type = activity.type.trim().toUpperCase() || 'UNKNOWN';
                     const totalValue = roundToTwo(activity.quantity * activity.unitPrice);
+                    const isBuy = type === 'BUY';
+                    const currentBuyIndex = isBuy ? buyIndex++ : -1;
 
                     return {
                       date: activity.date,
                       fee: roundToTwo(activity.fee),
                       quantity: roundToTwo(activity.quantity),
+                      soldQuantity: isBuy ? roundToTwo(soldQuantityByBuyIndex.get(currentBuyIndex) ?? 0) : null,
                       totalValue,
-                      totalWithFee: roundToTwo(totalValue + activity.fee),
-                      type: activity.type.trim().toUpperCase() || 'UNKNOWN',
+                      totalWithFee: roundToTwo(isBuy ? totalValue + activity.fee : totalValue - activity.fee),
+                      type,
                       unitPrice: roundToTwo(activity.unitPrice)
                     };
                   });
@@ -602,6 +608,8 @@ function normalizeAllocationPercentage(value: number): number {
 }
 
 interface FifoLot {
+  lotIndex: number;
+  originalQuantity: number;
   quantity: number;
   unitCost: number;
 }
@@ -614,10 +622,12 @@ function calculateActivitySymbolMetrics({
   activities: Activity[];
   holding: Holding | undefined;
   portfolioTotal: number;
-}): ActivitySymbolMetrics {
+}): { metrics: ActivitySymbolMetrics; soldQuantityByBuyIndex: Map<number, number> } {
   const lots: FifoLot[] = [];
+  const soldQuantityByBuyIndex = new Map<number, number>();
   let realizedAmount = 0;
   let realizedCostBasis = 0;
+  let buyIndex = 0;
 
   const sortedActivities = [...activities].sort((left, right) => {
     return getActivityTimestamp(left.date) - getActivityTimestamp(right.date);
@@ -634,6 +644,8 @@ function calculateActivitySymbolMetrics({
     if (type === 'BUY') {
       const totalCost = quantity * activity.unitPrice + activity.fee;
       lots.push({
+        lotIndex: buyIndex++,
+        originalQuantity: quantity,
         quantity,
         unitCost: totalCost / quantity
       });
@@ -654,6 +666,10 @@ function calculateActivitySymbolMetrics({
 
       matchedQuantity += matchedFromLot;
       matchedCostBasis += matchedFromLot * firstLot.unitCost;
+      soldQuantityByBuyIndex.set(
+        firstLot.lotIndex,
+        (soldQuantityByBuyIndex.get(firstLot.lotIndex) ?? 0) + matchedFromLot
+      );
       firstLot.quantity -= matchedFromLot;
       remainingToMatch -= matchedFromLot;
 
@@ -690,17 +706,20 @@ function calculateActivitySymbolMetrics({
   const currency = sortedActivities.find((activity) => activity.currency.trim())?.currency.trim() || 'EUR';
 
   return {
-    allocationPercentage: roundToTwo(allocationPercentage),
-    currency,
-    entryPriceAmount: roundToTwo(entryPriceAmount),
-    entryPricePerUnit: roundToTwo(entryPricePerUnit),
-    gainAmount: roundToTwo(gainAmount),
-    gainPercentage: roundToTwo(gainPercentage),
-    positionPriceAmount: roundToTwo(positionPriceAmount),
-    positionPricePerUnit: roundToTwo(positionPricePerUnit),
-    positionQuantity: roundToTwo(positionQuantity),
-    realizedAmount: roundToTwo(realizedAmount),
-    realizedPercentage: roundToTwo(realizedPercentage)
+    metrics: {
+      allocationPercentage: roundToTwo(allocationPercentage),
+      currency,
+      entryPriceAmount: roundToTwo(entryPriceAmount),
+      entryPricePerUnit: roundToTwo(entryPricePerUnit),
+      gainAmount: roundToTwo(gainAmount),
+      gainPercentage: roundToTwo(gainPercentage),
+      positionPriceAmount: roundToTwo(positionPriceAmount),
+      positionPricePerUnit: roundToTwo(positionPricePerUnit),
+      positionQuantity: roundToTwo(positionQuantity),
+      realizedAmount: roundToTwo(realizedAmount),
+      realizedPercentage: roundToTwo(realizedPercentage)
+    },
+    soldQuantityByBuyIndex
   };
 }
 

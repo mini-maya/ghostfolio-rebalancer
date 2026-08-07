@@ -143,7 +143,7 @@
               <tr>
                 <td class="col-sticky-1 strong-cell">{{ row.name }}</td>
                 <td class="strong-cell">{{ row.symbol }}</td>
-                <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}</td>
+                <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
                 <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                 <td class="numeric">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                 <td class="numeric">
@@ -271,7 +271,7 @@
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ symbolGroup.metrics.currency }}<br />
-                    {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}
+                    {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}
                     x
                     {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ symbolGroup.metrics.currency }}
@@ -297,6 +297,7 @@
                         <th>Type</th>
                         <th>Date</th>
                         <th class="numeric">Quantity</th>
+                        <th class="numeric">Sold Quantity</th>
                         <th class="numeric">Unit price</th>
                         <th class="numeric">Total value</th>
                         <th class="numeric">Fee</th>
@@ -314,7 +315,14 @@
                               -
                             }
                           </td>
-                          <td class="numeric">{{ entry.quantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}</td>
+                          <td class="numeric">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
+                          <td class="numeric">
+                            @if (entry.soldQuantity !== null) {
+                              {{ entry.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}
+                            } @else {
+                              -
+                            }
+                          </td>
                           <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                           <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
                           <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>

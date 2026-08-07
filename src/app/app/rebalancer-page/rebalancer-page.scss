@@ -291,7 +291,7 @@ textarea {
 }
 
 .metrics-name-cell::before {
-  color: var(--app-muted-text);
+  color: var(--app-primary);
   content: '▸';
   left: 0.75rem;
   position: absolute;
