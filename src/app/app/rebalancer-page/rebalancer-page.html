@@ -204,98 +204,127 @@
           @for (subClassGroup of classGroup.subClasses; track subClassGroup.subClass) {
             <h4>{{ subClassGroup.subClass }}</h4>
 
-            <div class="table-wrapper">
-              <table class="subclass-header-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Entry<br />Price</th>
-                    <th>Position<br />Price</th>
-                    <th>Gain<br />%</th>
-                    <th>Realized<br />%</th>
-                    <th>Allocation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (symbolGroup of subClassGroup.symbols; track symbolGroup.symbol) {
-                    <tr>
-                      <td>
-                        <strong>{{ symbolGroup.symbol }}</strong><br />
-                        <span>{{ symbolGroup.name }}</span>
-                      </td>
-                      <td class="numeric">
-                        {{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ symbolGroup.metrics.currency }}<br />
-                        {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ symbolGroup.metrics.currency }}
-                      </td>
-                      <td class="numeric">
-                        {{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ symbolGroup.metrics.currency }}<br />
-                        {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}
-                        x
-                        {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ symbolGroup.metrics.currency }}
-                      </td>
-                      <td class="numeric">
-                        {{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ symbolGroup.metrics.currency }}<br />
-                        {{ symbolGroup.metrics.gainPercentage > 0 ? '+' : symbolGroup.metrics.gainPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
-                      </td>
-                      <td class="numeric">
-                        {{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ symbolGroup.metrics.currency }}<br />
-                        {{ symbolGroup.metrics.realizedPercentage > 0 ? '+' : symbolGroup.metrics.realizedPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
-                      </td>
-                      <td class="numeric">
-                        {{ symbolGroup.metrics.allocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+            <div class="metrics-grid metrics-grid-header">
+              <button
+                class="sort-button metrics-header-cell"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('name')"
+                (click)="sortMetricsBy('name')"
+              >
+                Name <span>{{ metricsSortIndicator('name') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('entryPrice')"
+                (click)="sortMetricsBy('entryPrice')"
+              >
+                Entry price <span>{{ metricsSortIndicator('entryPrice') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('positionPrice')"
+                (click)="sortMetricsBy('positionPrice')"
+              >
+                Position price <span>{{ metricsSortIndicator('positionPrice') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('gain')"
+                (click)="sortMetricsBy('gain')"
+              >
+                Gain % <span>{{ metricsSortIndicator('gain') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('realized')"
+                (click)="sortMetricsBy('realized')"
+              >
+                Realized % <span>{{ metricsSortIndicator('realized') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('allocation')"
+                (click)="sortMetricsBy('allocation')"
+              >
+                Allocation <span>{{ metricsSortIndicator('allocation') }}</span>
+              </button>
             </div>
 
             @for (symbolGroup of subClassGroup.symbols; track symbolGroup.symbol) {
-              <h5 class="activity-symbol-heading">
-                <strong>{{ symbolGroup.symbol }}</strong>
-                <span>{{ symbolGroup.name }}</span>
-              </h5>
-
-              <div class="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Type</th>
-                      <th>Date</th>
-                      <th class="numeric">Quantity</th>
-                      <th class="numeric">Unit price</th>
-                      <th class="numeric">Total value</th>
-                      <th class="numeric">Fee</th>
-                      <th class="numeric">Total with fee</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (entry of symbolGroup.entries; track $index) {
+              <details class="activity-details">
+                <summary class="metrics-grid metrics-grid-row">
+                  <span class="metrics-cell metrics-name-cell">
+                    <strong>{{ symbolGroup.symbol }}</strong><br />
+                    <span>{{ symbolGroup.name }}</span>
+                  </span>
+                  <span class="metrics-cell numeric">
+                    {{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.currency }}
+                  </span>
+                  <span class="metrics-cell numeric">
+                    {{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}
+                    x
+                    {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.currency }}
+                  </span>
+                  <span class="metrics-cell numeric">
+                    {{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ symbolGroup.metrics.gainPercentage > 0 ? '+' : symbolGroup.metrics.gainPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  </span>
+                  <span class="metrics-cell numeric">
+                    {{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ symbolGroup.metrics.realizedPercentage > 0 ? '+' : symbolGroup.metrics.realizedPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  </span>
+                  <span class="metrics-cell numeric">
+                    {{ symbolGroup.metrics.allocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  </span>
+                </summary>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
                       <tr>
-                        <td>{{ entry.type }}</td>
-                        <td>
-                          @if (entry.date) {
-                            {{ entry.date | date: 'yyyy-MM-dd' }}
-                          } @else {
-                            -
-                          }
-                        </td>
-                        <td class="numeric">{{ entry.quantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}</td>
-                        <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                        <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                        <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                        <td class="numeric strong-cell">{{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th class="numeric">Quantity</th>
+                        <th class="numeric">Unit price</th>
+                        <th class="numeric">Total value</th>
+                        <th class="numeric">Fee</th>
+                        <th class="numeric">Total with fee</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      @for (entry of symbolGroup.entries; track $index) {
+                        <tr>
+                          <td>{{ entry.type }}</td>
+                          <td>
+                            @if (entry.date) {
+                              {{ entry.date | date: 'yyyy-MM-dd' }}
+                            } @else {
+                              -
+                            }
+                          </td>
+                          <td class="numeric">{{ entry.quantity | localeNumber: {minFractionDigits: 0, maxFractionDigits: 4} }}</td>
+                          <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                          <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                          <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                          <td class="numeric strong-cell">{{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             }
           }
         </section>

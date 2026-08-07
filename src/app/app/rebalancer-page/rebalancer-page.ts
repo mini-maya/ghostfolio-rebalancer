@@ -97,6 +97,13 @@ type SortColumn =
   | 'newAllocationPercentage';
 
 type SortDirection = 'asc' | 'desc';
+type MetricsSortColumn =
+  | 'name'
+  | 'entryPrice'
+  | 'positionPrice'
+  | 'gain'
+  | 'realized'
+  | 'allocation';
 
 @Component({
   selector: 'app-rebalancer-page',
@@ -123,6 +130,8 @@ export class RebalancerPage {
   protected readonly isAllocationDialogOpen = signal(false);
   protected readonly sortColumn = signal<SortColumn>('name');
   protected readonly sortDirection = signal<SortDirection>('asc');
+  protected readonly metricsSortColumn = signal<MetricsSortColumn>('name');
+  protected readonly metricsSortDirection = signal<SortDirection>('asc');
   protected readonly roundingStep = signal(10);
   protected readonly savingsRate = signal(1750);
 
@@ -280,6 +289,8 @@ export class RebalancerPage {
       this.holdings().map((holding) => [holding.symbol.trim().toUpperCase(), holding] as const)
     );
     const portfolioTotal = this.portfolioTotal();
+    const metricsSortColumn = this.metricsSortColumn();
+    const metricsDirectionFactor = this.metricsSortDirection() === 'asc' ? 1 : -1;
     const activityGroupsByClass = new Map<string, Map<string, Map<string, Activity[]>>>();
 
     for (const activity of this.activities()) {
@@ -316,12 +327,6 @@ export class RebalancerPage {
           })
           .map(([subClass, symbolsBySubClass]) => {
             const symbols = [...symbolsBySubClass.entries()]
-              .sort(([leftSymbol], [rightSymbol]) => {
-                return leftSymbol.localeCompare(rightSymbol, undefined, {
-                  numeric: true,
-                  sensitivity: 'base'
-                });
-              })
               .map(([symbol, activities]) => {
                 const name =
                   activities.find((activity) => activity.name.trim())?.name.trim() || symbol;
@@ -351,12 +356,30 @@ export class RebalancerPage {
                   });
 
                 return {
+                  _index: symbol,
                   entries,
                   metrics,
                   name,
                   symbol
                 };
-              });
+              })
+              .sort((left, right) => {
+                const comparison = compareMetricsSortValue({
+                  column: metricsSortColumn,
+                  left,
+                  right
+                });
+
+                if (comparison !== 0) {
+                  return comparison * metricsDirectionFactor;
+                }
+
+                return left._index.localeCompare(right._index, undefined, {
+                  numeric: true,
+                  sensitivity: 'base'
+                });
+              })
+              .map(({ _index, ...symbolRow }) => symbolRow);
 
             return {
               subClass,
@@ -445,6 +468,28 @@ export class RebalancerPage {
     }
 
     return this.sortDirection() === 'asc' ? '▲' : '▼';
+  }
+
+  protected isMetricsSortColumn(column: MetricsSortColumn): boolean {
+    return this.metricsSortColumn() === column;
+  }
+
+  protected sortMetricsBy(column: MetricsSortColumn) {
+    if (this.metricsSortColumn() === column) {
+      this.metricsSortDirection.set(this.metricsSortDirection() === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    this.metricsSortColumn.set(column);
+    this.metricsSortDirection.set('asc');
+  }
+
+  protected metricsSortIndicator(column: MetricsSortColumn): string {
+    if (!this.isMetricsSortColumn(column)) {
+      return '';
+    }
+
+    return this.metricsSortDirection() === 'asc' ? '▲' : '▼';
   }
 
   protected absolute(value: number): number {
@@ -657,6 +702,44 @@ function calculateActivitySymbolMetrics({
     realizedAmount: roundToTwo(realizedAmount),
     realizedPercentage: roundToTwo(realizedPercentage)
   };
+}
+
+function compareMetricsSortValue({
+  column,
+  left,
+  right
+}: {
+  column: MetricsSortColumn;
+  left: ActivitySymbolGroup;
+  right: ActivitySymbolGroup;
+}): number {
+  if (column === 'name') {
+    const leftValue = `${left.symbol} ${left.name}`;
+    const rightValue = `${right.symbol} ${right.name}`;
+
+    return leftValue.localeCompare(rightValue, undefined, {
+      numeric: true,
+      sensitivity: 'base'
+    });
+  }
+
+  if (column === 'entryPrice') {
+    return left.metrics.entryPriceAmount - right.metrics.entryPriceAmount;
+  }
+
+  if (column === 'positionPrice') {
+    return left.metrics.positionPriceAmount - right.metrics.positionPriceAmount;
+  }
+
+  if (column === 'gain') {
+    return left.metrics.gainPercentage - right.metrics.gainPercentage;
+  }
+
+  if (column === 'realized') {
+    return left.metrics.realizedPercentage - right.metrics.realizedPercentage;
+  }
+
+  return left.metrics.allocationPercentage - right.metrics.allocationPercentage;
 }
 
 function distributeMonthlyRate({
