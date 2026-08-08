@@ -106,7 +106,7 @@
                   <span class="name-secondary">{{ row.name }}</span>
                 </td>
                 <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
-                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
+                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
                   {{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%<br />
                   <span class="secondary-value">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
@@ -227,15 +227,15 @@
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
-                    {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
-                    {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 3} }}
+                    {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
                     x
-                    {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}
                   </span>
                   <span class="metrics-cell numeric">
@@ -316,7 +316,7 @@
                               -
                             }
                           </td>
-                          <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                          <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                           <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                           <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                           <td
@@ -368,7 +368,7 @@
                                         }
                                       </td>
                                       <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
-                                      <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                                      <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                                       <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                                       <td class="numeric">
                                         <span

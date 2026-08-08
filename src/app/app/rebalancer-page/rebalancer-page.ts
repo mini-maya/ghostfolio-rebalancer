@@ -274,7 +274,7 @@ export class RebalancerPage {
         currentAllocationPercentage:
           currentTotal > 0 ? roundToTwo((currentValue / currentTotal) * 100) : 0,
         currentValue: roundToTwo(currentValue),
-        marketPrice: roundToTwo(holding?.marketPrice ?? 0),
+        marketPrice: holding?.marketPrice ?? 0,
         name: holding?.name ?? symbol,
         newAllocationPercentage:
           nextTotal > 0 ? roundToTwo((newValue / nextTotal) * 100) : 0,
@@ -373,22 +373,22 @@ export class RebalancerPage {
                   })
                   .map((activity) => {
                     const type = activity.type.trim().toUpperCase() || 'UNKNOWN';
-                    const totalValue = roundToTwo(activity.quantity * activity.unitPrice);
+                    const totalValue = activity.quantity * activity.unitPrice;
                     const isBuy = type === 'BUY';
                     const currentBuyIndex = isBuy ? buyIndex++ : -1;
 
                     return {
                       date: activity.date,
-                      fee: roundToTwo(activity.fee),
+                      fee: activity.fee,
                       gainAmount: isBuy ? (gainAmountByBuyIndex.get(currentBuyIndex) ?? null) : null,
                       gainPercentage: isBuy ? (gainPercentageByBuyIndex.get(currentBuyIndex) ?? null) : null,
                       quantity: activity.quantity,
                       sellDetails: isBuy ? (sellDetailsByBuyIndex.get(currentBuyIndex) ?? []) : [],
                       soldQuantity: isBuy ? (soldQuantityByBuyIndex.get(currentBuyIndex) ?? 0) : null,
                       totalValue,
-                      totalWithFee: roundToTwo(isBuy ? totalValue + activity.fee : totalValue - activity.fee),
+                      totalWithFee: isBuy ? totalValue + activity.fee : totalValue - activity.fee,
                       type,
-                      unitPrice: roundToTwo(activity.unitPrice)
+                      unitPrice: activity.unitPrice
                     };
                   });
 
@@ -742,11 +742,11 @@ function calculateActivitySymbolMetrics({
 
       existingDetails.push({
         date: activity.date,
-        realizedAmount: roundToTwo(lotRealizedAmt),
-        realizedPercentage: roundToTwo(lotRealizedPct),
+        realizedAmount: lotRealizedAmt,
+        realizedPercentage: lotRealizedPct,
         soldQuantity: matchedFromLot,
-        totalValue: roundToTwo(matchedFromLot * activity.unitPrice),
-        unitPrice: roundToTwo(activity.unitPrice)
+        totalValue: matchedFromLot * activity.unitPrice,
+        unitPrice: activity.unitPrice
       });
       sellDetailsByBuyIndex.set(firstLot.lotIndex, existingDetails);
 
@@ -801,25 +801,25 @@ function calculateActivitySymbolMetrics({
     const lotGainAmt = lotCurrentAmount - lotEntryAmount;
     const lotGainPct = lotEntryAmount > 0 ? (lotGainAmt / lotEntryAmount) * 100 : null;
 
-    gainAmountByBuyIndex.set(lot.lotIndex, roundToTwo(lotGainAmt));
-    gainPercentageByBuyIndex.set(lot.lotIndex, lotGainPct !== null ? roundToTwo(lotGainPct) : null);
+    gainAmountByBuyIndex.set(lot.lotIndex, lotGainAmt);
+    gainPercentageByBuyIndex.set(lot.lotIndex, lotGainPct);
   }
 
   return {
     gainAmountByBuyIndex,
     gainPercentageByBuyIndex,
     metrics: {
-      allocationPercentage: roundToTwo(allocationPercentage),
+      allocationPercentage,
       currency,
-      entryPriceAmount: roundToTwo(entryPriceAmount),
-      entryPricePerUnit: roundToTwo(entryPricePerUnit),
-      gainAmount: roundToTwo(gainAmount),
-      gainPercentage: roundToTwo(gainPercentage),
-      positionPriceAmount: roundToTwo(positionPriceAmount),
-      positionPricePerUnit: roundToTwo(positionPricePerUnit),
-      positionQuantity: positionQuantity,
-      realizedAmount: roundToTwo(realizedAmount),
-      realizedPercentage: roundToTwo(realizedPercentage)
+      entryPriceAmount,
+      entryPricePerUnit,
+      gainAmount,
+      gainPercentage,
+      positionPriceAmount,
+      positionPricePerUnit,
+      positionQuantity,
+      realizedAmount,
+      realizedPercentage
     },
     sellDetailsByBuyIndex,
     soldQuantityByBuyIndex
