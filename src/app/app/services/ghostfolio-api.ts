@@ -18,6 +18,7 @@ interface ActivitiesResponse {
 interface RemoteHolding {
   allocationInPercentage?: number;
   assetProfile?: {
+    currency?: string;
     name?: string;
     symbol?: string;
   };
@@ -48,6 +49,7 @@ interface RemoteActivity extends Record<string, unknown> {
 
 export interface Holding {
   allocationInPercentage: number;
+  currency: string;
   marketPrice: number;
   name: string;
   quantity: number;
@@ -114,6 +116,7 @@ export class GhostfolioApi {
             .map((holding) => {
               return {
                 allocationInPercentage: holding.allocationInPercentage ?? 0,
+                currency: holding.assetProfile?.currency ?? '???',
                 marketPrice:
                   holding.marketPrice ??
                   getFallbackMarketPrice({

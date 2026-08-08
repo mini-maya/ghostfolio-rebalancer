@@ -29,6 +29,7 @@ interface AllocationDialogRow {
 interface RebalancingRow {
   buyAmount: number;
   buyRoundedAmount: number;
+  currency: string;
   currentAllocationPercentage: number;
   currentValue: number;
   marketPrice: number;
@@ -269,6 +270,7 @@ export class RebalancerPage {
         _index: index,
         buyAmount: roundToTwo(buyRoundedAmount === 0 ? 0 : buyAmount),
         buyRoundedAmount: roundToTwo(buyRoundedAmount),
+        currency: holding?.currency ?? '???',
         currentAllocationPercentage:
           currentTotal > 0 ? roundToTwo((currentValue / currentTotal) * 100) : 0,
         currentValue: roundToTwo(currentValue),
@@ -525,6 +527,18 @@ export class RebalancerPage {
     }
 
     return this.metricsSortDirection() === 'asc' ? '▲' : '▼';
+  }
+
+  protected currencySymbol(currency: string): string {
+    const symbols: Record<string, string> = {
+      CHF: 'CHF',
+      EUR: '€',
+      GBP: '£',
+      JPY: '¥',
+      USD: '$'
+    };
+
+    return symbols[currency.toUpperCase()] ?? currency;
   }
 
   protected toggleEntry(entry: ActivityDetailRow) {

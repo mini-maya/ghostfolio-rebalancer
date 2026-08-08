@@ -4,7 +4,7 @@
 
 .page {
   margin: 0 auto;
-  max-width: 1280px;
+  max-width: 1600px;
   padding: 2rem 1rem 3rem;
 }
 
@@ -290,6 +290,7 @@ textarea {
 .metrics-name-cell {
   position: relative;
   padding-left: 1.75rem;
+  white-space: normal;
 }
 
 .metrics-name-cell::before {
@@ -312,7 +313,7 @@ textarea {
 
 table {
   border-collapse: collapse;
-  min-width: 1080px;
+  min-width: 1400px;
   width: 100%;
 }
 
@@ -321,6 +322,7 @@ td {
   border-bottom: 1px solid var(--app-border);
   padding: 0.85rem 0.75rem;
   text-align: left;
+  white-space: nowrap;
 }
 
 .col-sticky-1 {
@@ -328,6 +330,7 @@ td {
   left: 0;
   min-width: 180px;
   position: sticky;
+  white-space: normal;
   z-index: 1;
 }
 

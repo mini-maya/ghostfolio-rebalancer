@@ -136,20 +136,20 @@
                   <span class="name-secondary">{{ row.name }}</span>
                 </td>
                 <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
-                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                <td class="numeric">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
+                <td class="numeric">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
                   {{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                 </td>
                 <td class="numeric">
                   {{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                 </td>
-                <td class="numeric">{{ row.targetGap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                <td class="numeric">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">{{ row.targetGap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
+                <td class="numeric">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric strong-cell">
-                  {{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}
                 </td>
-                <td class="numeric">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                <td class="numeric">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
                   {{ row.newAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                 </td>
@@ -256,21 +256,21 @@
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
                     {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ symbolGroup.metrics.currency }}
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
                     {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}
                     x
                     {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ symbolGroup.metrics.currency }}
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
                     <span
                       class="value-bold"
                       [class.value-positive]="symbolGroup.metrics.gainPercentage > 0"
@@ -281,7 +281,7 @@
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ symbolGroup.metrics.currency }}<br />
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
                     <span
                       class="value-bold"
                       [class.value-positive]="symbolGroup.metrics.realizedPercentage > 0"
@@ -340,19 +340,19 @@
                               -
                             }
                           </td>
-                          <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                          <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                          <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                          <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                          <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                          <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                           <td
                             class="numeric strong-cell"
                             [class.activity-type-buy]="entry.type === 'BUY'"
                             [class.activity-type-sell]="entry.type === 'SELL'"
                           >
-                            {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                            {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}
                           </td>
                           <td class="numeric">
                             @if (entry.gainAmount !== null && entry.gainPercentage !== null) {
-                              {{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}<br />
+                              {{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
                               <span
                                 class="value-bold"
                                 [class.value-positive]="entry.gainPercentage > 0"
@@ -389,10 +389,10 @@
                                         }
                                       </td>
                                       <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
-                                      <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                                      <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                                      <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                                      <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                                       <td class="numeric">
-                                        {{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}<br />
+                                        {{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
                                         <span
                                           class="value-bold"
                                           [class.value-positive]="sell.realizedPercentage > 0"
