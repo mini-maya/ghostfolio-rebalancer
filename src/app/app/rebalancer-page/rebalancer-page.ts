@@ -382,9 +382,9 @@ export class RebalancerPage {
                       fee: roundToTwo(activity.fee),
                       gainAmount: isBuy ? (gainAmountByBuyIndex.get(currentBuyIndex) ?? null) : null,
                       gainPercentage: isBuy ? (gainPercentageByBuyIndex.get(currentBuyIndex) ?? null) : null,
-                      quantity: roundToTwo(activity.quantity),
+                      quantity: activity.quantity,
                       sellDetails: isBuy ? (sellDetailsByBuyIndex.get(currentBuyIndex) ?? []) : [],
-                      soldQuantity: isBuy ? roundToTwo(soldQuantityByBuyIndex.get(currentBuyIndex) ?? 0) : null,
+                      soldQuantity: isBuy ? (soldQuantityByBuyIndex.get(currentBuyIndex) ?? 0) : null,
                       totalValue,
                       totalWithFee: roundToTwo(isBuy ? totalValue + activity.fee : totalValue - activity.fee),
                       type,
@@ -744,7 +744,7 @@ function calculateActivitySymbolMetrics({
         date: activity.date,
         realizedAmount: roundToTwo(lotRealizedAmt),
         realizedPercentage: roundToTwo(lotRealizedPct),
-        soldQuantity: roundToTwo(matchedFromLot),
+        soldQuantity: matchedFromLot,
         totalValue: roundToTwo(matchedFromLot * activity.unitPrice),
         unitPrice: roundToTwo(activity.unitPrice)
       });
@@ -817,7 +817,7 @@ function calculateActivitySymbolMetrics({
       gainPercentage: roundToTwo(gainPercentage),
       positionPriceAmount: roundToTwo(positionPriceAmount),
       positionPricePerUnit: roundToTwo(positionPricePerUnit),
-      positionQuantity: roundToTwo(positionQuantity),
+      positionQuantity: positionQuantity,
       realizedAmount: roundToTwo(realizedAmount),
       realizedPercentage: roundToTwo(realizedPercentage)
     },
