@@ -43,6 +43,7 @@ interface RebalancingRow {
 
 interface SellDetailRow {
   date: Date | null;
+  realizedAmount: number;
   realizedPercentage: number;
   soldQuantity: number;
   totalValue: number;
@@ -52,6 +53,7 @@ interface SellDetailRow {
 interface ActivityDetailRow {
   date: Date | null;
   fee: number;
+  gainAmount: number | null;
   gainPercentage: number | null;
   quantity: number;
   sellDetails: SellDetailRow[];
@@ -145,6 +147,7 @@ export class RebalancerPage {
   protected readonly metricsSortDirection = signal<SortDirection>('asc');
   protected readonly roundingStep = signal(10);
   protected readonly savingsRate = signal(1750);
+  private readonly expandedEntrySet = signal(new Set<ActivityDetailRow>());
 
   constructor() {
     effect(() => {
@@ -354,7 +357,7 @@ export class RebalancerPage {
               .map(([symbol, activities]) => {
                 const name =
                   activities.find((activity) => activity.name.trim())?.name.trim() || symbol;
-                const { metrics, gainPercentageByBuyIndex, sellDetailsByBuyIndex, soldQuantityByBuyIndex } = calculateActivitySymbolMetrics({
+                const { metrics, gainAmountByBuyIndex, gainPercentageByBuyIndex, sellDetailsByBuyIndex, soldQuantityByBuyIndex } = calculateActivitySymbolMetrics({
                   activities,
                   holding: holdingsBySymbol.get(symbol),
                   portfolioTotal
@@ -375,6 +378,7 @@ export class RebalancerPage {
                     return {
                       date: activity.date,
                       fee: roundToTwo(activity.fee),
+                      gainAmount: isBuy ? (gainAmountByBuyIndex.get(currentBuyIndex) ?? null) : null,
                       gainPercentage: isBuy ? (gainPercentageByBuyIndex.get(currentBuyIndex) ?? null) : null,
                       quantity: roundToTwo(activity.quantity),
                       sellDetails: isBuy ? (sellDetailsByBuyIndex.get(currentBuyIndex) ?? []) : [],
@@ -523,6 +527,24 @@ export class RebalancerPage {
     return this.metricsSortDirection() === 'asc' ? '▲' : '▼';
   }
 
+  protected toggleEntry(entry: ActivityDetailRow) {
+    this.expandedEntrySet.update((set) => {
+      const next = new Set(set);
+
+      if (next.has(entry)) {
+        next.delete(entry);
+      } else {
+        next.add(entry);
+      }
+
+      return next;
+    });
+  }
+
+  protected isEntryExpanded(entry: ActivityDetailRow): boolean {
+    return this.expandedEntrySet().has(entry);
+  }
+
   protected absolute(value: number): number {
     return Math.abs(value);
   }
@@ -649,6 +671,7 @@ function calculateActivitySymbolMetrics({
   portfolioTotal: number;
 }): {
   metrics: ActivitySymbolMetrics;
+  gainAmountByBuyIndex: Map<number, number | null>;
   gainPercentageByBuyIndex: Map<number, number | null>;
   sellDetailsByBuyIndex: Map<number, SellDetailRow[]>;
   soldQuantityByBuyIndex: Map<number, number>;
@@ -698,12 +721,14 @@ function calculateActivitySymbolMetrics({
       const sellUnitNetPrice = activity.unitPrice - feePerUnit;
       const lotProceeds = matchedFromLot * sellUnitNetPrice;
       const lotCostBasis = matchedFromLot * firstLot.unitCost;
+      const lotRealizedAmt = lotProceeds - lotCostBasis;
       const lotRealizedPct =
-        lotCostBasis > 0 ? ((lotProceeds - lotCostBasis) / lotCostBasis) * 100 : 0;
+        lotCostBasis > 0 ? (lotRealizedAmt / lotCostBasis) * 100 : 0;
       const existingDetails = sellDetailsByBuyIndex.get(firstLot.lotIndex) ?? [];
 
       existingDetails.push({
         date: activity.date,
+        realizedAmount: roundToTwo(lotRealizedAmt),
         realizedPercentage: roundToTwo(lotRealizedPct),
         soldQuantity: roundToTwo(matchedFromLot),
         totalValue: roundToTwo(matchedFromLot * activity.unitPrice),
@@ -752,18 +777,22 @@ function calculateActivitySymbolMetrics({
     : 0;
   const currency = sortedActivities.find((activity) => activity.currency.trim())?.currency.trim() || 'EUR';
 
-  // Build per-buy-lot gain percentage using current market price
+  // Build per-buy-lot gain percentage and amount using current market price
   const gainPercentageByBuyIndex = new Map<number, number | null>();
+  const gainAmountByBuyIndex = new Map<number, number | null>();
 
   for (const lot of lots) {
     const lotEntryAmount = lot.quantity * lot.unitCost;
     const lotCurrentAmount = lot.quantity * positionPricePerUnit;
-    const lotGainPct = lotEntryAmount > 0 ? ((lotCurrentAmount - lotEntryAmount) / lotEntryAmount) * 100 : null;
+    const lotGainAmt = lotCurrentAmount - lotEntryAmount;
+    const lotGainPct = lotEntryAmount > 0 ? (lotGainAmt / lotEntryAmount) * 100 : null;
 
+    gainAmountByBuyIndex.set(lot.lotIndex, roundToTwo(lotGainAmt));
     gainPercentageByBuyIndex.set(lot.lotIndex, lotGainPct !== null ? roundToTwo(lotGainPct) : null);
   }
 
   return {
+    gainAmountByBuyIndex,
     gainPercentageByBuyIndex,
     metrics: {
       allocationPercentage: roundToTwo(allocationPercentage),

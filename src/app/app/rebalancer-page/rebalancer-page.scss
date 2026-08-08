@@ -403,35 +403,6 @@ tbody tr:last-child td {
   padding: 0;
 }
 
-.sell-details {
-  padding: 0.5rem 0.75rem;
-}
-
-.sell-details-summary {
-  color: var(--app-muted-text);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  list-style: none;
-  padding: 0.35rem 0;
-}
-
-.sell-details-summary::-webkit-details-marker {
-  display: none;
-}
-
-.sell-details-summary::before {
-  color: var(--app-primary);
-  content: '▸';
-  display: inline-block;
-  margin-right: 0.35rem;
-  transition: transform 120ms ease;
-}
-
-.sell-details[open] .sell-details-summary::before {
-  transform: rotate(90deg);
-}
-
 .sell-details-table {
   min-width: 0;
   width: 100%;
@@ -441,11 +412,29 @@ tbody tr:last-child td {
 .sell-details-table td {
   border-bottom-color: var(--app-border);
   font-size: 0.9rem;
-  padding: 0.5rem 0.6rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .sell-details-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.buy-row-expandable {
+  cursor: pointer;
+}
+
+.buy-row-expandable:hover td {
+  background: var(--app-surface-soft);
+}
+
+.buy-row-expand-icon {
+  display: inline-block;
+  margin-right: 0.25rem;
+  transition: transform 120ms ease;
+}
+
+.buy-row-expand-icon-open {
+  transform: rotate(90deg);
 }
 
 code {

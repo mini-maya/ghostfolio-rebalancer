@@ -311,11 +311,18 @@
                     </thead>
                     <tbody>
                       @for (entry of symbolGroup.entries; track $index) {
-                        <tr>
+                        <tr
+                          [class.buy-row-expandable]="entry.type === 'BUY' && entry.sellDetails.length > 0"
+                          [class.buy-row-expanded]="entry.type === 'BUY' && isEntryExpanded(entry)"
+                          (click)="entry.type === 'BUY' && entry.sellDetails.length > 0 && toggleEntry(entry)"
+                        >
                           <td
                             [class.activity-type-buy]="entry.type === 'BUY'"
                             [class.activity-type-sell]="entry.type === 'SELL'"
                           >
+                            @if (entry.type === 'BUY' && entry.sellDetails.length > 0) {
+                              <span class="buy-row-expand-icon" [class.buy-row-expand-icon-open]="isEntryExpanded(entry)">▸</span>
+                            }
                             {{ entry.type }}
                           </td>
                           <td>
@@ -344,7 +351,8 @@
                             {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                           </td>
                           <td class="numeric">
-                            @if (entry.gainPercentage !== null) {
+                            @if (entry.gainAmount !== null && entry.gainPercentage !== null) {
+                              {{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}<br />
                               <span
                                 class="value-bold"
                                 [class.value-positive]="entry.gainPercentage > 0"
@@ -357,48 +365,46 @@
                             }
                           </td>
                         </tr>
-                        @if (entry.type === 'BUY' && entry.sellDetails.length > 0) {
+                        @if (entry.type === 'BUY' && entry.sellDetails.length > 0 && isEntryExpanded(entry)) {
                           <tr class="sell-details-row">
                             <td colspan="9" class="sell-details-cell">
-                              <details class="sell-details">
-                                <summary class="sell-details-summary">{{ entry.sellDetails.length }} sell{{ entry.sellDetails.length > 1 ? 's' : '' }}</summary>
-                                <table class="sell-details-table">
-                                  <thead>
+                              <table class="sell-details-table">
+                                <thead>
+                                  <tr>
+                                    <th>Date</th>
+                                    <th class="numeric">Sold Quantity</th>
+                                    <th class="numeric">Unit price</th>
+                                    <th class="numeric">Total value</th>
+                                    <th class="numeric">Realized</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (sell of entry.sellDetails; track $index) {
                                     <tr>
-                                      <th>Date</th>
-                                      <th class="numeric">Sold Quantity</th>
-                                      <th class="numeric">Unit price</th>
-                                      <th class="numeric">Total value</th>
-                                      <th class="numeric">Realized %</th>
+                                      <td>
+                                        @if (sell.date) {
+                                          {{ sell.date | date: 'yyyy-MM-dd' }}
+                                        } @else {
+                                          -
+                                        }
+                                      </td>
+                                      <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
+                                      <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                                      <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                                      <td class="numeric">
+                                        {{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}<br />
+                                        <span
+                                          class="value-bold"
+                                          [class.value-positive]="sell.realizedPercentage > 0"
+                                          [class.value-negative]="sell.realizedPercentage < 0"
+                                        >
+                                          {{ sell.realizedPercentage > 0 ? '+' : sell.realizedPercentage < 0 ? '-' : '' }}{{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                        </span>
+                                      </td>
                                     </tr>
-                                  </thead>
-                                  <tbody>
-                                    @for (sell of entry.sellDetails; track $index) {
-                                      <tr>
-                                        <td>
-                                          @if (sell.date) {
-                                            {{ sell.date | date: 'yyyy-MM-dd' }}
-                                          } @else {
-                                            -
-                                          }
-                                        </td>
-                                        <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
-                                        <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                                        <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
-                                        <td class="numeric">
-                                          <span
-                                            class="value-bold"
-                                            [class.value-positive]="sell.realizedPercentage > 0"
-                                            [class.value-negative]="sell.realizedPercentage < 0"
-                                          >
-                                            {{ sell.realizedPercentage > 0 ? '+' : sell.realizedPercentage < 0 ? '-' : '' }}{{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    }
-                                  </tbody>
-                                </table>
-                              </details>
+                                  }
+                                </tbody>
+                              </table>
                             </td>
                           </tr>
                         }
