@@ -778,9 +778,9 @@ function calculateActivitySymbolMetrics({
   const openQuantity = lots.reduce((sum, lot) => sum + lot.quantity, 0);
   const entryPriceAmount = lots.reduce((sum, lot) => sum + lot.quantity * lot.unitCost, 0);
   const entryPricePerUnit = openQuantity > 0 ? entryPriceAmount / openQuantity : 0;
-  const positionQuantity = holding?.quantity ?? openQuantity;
+  const positionQuantity = openQuantity;
   const positionPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
-  const positionPriceAmount = holding?.valueInBaseCurrency ?? positionQuantity * positionPricePerUnit;
+  const positionPriceAmount = holding?.valueInBaseCurrency ?? openQuantity * positionPricePerUnit;
   const gainAmount = positionPriceAmount - entryPriceAmount;
   const gainPercentage = entryPriceAmount > 0 ? (gainAmount / entryPriceAmount) * 100 : 0;
   const realizedPercentage = realizedCostBasis > 0 ? (realizedAmount / realizedCostBasis) * 100 : 0;
