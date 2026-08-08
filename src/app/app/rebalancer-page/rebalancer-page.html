@@ -50,20 +50,10 @@
                 <button
                   class="sort-button"
                   type="button"
-                  [class.sort-button-active]="isSortColumn('currentValue')"
-                  (click)="sortBy('currentValue')"
-                >
-                  Current value <span>{{ sortIndicator('currentValue') }}</span>
-                </button>
-              </th>
-              <th class="numeric">
-                <button
-                  class="sort-button"
-                  type="button"
                   [class.sort-button-active]="isSortColumn('currentAllocationPercentage')"
                   (click)="sortBy('currentAllocationPercentage')"
                 >
-                  Current % <span>{{ sortIndicator('currentAllocationPercentage') }}</span>
+                  Current <span>{{ sortIndicator('currentAllocationPercentage') }}</span>
                 </button>
               </th>
               <th class="numeric">
@@ -90,30 +80,10 @@
                 <button
                   class="sort-button"
                   type="button"
-                  [class.sort-button-active]="isSortColumn('buyAmount')"
-                  (click)="sortBy('buyAmount')"
-                >
-                  Buy amount <span>{{ sortIndicator('buyAmount') }}</span>
-                </button>
-              </th>
-              <th class="numeric">
-                <button
-                  class="sort-button"
-                  type="button"
                   [class.sort-button-active]="isSortColumn('buyRoundedAmount')"
                   (click)="sortBy('buyRoundedAmount')"
                 >
-                  Buy rounded <span>{{ sortIndicator('buyRoundedAmount') }}</span>
-                </button>
-              </th>
-              <th class="numeric">
-                <button
-                  class="sort-button"
-                  type="button"
-                  [class.sort-button-active]="isSortColumn('newValue')"
-                  (click)="sortBy('newValue')"
-                >
-                  New value <span>{{ sortIndicator('newValue') }}</span>
+                  Buy <span>{{ sortIndicator('buyRoundedAmount') }}</span>
                 </button>
               </th>
               <th class="numeric">
@@ -123,7 +93,7 @@
                   [class.sort-button-active]="isSortColumn('newAllocationPercentage')"
                   (click)="sortBy('newAllocationPercentage')"
                 >
-                  New % <span>{{ sortIndicator('newAllocationPercentage') }}</span>
+                  New <span>{{ sortIndicator('newAllocationPercentage') }}</span>
                 </button>
               </th>
             </tr>
@@ -137,21 +107,21 @@
                 </td>
                 <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
                 <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
-                <td class="numeric">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
-                  {{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  {{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%<br />
+                  <span class="secondary-value">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
                 </td>
                 <td class="numeric">
                   {{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                 </td>
                 <td class="numeric">{{ row.targetGap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
-                <td class="numeric">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
-                <td class="numeric strong-cell">
-                  {{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}
-                </td>
-                <td class="numeric">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
-                  {{ row.newAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  <span class="strong-cell">{{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span><br />
+                  <span class="secondary-value">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
+                </td>
+                <td class="numeric">
+                  {{ row.newAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%<br />
+                  <span class="secondary-value">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
                 </td>
               </tr>
             }
