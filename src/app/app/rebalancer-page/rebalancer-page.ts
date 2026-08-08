@@ -41,10 +41,20 @@ interface RebalancingRow {
   targetGap: number;
 }
 
+interface SellDetailRow {
+  date: Date | null;
+  realizedPercentage: number;
+  soldQuantity: number;
+  totalValue: number;
+  unitPrice: number;
+}
+
 interface ActivityDetailRow {
   date: Date | null;
   fee: number;
+  gainPercentage: number | null;
   quantity: number;
+  sellDetails: SellDetailRow[];
   soldQuantity: number | null;
   totalValue: number;
   totalWithFee: number;
@@ -344,7 +354,7 @@ export class RebalancerPage {
               .map(([symbol, activities]) => {
                 const name =
                   activities.find((activity) => activity.name.trim())?.name.trim() || symbol;
-                const { metrics, soldQuantityByBuyIndex } = calculateActivitySymbolMetrics({
+                const { metrics, gainPercentageByBuyIndex, sellDetailsByBuyIndex, soldQuantityByBuyIndex } = calculateActivitySymbolMetrics({
                   activities,
                   holding: holdingsBySymbol.get(symbol),
                   portfolioTotal
@@ -365,7 +375,9 @@ export class RebalancerPage {
                     return {
                       date: activity.date,
                       fee: roundToTwo(activity.fee),
+                      gainPercentage: isBuy ? (gainPercentageByBuyIndex.get(currentBuyIndex) ?? null) : null,
                       quantity: roundToTwo(activity.quantity),
+                      sellDetails: isBuy ? (sellDetailsByBuyIndex.get(currentBuyIndex) ?? []) : [],
                       soldQuantity: isBuy ? roundToTwo(soldQuantityByBuyIndex.get(currentBuyIndex) ?? 0) : null,
                       totalValue,
                       totalWithFee: roundToTwo(isBuy ? totalValue + activity.fee : totalValue - activity.fee),
@@ -635,9 +647,15 @@ function calculateActivitySymbolMetrics({
   activities: Activity[];
   holding: Holding | undefined;
   portfolioTotal: number;
-}): { metrics: ActivitySymbolMetrics; soldQuantityByBuyIndex: Map<number, number> } {
+}): {
+  metrics: ActivitySymbolMetrics;
+  gainPercentageByBuyIndex: Map<number, number | null>;
+  sellDetailsByBuyIndex: Map<number, SellDetailRow[]>;
+  soldQuantityByBuyIndex: Map<number, number>;
+} {
   const lots: FifoLot[] = [];
   const soldQuantityByBuyIndex = new Map<number, number>();
+  const sellDetailsByBuyIndex = new Map<number, SellDetailRow[]>();
   let realizedAmount = 0;
   let realizedCostBasis = 0;
   let buyIndex = 0;
@@ -676,9 +694,25 @@ function calculateActivitySymbolMetrics({
     while (remainingToMatch > 0 && lots.length > 0) {
       const firstLot = lots[0];
       const matchedFromLot = Math.min(firstLot.quantity, remainingToMatch);
+      const feePerUnit = activity.fee / quantity;
+      const sellUnitNetPrice = activity.unitPrice - feePerUnit;
+      const lotProceeds = matchedFromLot * sellUnitNetPrice;
+      const lotCostBasis = matchedFromLot * firstLot.unitCost;
+      const lotRealizedPct =
+        lotCostBasis > 0 ? ((lotProceeds - lotCostBasis) / lotCostBasis) * 100 : 0;
+      const existingDetails = sellDetailsByBuyIndex.get(firstLot.lotIndex) ?? [];
+
+      existingDetails.push({
+        date: activity.date,
+        realizedPercentage: roundToTwo(lotRealizedPct),
+        soldQuantity: roundToTwo(matchedFromLot),
+        totalValue: roundToTwo(matchedFromLot * activity.unitPrice),
+        unitPrice: roundToTwo(activity.unitPrice)
+      });
+      sellDetailsByBuyIndex.set(firstLot.lotIndex, existingDetails);
 
       matchedQuantity += matchedFromLot;
-      matchedCostBasis += matchedFromLot * firstLot.unitCost;
+      matchedCostBasis += lotCostBasis;
       soldQuantityByBuyIndex.set(
         firstLot.lotIndex,
         (soldQuantityByBuyIndex.get(firstLot.lotIndex) ?? 0) + matchedFromLot
@@ -718,7 +752,19 @@ function calculateActivitySymbolMetrics({
     : 0;
   const currency = sortedActivities.find((activity) => activity.currency.trim())?.currency.trim() || 'EUR';
 
+  // Build per-buy-lot gain percentage using current market price
+  const gainPercentageByBuyIndex = new Map<number, number | null>();
+
+  for (const lot of lots) {
+    const lotEntryAmount = lot.quantity * lot.unitCost;
+    const lotCurrentAmount = lot.quantity * positionPricePerUnit;
+    const lotGainPct = lotEntryAmount > 0 ? ((lotCurrentAmount - lotEntryAmount) / lotEntryAmount) * 100 : null;
+
+    gainPercentageByBuyIndex.set(lot.lotIndex, lotGainPct !== null ? roundToTwo(lotGainPct) : null);
+  }
+
   return {
+    gainPercentageByBuyIndex,
     metrics: {
       allocationPercentage: roundToTwo(allocationPercentage),
       currency,
@@ -732,6 +778,7 @@ function calculateActivitySymbolMetrics({
       realizedAmount: roundToTwo(realizedAmount),
       realizedPercentage: roundToTwo(realizedPercentage)
     },
+    sellDetailsByBuyIndex,
     soldQuantityByBuyIndex
   };
 }

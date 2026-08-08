@@ -271,12 +271,24 @@
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ symbolGroup.metrics.currency }}<br />
-                    {{ symbolGroup.metrics.gainPercentage > 0 ? '+' : symbolGroup.metrics.gainPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                    <span
+                      class="value-bold"
+                      [class.value-positive]="symbolGroup.metrics.gainPercentage > 0"
+                      [class.value-negative]="symbolGroup.metrics.gainPercentage < 0"
+                    >
+                      {{ symbolGroup.metrics.gainPercentage > 0 ? '+' : symbolGroup.metrics.gainPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                    </span>
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ symbolGroup.metrics.currency }}<br />
-                    {{ symbolGroup.metrics.realizedPercentage > 0 ? '+' : symbolGroup.metrics.realizedPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                    <span
+                      class="value-bold"
+                      [class.value-positive]="symbolGroup.metrics.realizedPercentage > 0"
+                      [class.value-negative]="symbolGroup.metrics.realizedPercentage < 0"
+                    >
+                      {{ symbolGroup.metrics.realizedPercentage > 0 ? '+' : symbolGroup.metrics.realizedPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                    </span>
                   </span>
                   <span class="metrics-cell numeric">
                     {{ symbolGroup.metrics.allocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
@@ -294,6 +306,7 @@
                         <th class="numeric">Total value</th>
                         <th class="numeric">Fee</th>
                         <th class="numeric">Total with fee</th>
+                        <th class="numeric">Gain %</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -330,7 +343,65 @@
                           >
                             {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                           </td>
+                          <td class="numeric">
+                            @if (entry.gainPercentage !== null) {
+                              <span
+                                class="value-bold"
+                                [class.value-positive]="entry.gainPercentage > 0"
+                                [class.value-negative]="entry.gainPercentage < 0"
+                              >
+                                {{ entry.gainPercentage > 0 ? '+' : entry.gainPercentage < 0 ? '-' : '' }}{{ absolute(entry.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                              </span>
+                            } @else {
+                              -
+                            }
+                          </td>
                         </tr>
+                        @if (entry.type === 'BUY' && entry.sellDetails.length > 0) {
+                          <tr class="sell-details-row">
+                            <td colspan="9" class="sell-details-cell">
+                              <details class="sell-details">
+                                <summary class="sell-details-summary">{{ entry.sellDetails.length }} sell{{ entry.sellDetails.length > 1 ? 's' : '' }}</summary>
+                                <table class="sell-details-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Date</th>
+                                      <th class="numeric">Sold Quantity</th>
+                                      <th class="numeric">Unit price</th>
+                                      <th class="numeric">Total value</th>
+                                      <th class="numeric">Realized %</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    @for (sell of entry.sellDetails; track $index) {
+                                      <tr>
+                                        <td>
+                                          @if (sell.date) {
+                                            {{ sell.date | date: 'yyyy-MM-dd' }}
+                                          } @else {
+                                            -
+                                          }
+                                        </td>
+                                        <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 4} }}</td>
+                                        <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                                        <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</td>
+                                        <td class="numeric">
+                                          <span
+                                            class="value-bold"
+                                            [class.value-positive]="sell.realizedPercentage > 0"
+                                            [class.value-negative]="sell.realizedPercentage < 0"
+                                          >
+                                            {{ sell.realizedPercentage > 0 ? '+' : sell.realizedPercentage < 0 ? '-' : '' }}{{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    }
+                                  </tbody>
+                                </table>
+                              </details>
+                            </td>
+                          </tr>
+                        }
                       }
                     </tbody>
                   </table>
