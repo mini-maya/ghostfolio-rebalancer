@@ -38,10 +38,10 @@ Then open **http://localhost:8080** in your browser.
 | `GHOSTFOLIO_CA_CERT_PATH` | Optional path to a trusted CA certificate used for outbound Ghostfolio HTTPS requests | `/data/ca.crt` |
 
 `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are optional runtime defaults and
-can be changed in the UI without restarting the container. `BASE_URL` and
-`ACCESS_TOKEN` only pre-fill (and auto-connect) the login form while no stored local
-account exists. `ALLOCATIONS_TEXT` pre-fills the **Target allocations** field in
-**Advanced settings**.
+can be changed in the UI without restarting the container. `BASE_URL` always pre-fills
+the Ghostfolio URL field on the login page when set. `ACCESS_TOKEN` only pre-fills
+(and auto-connects) while no stored local account exists. `ALLOCATIONS_TEXT` pre-fills
+the **Target allocations** field in **Advanced settings**.
 
 Stored local accounts are written to `ACCOUNTS_DIR/accounts.csv` as a semicolon-
 separated CSV file with the required columns `user;baseUrl;allocationsText;payload`.
@@ -123,9 +123,10 @@ must allow the necessary CORS requests.
 
 If `BASE_URL` and `ACCESS_TOKEN` are provided via ENV/runtime config and no stored
 account exists yet, both fields are pre-filled and the app tries to connect
-automatically. If you also fill in local `user` + `password`, the app first validates
-Ghostfolio access and then reveals a password-confirmation field so it can create a
-stored local account.
+automatically. Once local accounts exist, only `BASE_URL` continues to pre-fill the
+URL field and auto-connect stays disabled. If you also fill in local `user` +
+`password`, the app first validates Ghostfolio access and then reveals a
+password-confirmation field so it can create a stored local account.
 
 **Allocation dialog**: After loading holdings, this dialog opens when no target
 allocations are configured yet. It starts with generated values from current
@@ -172,10 +173,11 @@ For trusted self-signed Ghostfolio certificates, copy the CA certificate into th
 mounted data directory as `ca.crt` before starting the container.
 
 The values from `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are optional
-runtime defaults. `BASE_URL` and `ACCESS_TOKEN` are only used on the login page
-until at least one stored account exists. `ALLOCATIONS_TEXT` is loaded as editable
-default in **Advanced settings** for non-account sessions; stored accounts persist
-their own target allocations in `accounts.csv`.
+runtime defaults. `BASE_URL` is always used as the login-page URL default when set.
+`ACCESS_TOKEN` is only used on the login page until at least one stored account
+exists. `ALLOCATIONS_TEXT` is loaded as editable default in **Advanced settings** for
+non-account sessions; stored accounts persist their own target allocations in
+`accounts.csv`.
 
 The main view directly shows **Monthly rate**, **Minimum buy amount**, **Rounding
 step**, and **Load holdings**. The collapsed **Advanced settings** area contains

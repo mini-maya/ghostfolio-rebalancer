@@ -33,7 +33,7 @@ app.use(express.json());
 app.get('/api/runtime-config', async (_request, response, next) => {
   try {
     const hasStoredAccounts = await accountStore.hasAccounts();
-    const baseUrl = hasStoredAccounts ? '' : process.env.BASE_URL ?? '';
+    const baseUrl = process.env.BASE_URL ?? '';
     const accessToken = hasStoredAccounts ? '' : process.env.ACCESS_TOKEN ?? '';
     const allocationsText = process.env.ALLOCATIONS_TEXT ?? '';
 
