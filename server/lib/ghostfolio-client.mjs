@@ -1,4 +1,16 @@
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+
 import { HttpError } from './errors.mjs';
+
+const ghostfolioCaPath = getGhostfolioCaPath();
+const ghostfolioCaCertificate = loadGhostfolioCaCertificate(ghostfolioCaPath);
+const ghostfolioHttpsAgent = ghostfolioCaCertificate
+  ? new https.Agent({
+      ca: ghostfolioCaCertificate
+    })
+  : null;
 
 export async function authenticate(baseUrl, accessToken) {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
@@ -90,8 +102,17 @@ async function requestJson(url, options, query = {}) {
   let response;
 
   try {
-    response = await fetch(requestUrl, options);
-  } catch {
+    response = await sendRequest(new URL(requestUrl), options);
+  } catch (error) {
+    if (isTlsVerificationError(error)) {
+      throw new HttpError(
+        502,
+        ghostfolioCaCertificate
+          ? 'TLS certificate validation for the remote Ghostfolio instance failed.'
+          : `TLS certificate validation for the remote Ghostfolio instance failed. Mount the trusted CA as ${ghostfolioCaPath} so the backend can verify Ghostfolio.`
+      );
+    }
+
     throw new HttpError(
       502,
       'The remote Ghostfolio instance is not reachable.',
@@ -99,22 +120,22 @@ async function requestJson(url, options, query = {}) {
     );
   }
 
-  const contentType = response.headers.get('content-type') ?? '';
+  const contentType = readHeaderValue(response.headers['content-type']);
   const responseBody = contentType.includes('application/json')
-    ? await response.json().catch(() => null)
-    : await response.text().catch(() => '');
+    ? parseJsonSafely(response.body)
+    : response.body;
 
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    if (response.statusCode === 401 || response.statusCode === 403) {
       throw new HttpError(
-        response.status,
+        response.statusCode,
         'Authentication against the remote Ghostfolio instance failed.'
       );
     }
 
     throw new HttpError(
       502,
-      `The remote Ghostfolio request failed with status ${response.status}.`
+      `The remote Ghostfolio request failed with status ${response.statusCode}.`
     );
   }
 
@@ -175,4 +196,77 @@ function buildRequestBaseUrlCandidates(baseUrl) {
   }
 
   return [...new Set(candidates)];
+}
+
+function getGhostfolioCaPath() {
+  return process.env.GHOSTFOLIO_CA_CERT_PATH?.trim() || '/data/ca.crt';
+}
+
+function loadGhostfolioCaCertificate(caPath) {
+  try {
+    return fs.readFileSync(caPath);
+  } catch {
+    return null;
+  }
+}
+
+function isTlsVerificationError(error) {
+  const code = error?.code;
+
+  return (
+    code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+    code === 'SELF_SIGNED_CERT_IN_CHAIN' ||
+    code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
+    code === 'CERT_SIGNATURE_FAILURE' ||
+    code === 'ERR_TLS_CERT_ALTNAME_INVALID'
+  );
+}
+
+function sendRequest(url, options) {
+  const transport = url.protocol === 'https:' ? https : http;
+
+  return new Promise((resolve, reject) => {
+    const request = transport.request(
+      url,
+      {
+        agent: url.protocol === 'https:' ? ghostfolioHttpsAgent ?? undefined : undefined,
+        headers: options.headers,
+        method: options.method ?? 'GET'
+      },
+      (response) => {
+        const chunks = [];
+
+        response.on('data', (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        response.on('end', () => {
+          resolve({
+            body: Buffer.concat(chunks).toString('utf8'),
+            headers: response.headers,
+            statusCode: response.statusCode ?? 0
+          });
+        });
+      }
+    );
+
+    request.on('error', reject);
+
+    if (options.body) {
+      request.write(options.body);
+    }
+
+    request.end();
+  });
+}
+
+function readHeaderValue(headerValue) {
+  return Array.isArray(headerValue) ? headerValue.join(', ') : headerValue ?? '';
+}
+
+function parseJsonSafely(value) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }

@@ -35,6 +35,7 @@ Then open **http://localhost:8080** in your browser.
 | `ALLOCATIONS_TEXT` | Target allocations (`SYMBOL,PERCENT` pairs separated by `|`) | `SPPW.DE,80|IUSN.DE,10|IS3N.DE,10` |
 | `ACCOUNT_ENCRYPTION_KEY` | Encryption key for stored local accounts and cached Ghostfolio bearer tokens | `replace-with-a-long-secret` |
 | `ACCOUNTS_DIR` | Directory containing the encrypted account CSV file | `/data` |
+| `GHOSTFOLIO_CA_CERT_PATH` | Optional path to a trusted CA certificate used for outbound Ghostfolio HTTPS requests | `/data/ca.crt` |
 
 `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are optional runtime defaults and
 can be changed in the UI without restarting the container. `BASE_URL` and
@@ -48,6 +49,12 @@ Only the local user name, `baseUrl`, and the plain-text per-account `allocations
 stay outside the encrypted payload; the Ghostfolio access token, the local password
 data, and the cached Ghostfolio bearer token are encrypted with
 `ACCOUNT_ENCRYPTION_KEY`.
+
+If your Ghostfolio instance uses a private CA or self-signed certificate, place the
+trusted certificate at `ACCOUNTS_DIR/ca.crt` (for the default `/data` mount this is
+`./data/ca.crt`). The backend Ghostfolio client will use that CA only for outbound
+Ghostfolio HTTPS requests. If you need a different filename or path, set
+`GHOSTFOLIO_CA_CERT_PATH`.
 
 When the app runs in Docker and you enter a Ghostfolio URL with `localhost` or
 `127.0.0.1`, the backend automatically retries via `host.docker.internal` so a
@@ -160,6 +167,9 @@ starts an existing `ghostfolio-rebalancer:latest` image.
 
 The checked-in `.env` file is used by default; `.env.example` is provided as a
 template if you want to recreate it.
+
+For trusted self-signed Ghostfolio certificates, copy the CA certificate into the
+mounted data directory as `ca.crt` before starting the container.
 
 The values from `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are optional
 runtime defaults. `BASE_URL` and `ACCESS_TOKEN` are only used on the login page

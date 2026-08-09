@@ -102,10 +102,10 @@ input:disabled {
 }
 
 .secondary-button {
-  background: transparent;
-  border: 1px solid var(--app-border-strong);
+  background: var(--app-primary);
+  border: 0;
   border-radius: 0.75rem;
-  color: var(--app-text);
+  color: var(--app-surface);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
