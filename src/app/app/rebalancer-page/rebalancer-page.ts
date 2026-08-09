@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
-import { getRuntimeConfig } from '../runtime-config';
+import { RuntimeConfigService } from '../runtime-config';
 import { GhostfolioApi, type Activity, type Holding } from '../services/ghostfolio-api';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 
@@ -127,10 +127,12 @@ type MetricsSortColumn =
 })
 export class RebalancerPage {
   private readonly authService = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly ghostfolioApi = inject(GhostfolioApi);
-  private readonly runtimeConfig = getRuntimeConfig();
+  private readonly runtimeConfigService = inject(RuntimeConfigService);
+  private readonly runtimeConfig = this.runtimeConfigService.config;
 
-  protected readonly allocationsText = signal(this.runtimeConfig.allocationsText);
+  protected readonly allocationsText = signal(this.getInitialAllocationsText());
   protected readonly activities = signal<Activity[]>([]);
   protected readonly errorMessage = signal('');
   protected readonly holdings = signal<Holding[]>([]);
@@ -148,9 +150,16 @@ export class RebalancerPage {
   protected readonly metricsSortDirection = signal<SortDirection>('asc');
   protected readonly roundingStep = signal(10);
   protected readonly savingsRate = signal(1750);
+  private allocationsSaveTimeout: number | null = null;
   private readonly expandedEntrySet = signal(new Set<ActivityDetailRow>());
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.allocationsSaveTimeout !== null) {
+        window.clearTimeout(this.allocationsSaveTimeout);
+      }
+    });
+
     effect(() => {
       if (
         this.authService.isAuthenticated() &&
@@ -168,7 +177,7 @@ export class RebalancerPage {
     const items: AllocationItem[] = [];
     let total = 0;
 
-    for (const [index, rawEntry] of this.allocationsText().split(';').entries()) {
+    for (const [index, rawEntry] of this.allocationsText().split('|').entries()) {
       const entry = rawEntry.trim();
 
       if (!entry) {
@@ -178,7 +187,7 @@ export class RebalancerPage {
       const [symbol, percentageText, ...rest] = entry.split(',').map((value) => value.trim());
 
       if (!symbol || !percentageText || rest.length > 0) {
-        errors.push(`Entry ${index + 1} must use "SYMBOL,PERCENT".`);
+        errors.push(`Entry ${index + 1} must use "SYMBOL,PERCENT|SYMBOL,PERCENT".`);
         continue;
       }
 
@@ -216,7 +225,9 @@ export class RebalancerPage {
     return Math.abs(this.allocationState().total - 100) <= 0.001;
   });
 
-  protected readonly hasAdvancedDefaults = Boolean(this.runtimeConfig.allocationsText);
+  protected readonly hasAdvancedDefaults = computed(() => {
+    return Boolean(this.getInitialAllocationsText());
+  });
   protected readonly allocationDialogTotal = computed(() => {
     return roundToTwo(
       this.allocationDialogRows().reduce((sum, row) => {
@@ -433,6 +444,7 @@ export class RebalancerPage {
 
   protected updateAllocationsText(event: Event) {
     this.allocationsText.set(readInputValue(event));
+    this.scheduleAllocationsSave();
   }
 
   protected updateAllocationDialogTarget(symbol: string, event: Event) {
@@ -463,11 +475,12 @@ export class RebalancerPage {
       .map(({ symbol, targetAllocationPercentage }) => {
         return `${symbol},${formatAllocationPercentage(targetAllocationPercentage)}`;
       })
-      .join(';');
+      .join('|');
 
     this.allocationsText.set(nextAllocationsText);
     this.isAllocationDialogOpen.set(false);
     this.infoMessage.set('Target allocations were generated from current holdings.');
+    this.scheduleAllocationsSave();
   }
 
   protected updateSavingsRate(event: Event) {
@@ -571,13 +584,9 @@ export class RebalancerPage {
 
     try {
       const baseUrl = this.authService.baseUrl();
-      const accessToken = this.authService.accessToken();
-      const bearerToken = await firstValueFrom(
-        this.ghostfolioApi.authenticate(baseUrl, accessToken)
-      );
       const [holdings, activities] = await Promise.all([
-        firstValueFrom(this.ghostfolioApi.fetchHoldings(baseUrl, bearerToken)),
-        firstValueFrom(this.ghostfolioApi.fetchActivities(baseUrl, bearerToken))
+        firstValueFrom(this.ghostfolioApi.fetchHoldings()),
+        firstValueFrom(this.ghostfolioApi.fetchActivities())
       ]);
 
       this.holdings.set(holdings);
@@ -626,7 +635,11 @@ export class RebalancerPage {
 
     if (error instanceof HttpErrorResponse) {
       if (error.status === 0) {
-        return 'The remote Ghostfolio instance is not reachable or blocks this request via CORS.';
+        return 'The application backend is not reachable.';
+      }
+
+      if (typeof error.error?.message === 'string' && error.error.message.trim()) {
+        return error.error.message;
       }
 
       if (error.status === 401 || error.status === 403) {
@@ -637,6 +650,37 @@ export class RebalancerPage {
     }
 
     return 'Loading holdings from the remote Ghostfolio instance failed.';
+  }
+
+  private getInitialAllocationsText(): string {
+    if (this.authService.sessionMode() === 'account') {
+      return this.authService.allocationsText();
+    }
+
+    return this.runtimeConfig().allocationsText;
+  }
+
+  private scheduleAllocationsSave() {
+    if (this.authService.sessionMode() !== 'account') {
+      return;
+    }
+
+    if (this.allocationsSaveTimeout !== null) {
+      window.clearTimeout(this.allocationsSaveTimeout);
+    }
+
+    this.allocationsSaveTimeout = window.setTimeout(() => {
+      this.allocationsSaveTimeout = null;
+      void this.saveAllocationsText();
+    }, 300);
+  }
+
+  private async saveAllocationsText() {
+    try {
+      await this.authService.updateAccountAllocationsText(this.allocationsText());
+    } catch {
+      this.errorMessage.set('Saving target allocations to the account failed.');
+    }
   }
 }
 

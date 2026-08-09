@@ -8,13 +8,24 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:1.29-alpine
+FROM node:22-alpine
 
 LABEL org.opencontainers.image.source=https://github.com/mini-maya/ghostfolio-rebalancer
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker-entrypoint.d/40-runtime-env.sh /docker-entrypoint.d/40-runtime-env.sh
-RUN chmod +x /docker-entrypoint.d/40-runtime-env.sh
-COPY --from=builder /app/dist/ghostfolio-rebalancer/browser /usr/share/nginx/html
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=80
+ENV ACCOUNTS_DIR=/data
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server ./server
+COPY --from=builder /app/dist ./dist
+
+VOLUME ["/data"]
 
 EXPOSE 80
+
+CMD ["node", "server/server.mjs"]

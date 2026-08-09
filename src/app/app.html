@@ -16,6 +16,27 @@
       </button>
     }
 
+    @if (showLogoutButton()) {
+      <button
+        class="logout-button"
+        type="button"
+        [disabled]="isLoggingOut()"
+        (click)="logout()"
+      >
+        <svg
+          aria-hidden="true"
+          class="button-icon"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zm-6 4h9v-2H4V5h9V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2z"
+            fill="currentColor"
+          />
+        </svg>
+        <span>{{ isLoggingOut() ? 'Logging out...' : 'Logout' }}</span>
+      </button>
+    }
+
     <label class="theme-picker">
       <span>Theme</span>
       <select [value]="themeMode()" (change)="updateThemeMode($event)">

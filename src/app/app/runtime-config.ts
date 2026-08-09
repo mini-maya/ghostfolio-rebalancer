@@ -1,42 +1,49 @@
-interface RuntimeConfig {
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
+export interface RuntimeConfig {
   accessToken: string;
   allocationsText: string;
   baseUrl: string;
   hasInjectedDefaults: boolean;
+  hasStoredAccounts: boolean;
 }
 
-declare global {
-  interface Window {
-    __GHOSTFOLIO_REBALANCER_CONFIG?: {
-      accessTokenBase64?: string;
-      allocationsTextBase64?: string;
-      baseUrlBase64?: string;
-    };
-  }
-}
+const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
+  accessToken: '',
+  allocationsText: '',
+  baseUrl: '',
+  hasInjectedDefaults: false,
+  hasStoredAccounts: false
+};
 
-export function getRuntimeConfig(): RuntimeConfig {
-  const config = window.__GHOSTFOLIO_REBALANCER_CONFIG;
-  const accessToken = decodeBase64(config?.accessTokenBase64);
-  const allocationsText = decodeBase64(config?.allocationsTextBase64);
-  const baseUrl = decodeBase64(config?.baseUrlBase64);
+@Injectable({
+  providedIn: 'root'
+})
+export class RuntimeConfigService {
+  private readonly http = inject(HttpClient);
+  private readonly _config = signal<RuntimeConfig>(DEFAULT_RUNTIME_CONFIG);
+  private loadPromise?: Promise<void>;
 
-  return {
-    accessToken,
-    allocationsText,
-    baseUrl,
-    hasInjectedDefaults: Boolean(accessToken || allocationsText || baseUrl)
-  };
-}
+  public readonly config = this._config.asReadonly();
 
-function decodeBase64(value?: string): string {
-  if (!value) {
-    return '';
-  }
+  public async load(): Promise<void> {
+    if (this.loadPromise) {
+      return this.loadPromise;
+    }
 
-  try {
-    return atob(value);
-  } catch {
-    return '';
+    this.loadPromise = firstValueFrom(this.http.get<RuntimeConfig>('/api/runtime-config'))
+      .then((config) => {
+        this._config.set({
+          ...DEFAULT_RUNTIME_CONFIG,
+          ...config
+        });
+      })
+      .finally(() => {
+        this.loadPromise = undefined;
+      });
+
+    return this.loadPromise;
   }
 }

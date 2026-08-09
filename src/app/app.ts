@@ -1,9 +1,11 @@
 import { DOCUMENT } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from './app/auth/auth.service';
+import { RuntimeConfigService } from './app/runtime-config';
 import { GhostfolioApi } from './app/services/ghostfolio-api';
 
 type ThemeMode = 'system' | 'light' | 'dark';
@@ -36,11 +38,28 @@ export class App {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly ghostfolioApi = inject(GhostfolioApi);
+  private readonly router = inject(Router);
+  private readonly runtimeConfigService = inject(RuntimeConfigService);
+  private readonly runtimeConfig = this.runtimeConfigService.config;
   protected readonly ghostfolioErrorMessage = signal('');
   protected readonly isGhostfolioLoading = signal(false);
+  protected readonly isLoggingOut = signal(false);
   protected readonly themeMode = signal<ThemeMode>(readStoredThemeMode());
   protected readonly showGhostfolioButton = computed(() => {
-    return Boolean(this.authService.baseUrl() && this.authService.accessToken());
+    return this.authService.isAuthenticated() && Boolean(this.authService.baseUrl());
+  });
+  protected readonly showLogoutButton = computed(() => {
+    if (!this.authService.isAuthenticated()) {
+      return false;
+    }
+
+    const isEnvAutoLoginSession =
+      this.authService.sessionMode() === 'token' &&
+      this.authService.loginSource() === 'env-default' &&
+      this.runtimeConfig().hasInjectedDefaults &&
+      !this.runtimeConfig().hasStoredAccounts;
+
+    return !isEnvAutoLoginSession;
   });
   protected readonly canOpenGhostfolio = computed(() => {
     return this.showGhostfolioButton() && !this.isGhostfolioLoading();
@@ -80,11 +99,10 @@ export class App {
 
   protected async openGhostfolio() {
     const baseUrl = this.authService.baseUrl();
-    const accessToken = this.authService.accessToken();
 
     this.ghostfolioErrorMessage.set('');
 
-    if (!baseUrl || !accessToken) {
+    if (!baseUrl) {
       return;
     }
 
@@ -102,24 +120,43 @@ export class App {
     this.isGhostfolioLoading.set(true);
 
     try {
-      const authToken = await firstValueFrom(
-        this.ghostfolioApi.authenticate(baseUrl, accessToken)
-      );
       const language = resolveBrowserLanguage();
-      const ghostfolioAuthUrl = new URL(
-        `${language}/auth/${encodeURIComponent(authToken)}`,
-        `${baseUrl}/`
-      ).toString();
+      const ghostfolioAuthUrl = await firstValueFrom(
+        this.ghostfolioApi.getDirectLoginUrl(language)
+      );
       popup.location.replace(ghostfolioAuthUrl);
-    } catch {
+    } catch (error) {
       if (!popup.closed) {
         popup.close();
       }
-      this.ghostfolioErrorMessage.set(
-        'Ghostfolio direct login failed. Please verify your access token and try again.'
-      );
+
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        this.ghostfolioErrorMessage.set('Please sign in again before opening Ghostfolio.');
+      } else {
+        this.ghostfolioErrorMessage.set(
+          'Ghostfolio direct login failed. Please verify your credentials and try again.'
+        );
+      }
     } finally {
       this.isGhostfolioLoading.set(false);
+    }
+  }
+
+  protected async logout() {
+    if (this.isLoggingOut()) {
+      return;
+    }
+
+    this.ghostfolioErrorMessage.set('');
+    this.isLoggingOut.set(true);
+
+    try {
+      await this.authService.logout();
+      await this.router.navigate(['/login']);
+    } catch {
+      this.ghostfolioErrorMessage.set('Logout failed. Please try again.');
+    } finally {
+      this.isLoggingOut.set(false);
     }
   }
 }

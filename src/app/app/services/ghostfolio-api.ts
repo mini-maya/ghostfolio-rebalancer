@@ -1,10 +1,6 @@
-import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import {inject, Injectable} from '@angular/core';
-import {firstValueFrom, from, map} from 'rxjs';
-
-interface AnonymousLoginResponse {
-  authToken: string;
-}
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom, from, map } from 'rxjs';
 
 interface HoldingsResponse {
   holdings: RemoteHolding[];
@@ -13,6 +9,10 @@ interface HoldingsResponse {
 interface ActivitiesResponse {
   activities?: RemoteActivity[];
   count?: number;
+}
+
+interface DirectLoginUrlResponse {
+  url: string;
 }
 
 interface RemoteHolding {
@@ -78,40 +78,11 @@ export interface Activity {
 export class GhostfolioApi {
   private readonly http = inject(HttpClient);
 
-  public normalizeBaseUrl(baseUrl: string): string {
-    const normalizedUrl = new URL(baseUrl);
-
-    return normalizedUrl.toString().replace(/\/$/, '');
-  }
-
-  public authenticate(baseUrl: string, accessToken: string) {
+  public fetchHoldings() {
     return this.http
-      .post<AnonymousLoginResponse>(this.buildApiUrl(baseUrl, 'api/v1/auth/anonymous'), {
-        accessToken
-      })
+      .get<HoldingsResponse>('/api/ghostfolio/holdings')
       .pipe(
-        map(({authToken}) => {
-          if (!authToken) {
-            throw new Error('Authentication did not return a bearer token.');
-          }
-
-          return authToken;
-        })
-      );
-  }
-
-  public fetchHoldings(baseUrl: string, bearerToken: string) {
-    return this.http
-      .get<HoldingsResponse>(
-        this.buildApiUrl(baseUrl, 'api/v1/portfolio/holdings'),
-        {
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${bearerToken}`
-          })
-        }
-      )
-      .pipe(
-        map(({holdings}) => {
+        map(({ holdings }) => {
           return (holdings ?? [])
             .map((holding) => {
               return {
@@ -132,14 +103,14 @@ export class GhostfolioApi {
                 valueInBaseCurrency: holding.valueInBaseCurrency ?? 0
               };
             })
-            .filter(({symbol}) => Boolean(symbol))
+            .filter(({ symbol }) => Boolean(symbol))
             .sort((a, b) => a.symbol.localeCompare(b.symbol));
         })
       );
   }
 
-  public fetchActivities(baseUrl: string, bearerToken: string) {
-    return from(this.fetchAllActivities(baseUrl, bearerToken)).pipe(
+  public fetchActivities() {
+    return from(this.fetchAllActivities()).pipe(
       map((activities): Activity[] => {
         return activities.map((activity) => {
           const type = getStringValue(activity.type);
@@ -169,70 +140,34 @@ export class GhostfolioApi {
     );
   }
 
-  private buildApiUrl(baseUrl: string, path: string): string {
-    return new URL(path, `${baseUrl}/`).toString();
-  }
-
-  private async fetchAllActivities(
-    baseUrl: string,
-    bearerToken: string
-  ): Promise<RemoteActivity[]> {
-    const take = 500;
-    const allActivities: RemoteActivity[] = [];
-    let count = 0;
-    let skip = 0;
-
-    do {
-      const {activities, count: totalCount} = await firstValueFrom(
-        this.http.get<ActivitiesResponse>(
-          this.buildApiUrl(baseUrl, 'api/v1/activities'),
-          {
-            headers: new HttpHeaders({
-              Authorization: `Bearer ${bearerToken}`
-            }),
-            params: this.buildActivitiesQueryParams({skip, take})
+  public getDirectLoginUrl(language: string) {
+    return this.http
+      .get<DirectLoginUrlResponse>('/api/ghostfolio/direct-login-url', {
+        params: new HttpParams().set('language', language)
+      })
+      .pipe(
+        map(({ url }) => {
+          if (!url) {
+            throw new Error('The direct Ghostfolio login URL is missing.');
           }
-        )
+
+          return url;
+        })
       );
-
-      const pageActivities = activities ?? [];
-
-      allActivities.push(...pageActivities);
-      count = totalCount ?? 0;
-      skip += pageActivities.length;
-
-      if (pageActivities.length === 0) {
-        break;
-      }
-    } while (allActivities.length < count);
-
-    return allActivities;
   }
 
-  private buildActivitiesQueryParams({
-                                       skip,
-                                       take
-  }: {
-    skip?: number;
-    take?: number;
-  }): HttpParams {
-    let params = new HttpParams();
+  private async fetchAllActivities(): Promise<RemoteActivity[]> {
+    const { activities } = await firstValueFrom(
+      this.http.get<ActivitiesResponse>('/api/ghostfolio/activities')
+    );
 
-    if (typeof skip === 'number') {
-      params = params.append('skip', skip);
-    }
-
-    if (typeof take === 'number') {
-      params = params.append('take', take);
-    }
-
-    return params;
+    return activities ?? [];
   }
 }
 
 function getFallbackMarketPrice({
-                                  quantity,
-                                  valueInBaseCurrency
+  quantity,
+  valueInBaseCurrency
 }: {
   quantity?: number;
   valueInBaseCurrency?: number;

@@ -457,7 +457,7 @@
     <details class="advanced-settings">
       <summary>
         Advanced settings
-        @if (hasAdvancedDefaults) {
+        @if (hasAdvancedDefaults()) {
           <span class="summary-tag">defaults loaded</span>
         }
       </summary>
@@ -467,11 +467,11 @@
           <span>Target allocations</span>
           <textarea
             rows="6"
-            placeholder="IS3N.DE,60;..."
+            placeholder="IS3N.DE,60|..."
             [value]="allocationsText()"
             (input)="updateAllocationsText($event)"
           ></textarea>
-          <small>Use <code>SYMBOL,PERCENT;SYMBOL,PERCENT</code>, for example <code>SPPW.DE,80;IUSN.DE,10;IS3N.DE,10</code>.</small>
+          <small>Use <code>SYMBOL,PERCENT|SYMBOL,PERCENT</code>, for example <code>SPPW.DE,80|IUSN.DE,10|IS3N.DE,10</code>.</small>
         </label>
       </div>
     </details>
@@ -530,7 +530,7 @@
                       class="allocation-target-input"
                       type="number"
                       min="0"
-                      step="5"
+                      step="1"
                       [value]="row.targetAllocationPercentage"
                       (input)="updateAllocationDialogTarget(row.symbol, $event)"
                     />

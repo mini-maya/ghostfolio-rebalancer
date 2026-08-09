@@ -2,45 +2,109 @@
   <section class="login-card card">
     <div class="login-header">
       <h2>Connect to Ghostfolio</h2>
-      <p>Enter your Ghostfolio instance URL and account access token to continue.</p>
+      <p>Use Ghostfolio access token login or sign in with a saved local account.</p>
     </div>
 
-    <form class="login-form" (submit)="submit($event)">
-      <label class="field">
-        <span>Ghostfolio URL</span>
-        <input
-          type="url"
-          placeholder="https://demo.ghostfol.io"
-          autocomplete="url"
-          [value]="baseUrl()"
-          [disabled]="isLoading()"
-          (input)="updateBaseUrl($event)"
-        />
-      </label>
+    <div class="login-layout">
+      <form class="login-form" (submit)="submitTokenLogin($event)">
+        <div class="method-header">
+          <h3>Ghostfolio access token</h3>
+          <p>Validate your Ghostfolio URL and access token. If user and password are filled in, this flow can also create a local account.</p>
+        </div>
 
-      <label class="field">
-        <span>Account access token</span>
-        <input
-          type="password"
-          placeholder="Your access token"
-          autocomplete="current-password"
-          [value]="accessToken()"
-          [disabled]="isLoading()"
-          (input)="updateAccessToken($event)"
-        />
-      </label>
+        <label class="field">
+          <span>Ghostfolio URL</span>
+          <input
+            type="url"
+            placeholder="https://demo.ghostfol.io"
+            autocomplete="url"
+            [value]="baseUrl()"
+            [disabled]="isTokenLoading() || isUserPasswordLoading()"
+            (input)="updateBaseUrl($event)"
+          />
+        </label>
 
-      @if (errorMessage()) {
-        <p class="message message-error">{{ errorMessage() }}</p>
-      }
+        <label class="field">
+          <span>Account access token</span>
+          <input
+            type="password"
+            placeholder="Your access token"
+            autocomplete="off"
+            [value]="accessToken()"
+            [disabled]="isTokenLoading() || isUserPasswordLoading()"
+            (input)="updateAccessToken($event)"
+          />
+        </label>
 
-      <button
-        class="primary-button"
-        type="submit"
-        [disabled]="isLoading()"
-      >
-        {{ isLoading() ? 'Connecting…' : 'Connect' }}
-      </button>
-    </form>
+        <button
+          class="primary-button"
+          type="submit"
+          [disabled]="isTokenLoading() || isUserPasswordLoading()"
+        >
+          {{ isTokenLoading() ? 'Working…' : tokenButtonLabel() }}
+        </button>
+      </form>
+
+      <form class="login-form" (submit)="submitUserPasswordLogin($event)">
+        <div class="method-header">
+          <h3>Local account</h3>
+          <p>Use these fields to create a saved local account together with the Ghostfolio access-token flow, or sign in with an existing local account.</p>
+        </div>
+
+        <label class="field">
+          <span>User</span>
+          <input
+            type="text"
+            placeholder="Local user name"
+            autocomplete="username"
+            [value]="user()"
+            [disabled]="isTokenLoading() || isUserPasswordLoading()"
+            (input)="updateUser($event)"
+          />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input
+            type="password"
+            placeholder="Local password"
+            autocomplete="current-password"
+            [value]="password()"
+            [disabled]="isTokenLoading() || isUserPasswordLoading()"
+            (input)="updatePassword($event)"
+          />
+        </label>
+
+        @if (isPasswordConfirmationVisible()) {
+          <label class="field">
+            <span>Confirm password</span>
+            <input
+              type="password"
+              placeholder="Confirm local password"
+              autocomplete="new-password"
+              [value]="passwordConfirmation()"
+              [disabled]="isTokenLoading() || isUserPasswordLoading()"
+              (input)="updatePasswordConfirmation($event)"
+            />
+          </label>
+        }
+
+        <button
+          class="secondary-button"
+          type="submit"
+          [disabled]="isTokenLoading() || isUserPasswordLoading()"
+        >
+          {{ isUserPasswordLoading() ? 'Signing in…' : 'Login with user and password' }}
+        </button>
+      </form>
+    </div>
+
+    @if (infoMessage()) {
+      <p class="message message-info">{{ infoMessage() }}</p>
+    }
+
+    @if (errorMessage()) {
+      <p class="message message-error">{{ errorMessage() }}</p>
+    }
   </section>
 </main>
