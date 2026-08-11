@@ -234,7 +234,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
         this.chart = new Chart<'bar' | 'line'>(chartCanvas.nativeElement, {
           data: chartData,
           options: {
-            animation: false,
+            animation: { duration: 1200, easing: 'easeOutQuart' },
             elements: getChartElementsOptions(this.colorScheme),
             interaction: { intersect: false, mode: 'index' },
             maintainAspectRatio: true,

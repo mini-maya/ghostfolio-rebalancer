@@ -386,6 +386,17 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
+.table-primary-value {
+  font-weight: 700;
+}
+
+.table-inline-highlight {
+  background: var(--app-surface-soft);
+  border-radius: 0.4rem;
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+}
+
 .activity-type-buy {
   color: var(--app-primary-text);
   font-weight: 700;
