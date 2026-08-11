@@ -15,6 +15,37 @@ interface DirectLoginUrlResponse {
   url: string;
 }
 
+interface PortfolioPerformanceEntry {
+  date?: string;
+  netPerformanceInPercentageWithCurrencyEffect?: number;
+  totalInvestmentValueWithCurrencyEffect?: number;
+  value?: number;
+  valueInPercentage?: number;
+  valueWithCurrencyEffect?: number;
+}
+
+interface PortfolioPerformanceSummary {
+  currentValueInBaseCurrency?: number;
+  netPerformance?: number;
+  netPerformanceInPercentage?: number;
+  netPerformanceInPercentageWithCurrencyEffect?: number;
+  netPerformancePercentage?: number;
+  netPerformancePercentageWithCurrencyEffect?: number;
+  netPerformanceWithCurrencyEffect?: number;
+  totalInvestmentValueWithCurrencyEffect?: number;
+}
+
+interface PortfolioPerformanceResponse {
+  chart?: PortfolioPerformanceEntry[];
+  performance?: PortfolioPerformanceSummary;
+}
+
+export interface PortfolioPerformanceChartItem {
+  date: string;
+  investment: number;
+  value: number;
+}
+
 interface RemoteHolding {
   allocationInPercentage?: number;
   assetProfile?: {
@@ -136,6 +167,22 @@ export class GhostfolioApi {
             valueInBaseCurrency: getNumberValue(activity.valueInBaseCurrency)
           };
         });
+      })
+    );
+  }
+
+  public fetchPortfolioPerformance() {
+    return this.http.get<PortfolioPerformanceResponse>('/api/ghostfolio/performance').pipe(
+      map(({ chart }) => {
+        return (chart ?? [])
+          .map((entry): PortfolioPerformanceChartItem => {
+            return {
+              date: entry.date ?? '',
+              investment: getNumberValue(entry.totalInvestmentValueWithCurrencyEffect),
+              value: getNumberValue(entry.valueWithCurrencyEffect ?? entry.value)
+            };
+          })
+          .filter(({ date }) => Boolean(date));
       })
     );
   }

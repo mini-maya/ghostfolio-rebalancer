@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  height: 100%;
+
+  ngx-skeleton-loader {
+    height: 100%;
+  }
+}
+
+:host,
+.chart-container {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.time-range-selector {
+  border: 0;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  position: relative;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--app-border);
+    border-radius: 999px;
+    background-color: var(--app-surface-soft);
+    color: var(--app-text);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+    white-space: nowrap;
+  }
+
+  input:checked + label {
+    background-color: var(--app-primary);
+    border-color: var(--app-primary);
+    color: var(--app-surface);
+  }
+
+  input:focus-visible + label {
+    outline: 2px solid var(--app-primary);
+    outline-offset: 2px;
+  }
+
+  input:disabled + label {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.chart-canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+}

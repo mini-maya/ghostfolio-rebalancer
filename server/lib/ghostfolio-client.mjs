@@ -91,6 +91,18 @@ export async function fetchHoldings(baseUrl, bearerToken) {
   });
 }
 
+export async function fetchPortfolioPerformance(baseUrl, bearerToken, queryParams = {}) {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+
+  return requestGhostfolioJson(normalizedBaseUrl, 'api/v2/portfolio/performance', {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${bearerToken}`
+    },
+    method: 'GET'
+  }, queryParams);
+}
+
 export function normalizeBaseUrl(baseUrl) {
   const normalizedUrl = new URL(baseUrl);
 

@@ -1,6 +1,6 @@
 {
   "name": "ghostfolio-rebalancer",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
@@ -21,21 +21,26 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "^20.0.0",
-    "@angular/compiler": "^20.0.0",
-    "@angular/core": "^20.0.0",
-    "@angular/forms": "^20.0.0",
-    "@angular/platform-browser": "^20.0.0",
-    "@angular/router": "^20.0.0",
+    "@angular/common": "^22.0.0",
+    "@angular/compiler": "^22.0.0",
+    "@angular/core": "^22.0.0",
+    "@angular/forms": "^22.0.0",
+    "@angular/platform-browser": "^22.0.0",
+    "@angular/router": "^22.0.0",
+    "chart.js": "^4.5.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "date-fns": "^4.4.0",
     "express": "^4.22.2",
+    "ngx-skeleton-loader": "^13.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.16.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.0.5",
-    "@angular/cli": "^20.0.5",
-    "@angular/compiler-cli": "^20.0.0",
+    "@angular/build": "^22.0.0",
+    "@angular/cli": "^21.0.4",
+    "@angular/compiler-cli": "^22.0.0",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.7.0",
     "karma": "~6.4.0",
@@ -43,6 +48,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.8.2"
+    "typescript": "~6.0.0"
   }
 }

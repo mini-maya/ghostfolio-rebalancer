@@ -1,0 +1,35 @@
+@if (isLoading) {
+  <ngx-skeleton-loader
+    animation="pulse"
+    [theme]="{
+      height: '100%',
+      width: '100%'
+    }"
+  />
+}
+<div class="chart-container">
+  <canvas
+    #chartCanvas
+    class="chart-canvas"
+    [style.display]="isLoading ? 'none' : 'block'"
+  ></canvas>
+
+  <fieldset class="time-range-selector" aria-label="Zeiträume">
+    @for (option of timeRangeOptions; track option.value) {
+      <div class="radio">
+        <input
+          [id]="'time-range-' + option.value"
+          name="time-range"
+          type="radio"
+          [value]="option.value"
+          [checked]="selectedTimeRange() === option.value"
+          [disabled]="isLoading"
+          (change)="selectTimeRange(option.value)"
+        />
+        <label [for]="'time-range-' + option.value">
+          {{ option.label }}
+        </label>
+      </div>
+    }
+  </fieldset>
+</div>

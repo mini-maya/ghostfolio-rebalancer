@@ -152,6 +152,19 @@
       <p>Activities are grouped by asset class and subclass, then by symbol.</p>
     </div>
 
+    @if (investmentChartHistoricalDataItems().length) {
+      <div class="portfolio-performance-chart">
+        <gf-investment-chart
+          [benchmarkDataItems]="investmentChartBenchmarkDataItems()"
+          [benchmarkDataLabel]="'Investments'"
+          [colorScheme]="portfolioChartColorScheme()"
+          [currency]="portfolioChartCurrency()"
+          [historicalDataItems]="investmentChartHistoricalDataItems()"
+          [isLoading]="isLoading()"
+        />
+      </div>
+    }
+
     @if (!activities().length) {
       <p class="empty-state">No activities loaded yet.</p>
     } @else {

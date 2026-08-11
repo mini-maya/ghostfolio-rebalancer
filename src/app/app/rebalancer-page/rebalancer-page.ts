@@ -1,11 +1,14 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { RuntimeConfigService } from '../runtime-config';
-import { GhostfolioApi, type Activity, type Holding } from '../services/ghostfolio-api';
+import { GfInvestmentChartComponent } from '../../shared/investment-chart/public-api';
+import type { InvestmentItem, LineChartItem } from '../../shared/investment-chart/src/investment-chart.interfaces';
+import type { ColorScheme } from '../../shared/investment-chart/src/investment-chart.types';
+import { GhostfolioApi, type Activity, type Holding, type PortfolioPerformanceChartItem } from '../services/ghostfolio-api';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 
 interface AllocationItem {
@@ -96,6 +99,29 @@ interface ActivityClassGroup {
   subClasses: ActivitySubClassGroup[];
 }
 
+interface PortfolioPerformanceEntry {
+  date: string;
+  netPerformanceInPercentageWithCurrencyEffect?: number;
+  totalInvestmentValueWithCurrencyEffect?: number;
+  value?: number;
+  valueInPercentage?: number;
+  valueWithCurrencyEffect?: number;
+}
+
+interface PortfolioPerformanceData {
+  chart?: PortfolioPerformanceEntry[];
+  performance?: {
+    currentValueInBaseCurrency?: number;
+    netPerformance?: number;
+    netPerformanceInPercentage?: number;
+    netPerformanceInPercentageWithCurrencyEffect?: number;
+    netPerformancePercentage?: number;
+    netPerformancePercentageWithCurrencyEffect?: number;
+    netPerformanceWithCurrencyEffect?: number;
+    totalInvestmentValueWithCurrencyEffect?: number;
+  };
+}
+
 type SortColumn =
   | 'symbol'
   | 'name'
@@ -121,13 +147,14 @@ type MetricsSortColumn =
 
 @Component({
   selector: 'app-rebalancer-page',
-  imports: [CommonModule, LocaleNumberPipe],
+  imports: [CommonModule, GfInvestmentChartComponent, LocaleNumberPipe],
   templateUrl: './rebalancer-page.html',
   styleUrl: './rebalancer-page.scss'
 })
 export class RebalancerPage {
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
   private readonly ghostfolioApi = inject(GhostfolioApi);
   private readonly runtimeConfigService = inject(RuntimeConfigService);
   private readonly runtimeConfig = this.runtimeConfigService.config;
@@ -139,6 +166,8 @@ export class RebalancerPage {
   protected readonly infoMessage = signal(
     'Set your monthly rate and load the holdings.'
   );
+  protected readonly portfolioPerformanceData = signal<PortfolioPerformanceChartItem[]>([]);
+  protected readonly portfolioChartColorScheme = signal<ColorScheme>(readChartColorScheme(this.document));
   protected readonly isLoading = signal(false);
   protected readonly lastLoadedUrl = signal('');
   protected readonly minimumBuyAmount = signal(10);
@@ -154,10 +183,21 @@ export class RebalancerPage {
   private readonly expandedEntrySet = signal(new Set<ActivityDetailRow>());
 
   constructor() {
+    const themeObserver = new MutationObserver(() => {
+      this.portfolioChartColorScheme.set(readChartColorScheme(this.document));
+    });
+
+    themeObserver.observe(this.document.documentElement, {
+      attributeFilter: ['data-theme'],
+      attributes: true
+    });
+
     this.destroyRef.onDestroy(() => {
       if (this.allocationsSaveTimeout !== null) {
         window.clearTimeout(this.allocationsSaveTimeout);
       }
+
+      themeObserver.disconnect();
     });
 
     effect(() => {
@@ -219,6 +259,24 @@ export class RebalancerPage {
 
   protected readonly plannedPortfolioTotal = computed(() => {
     return roundToTwo(this.portfolioTotal() + this.savingsRate());
+  });
+
+  protected readonly investmentChartBenchmarkDataItems = computed<InvestmentItem[]>(() => {
+    return this.portfolioPerformanceData().map(({ date, investment }) => ({
+      date,
+      investment
+    }));
+  });
+
+  protected readonly investmentChartHistoricalDataItems = computed<LineChartItem[]>(() => {
+    return this.portfolioPerformanceData().map(({ date, value }) => ({
+      date,
+      value
+    }));
+  });
+
+  protected readonly portfolioChartCurrency = computed(() => {
+    return this.holdings()[0]?.currency ?? '???';
   });
 
   protected readonly allocationTotalIsValid = computed(() => {
@@ -584,16 +642,18 @@ export class RebalancerPage {
 
     try {
       const baseUrl = this.authService.baseUrl();
-      const [holdings, activities] = await Promise.all([
+      const [holdings, activities, portfolioPerformanceData] = await Promise.all([
         firstValueFrom(this.ghostfolioApi.fetchHoldings()),
-        firstValueFrom(this.ghostfolioApi.fetchActivities())
+        firstValueFrom(this.ghostfolioApi.fetchActivities()),
+        firstValueFrom(this.ghostfolioApi.fetchPortfolioPerformance())
       ]);
 
       this.holdings.set(holdings);
       this.activities.set(activities);
+      this.portfolioPerformanceData.set(portfolioPerformanceData);
       this.lastLoadedUrl.set(baseUrl);
       this.infoMessage.set(
-        `Loaded ${holdings.length} holdings and ${activities.length} activities from ${baseUrl}.`
+        `Loaded ${holdings.length} holdings, ${activities.length} activities and ${portfolioPerformanceData.length} performance points from ${baseUrl}.`
       );
 
       if (!this.allocationsText().trim()) {
@@ -602,6 +662,7 @@ export class RebalancerPage {
     } catch (error) {
       this.activities.set([]);
       this.holdings.set([]);
+      this.portfolioPerformanceData.set([]);
       this.errorMessage.set(this.getErrorMessage(error));
     } finally {
       this.isLoading.set(false);
@@ -690,6 +751,10 @@ function readInputValue(event: Event): string {
 
 function roundToTwo(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function readChartColorScheme(document: Document): ColorScheme {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'DARK' : 'LIGHT';
 }
 
 function formatAllocationPercentage(value: number): string {

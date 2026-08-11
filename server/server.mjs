@@ -9,6 +9,7 @@ import {
   authenticate,
   fetchActivities,
   fetchHoldings,
+  fetchPortfolioPerformance,
   normalizeBaseUrl
 } from './lib/ghostfolio-client.mjs';
 
@@ -226,6 +227,21 @@ app.get('/api/ghostfolio/activities', async (request, response, next) => {
   try {
     const payload = await withActiveGhostfolioSession(request, async ({ baseUrl, bearerToken }) => {
       return fetchActivities(baseUrl, bearerToken);
+    });
+
+    response.json(payload);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/ghostfolio/performance', async (request, response, next) => {
+  try {
+    const queryParams = {
+      range: request.query.range
+    };
+    const payload = await withActiveGhostfolioSession(request, async ({ baseUrl, bearerToken }) => {
+      return fetchPortfolioPerformance(baseUrl, bearerToken, queryParams);
     });
 
     response.json(payload);
