@@ -261,10 +261,16 @@
                     >{{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                     <span
+                      class="value-with-arrow"
                       [class.value-positive]="symbolGroup.metrics.gainPercentage > 0"
                       [class.value-negative]="symbolGroup.metrics.gainPercentage < 0"
                     >
-                      {{ symbolGroup.metrics.gainPercentage > 0 ? '+' : symbolGroup.metrics.gainPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      @if (symbolGroup.metrics.gainPercentage > 0) {
+                        <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                      } @else if (symbolGroup.metrics.gainPercentage < 0) {
+                        <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                      }
+                      {{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                     </span>
                   </span>
                   <span class="metrics-cell numeric">
@@ -275,10 +281,16 @@
                     >{{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                     <span
+                      class="value-with-arrow"
                       [class.value-positive]="symbolGroup.metrics.realizedPercentage > 0"
                       [class.value-negative]="symbolGroup.metrics.realizedPercentage < 0"
                     >
-                      {{ symbolGroup.metrics.realizedPercentage > 0 ? '+' : symbolGroup.metrics.realizedPercentage < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      @if (symbolGroup.metrics.realizedPercentage > 0) {
+                        <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                      } @else if (symbolGroup.metrics.realizedPercentage < 0) {
+                        <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                      }
+                      {{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                     </span>
                   </span>
                   <span class="metrics-cell numeric">
@@ -349,10 +361,16 @@
                                 [class.value-negative]="entry.gainAmount < 0"
                               >{{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                               <span
+                                class="value-with-arrow"
                                 [class.value-positive]="entry.gainPercentage > 0"
                                 [class.value-negative]="entry.gainPercentage < 0"
                               >
-                                {{ entry.gainPercentage > 0 ? '+' : entry.gainPercentage < 0 ? '-' : '' }}{{ absolute(entry.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                @if (entry.gainPercentage > 0) {
+                                  <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                                } @else if (entry.gainPercentage < 0) {
+                                  <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                                }
+                                {{ absolute(entry.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                               </span>
                             } @else {
                               -
@@ -392,10 +410,16 @@
                                           [class.value-negative]="sell.realizedAmount < 0"
                                         >{{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                                         <span
+                                          class="value-with-arrow"
                                           [class.value-positive]="sell.realizedPercentage > 0"
                                           [class.value-negative]="sell.realizedPercentage < 0"
                                         >
-                                          {{ sell.realizedPercentage > 0 ? '+' : sell.realizedPercentage < 0 ? '-' : '' }}{{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                          @if (sell.realizedPercentage > 0) {
+                                            <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                                          } @else if (sell.realizedPercentage < 0) {
+                                            <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                                          }
+                                          {{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                                         </span>
                                       </td>
                                     </tr>
