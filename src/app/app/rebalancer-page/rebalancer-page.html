@@ -105,7 +105,7 @@
                   <strong>{{ row.symbol }}</strong><br />
                   <span class="name-secondary">{{ row.name }}</span>
                 </td>
-                <td class="numeric">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
+                <td class="numeric"><span class="table-inline-highlight">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span></td>
                 <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
                   <span class="table-primary-value">{{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span><br />
@@ -343,12 +343,12 @@
                               -
                             }
                           </td>
-                          <td class="numeric">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
+                          <td class="numeric"><span class="table-inline-highlight">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span></td>
                           <td class="numeric">
                             @if (entry.soldQuantity !== null && entry.soldQuantity !== 0) {
-                              {{ entry.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}
+                              <span class="table-inline-highlight">{{ entry.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span>
                             } @else {
-                              -
+                              <span class="table-inline-highlight">-</span>
                             }
                           </td>
                           <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
