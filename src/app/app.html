@@ -52,4 +52,24 @@
   <p class="app-toolbar-message">{{ ghostfolioErrorMessage() }}</p>
 }
 
+@if (showAppMenu()) {
+  <nav class="app-menu card" aria-label="Primary">
+    <a
+      class="app-menu-link"
+      routerLink="/rebalancer"
+      routerLinkActive="app-menu-link-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      Rebalancer
+    </a>
+    <a
+      class="app-menu-link"
+      routerLink="/activity"
+      routerLinkActive="app-menu-link-active"
+    >
+      Activity
+    </a>
+  </nav>
+}
+
 <router-outlet></router-outlet>

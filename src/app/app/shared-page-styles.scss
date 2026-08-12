@@ -1,0 +1,130 @@
+.card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow);
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+}
+
+.section-header {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.section-header-stack {
+  align-items: flex-start;
+}
+
+.empty-state {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--app-border);
+  padding: 0.85rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: var(--app-muted-text);
+  font-size: 0.9rem;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sort-button {
+  -webkit-appearance: none;
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+}
+
+.sort-button span {
+  color: var(--app-sort-muted);
+  font-size: 0.8rem;
+}
+
+.sort-button-active {
+  color: var(--app-primary-text);
+}
+
+.numeric {
+  text-align: right;
+}
+
+.strong-cell {
+  color: var(--app-primary-text);
+  font-weight: 700;
+}
+
+.table-primary-value {
+  font-weight: 700;
+}
+
+.table-inline-highlight {
+  background: var(--app-surface-soft);
+  border-radius: 0.4rem;
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+}
+
+.name-secondary,
+.secondary-value {
+  color: var(--app-muted-text);
+}
+
+.value-with-arrow {
+  align-items: center;
+  border-radius: 0.4rem;
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.arrow-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  height: 1em;
+  width: 1em;
+}
+
+.value-positive {
+  background: var(--app-primary-soft);
+  color: var(--app-primary-text);
+}
+
+.value-negative {
+  background: var(--app-error-bg);
+  color: var(--app-error-text);
+}
+
+.value-bold {
+  font-weight: 700;
+}

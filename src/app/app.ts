@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from './app/auth/auth.service';
@@ -29,7 +29,7 @@ const SUPPORTED_GHOSTFOLIO_LANGUAGES = new Set([
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -47,6 +47,9 @@ export class App {
   protected readonly themeMode = signal<ThemeMode>(readStoredThemeMode());
   protected readonly showGhostfolioButton = computed(() => {
     return this.authService.isAuthenticated() && Boolean(this.authService.baseUrl());
+  });
+  protected readonly showAppMenu = computed(() => {
+    return this.authService.isAuthenticated();
   });
   protected readonly showLogoutButton = computed(() => {
     if (!this.authService.isAuthenticated()) {

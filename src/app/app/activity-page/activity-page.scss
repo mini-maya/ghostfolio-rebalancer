@@ -1,0 +1,189 @@
+@use '../shared-page-styles';
+
+:host {
+  display: block;
+}
+
+.page {
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 2rem 1rem 3rem;
+}
+
+h2,
+h3,
+h4 {
+  color: var(--app-text);
+  margin: 0;
+}
+
+.section-header p {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+.portfolio-performance-chart {
+  margin-bottom: 1.5rem;
+  min-height: 320px;
+}
+
+.portfolio-summary-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.portfolio-summary-card {
+  margin-top: 0;
+}
+
+.stat {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.stat span {
+  color: var(--app-muted-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.stat strong {
+  color: var(--app-text);
+  font-size: 1.05rem;
+}
+
+.metrics-grid {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
+}
+
+.metrics-grid-header {
+  color: var(--app-muted-text);
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.metrics-header-cell {
+  border-bottom: 1px solid var(--app-border);
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.85rem 0.75rem;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.metrics-grid-header .metrics-header-cell.numeric {
+  justify-content: flex-end;
+}
+
+.metrics-grid-header .metrics-header-cell:first-child {
+  padding-left: 1.75rem;
+}
+
+.activity-details {
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.activity-details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.activity-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.metrics-grid-row {
+  background: var(--app-surface);
+}
+
+.metrics-cell {
+  border-bottom: 1px solid var(--app-border);
+  display: block;
+  padding: 0.85rem 0.75rem;
+}
+
+.activity-details[open] .metrics-cell {
+  border-bottom-color: transparent;
+}
+
+.metrics-name-cell {
+  padding-left: 1.75rem;
+  position: relative;
+  white-space: normal;
+}
+
+.metrics-name-cell::before {
+  color: var(--app-primary);
+  content: '▸';
+  left: 0.75rem;
+  position: absolute;
+  top: 0.95rem;
+  transition: transform 120ms ease;
+}
+
+.activity-details[open] .metrics-name-cell::before {
+  transform: rotate(90deg);
+}
+
+.metrics-name-cell > span {
+  color: var(--app-muted-text);
+}
+
+.activity-type-buy {
+  color: var(--app-primary-text);
+  font-weight: 700;
+}
+
+.activity-type-sell {
+  color: var(--app-error-text);
+  font-weight: 700;
+}
+
+.sell-details-row {
+  background: var(--app-surface-soft);
+}
+
+.sell-details-cell {
+  padding: 0;
+}
+
+.sell-details-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.sell-details-table th,
+.sell-details-table td {
+  border-bottom-color: var(--app-border);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.sell-details-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.buy-row-expandable {
+  cursor: pointer;
+}
+
+.buy-row-expandable:hover td {
+  background: var(--app-surface-soft);
+}
+
+.buy-row-expand-icon {
+  display: inline-block;
+  margin-right: 0.25rem;
+  transition: transform 120ms ease;
+}
+
+.buy-row-expand-icon-open {
+  transform: rotate(90deg);
+}

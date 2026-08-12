@@ -1,0 +1,368 @@
+<main class="page">
+  <section class="card">
+    <div class="section-header">
+      <h2>Activities by asset class</h2>
+      <p>Activities are grouped by asset class and subclass, then by symbol.</p>
+    </div>
+
+    @if (!activities().length) {
+      <p class="empty-state">No activities loaded yet. Load holdings in the Rebalancer page.</p>
+    } @else {
+      @if (investmentChartHistoricalDataItems().length) {
+        <div class="portfolio-performance-chart">
+          <gf-investment-chart
+            [benchmarkDataItems]="investmentChartBenchmarkDataItems()"
+            [benchmarkDataLabel]="'Investments'"
+            [colorScheme]="portfolioChartColorScheme()"
+            [currency]="portfolioChartCurrency()"
+            [historicalDataItems]="investmentChartHistoricalDataItems()"
+            [isLoading]="isLoading()"
+            [timeRange]="selectedChartTimeRange()"
+            (timeRangeChange)="onChartTimeRangeChange($event)"
+          />
+        </div>
+
+        <div class="portfolio-summary-grid">
+          <article class="card stat portfolio-summary-card">
+            <span>Total Period (MAX)</span>
+            <strong>{{ maxRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+            <span>Gain</span>
+            <strong
+              class="value-bold"
+              [class.value-positive]="maxRangePortfolioSummary().gainAmount > 0"
+              [class.value-negative]="maxRangePortfolioSummary().gainAmount < 0"
+            >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+            @if (maxRangePortfolioSummary().gainPercentage !== 0) {
+              <span
+                class="value-with-arrow"
+                [class.value-positive]="maxRangePortfolioSummary().gainPercentage > 0"
+                [class.value-negative]="maxRangePortfolioSummary().gainPercentage < 0"
+              >
+                @if (maxRangePortfolioSummary().gainPercentage > 0) {
+                  <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                } @else if (maxRangePortfolioSummary().gainPercentage < 0) {
+                  <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                }
+                {{ absolute(maxRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+            } @else {
+              <span class="value-with-arrow">0.00%</span>
+            }
+          </article>
+
+          <article class="card stat portfolio-summary-card">
+            <span>Selected Range ({{ selectedChartTimeRange() }})</span>
+            <strong>{{ selectedRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+            <span>Gain %</span>
+            <strong
+              class="value-bold"
+              [class.value-positive]="selectedRangePortfolioSummary().gainAmount > 0"
+              [class.value-negative]="selectedRangePortfolioSummary().gainAmount < 0"
+            >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+            @if (selectedRangePortfolioSummary().gainPercentage !== 0) {
+              <span
+                class="value-with-arrow"
+                [class.value-positive]="selectedRangePortfolioSummary().gainPercentage > 0"
+                [class.value-negative]="selectedRangePortfolioSummary().gainPercentage < 0"
+              >
+                @if (selectedRangePortfolioSummary().gainPercentage > 0) {
+                  <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                } @else if (selectedRangePortfolioSummary().gainPercentage < 0) {
+                  <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                }
+                {{ absolute(selectedRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+            } @else {
+              <span class="value-with-arrow">0.00%</span>
+            }
+          </article>
+        </div>
+      }
+
+      @for (classGroup of activityClassGroups(); track classGroup.assetClass) {
+        <section class="activity-type-group">
+          <div class="section-header section-header-stack">
+            <div>
+              <h3>{{ classGroup.assetClass }}</h3>
+            </div>
+          </div>
+
+          @for (subClassGroup of classGroup.subClasses; track subClassGroup.subClass) {
+            <h4>{{ subClassGroup.subClass }}</h4>
+
+            <div class="metrics-grid metrics-grid-header">
+              <button
+                class="sort-button metrics-header-cell"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('name')"
+                (click)="sortMetricsBy('name')"
+              >
+                Name <span>{{ metricsSortIndicator('name') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('entryPrice')"
+                (click)="sortMetricsBy('entryPrice')"
+              >
+                Entry <br />price <span>{{ metricsSortIndicator('entryPrice') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('positionPrice')"
+                (click)="sortMetricsBy('positionPrice')"
+              >
+                Position <br />price <span>{{ metricsSortIndicator('positionPrice') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('gain')"
+                (click)="sortMetricsBy('gain')"
+              >
+                Gain <br />% <span>{{ metricsSortIndicator('gain') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('realized')"
+                (click)="sortMetricsBy('realized')"
+              >
+                Realized <br />% <span>{{ metricsSortIndicator('realized') }}</span>
+              </button>
+              <button
+                class="sort-button metrics-header-cell numeric"
+                type="button"
+                [class.sort-button-active]="isMetricsSortColumn('allocation')"
+                (click)="sortMetricsBy('allocation')"
+              >
+                Allocation % <span>{{ metricsSortIndicator('allocation') }}</span>
+              </button>
+            </div>
+
+            @for (symbolGroup of subClassGroup.symbols; track symbolGroup.symbol) {
+              <details class="activity-details">
+                <summary class="metrics-grid metrics-grid-row">
+                  <span class="metrics-cell metrics-name-cell">
+                    <strong>{{ symbolGroup.symbol }}</strong><br />
+                    <span>{{ symbolGroup.name }}</span>
+                  </span>
+                  <span class="metrics-cell numeric">
+                    <span class="table-primary-value">{{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
+                    {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}
+                  </span>
+                  <span class="metrics-cell numeric">
+                    <span class="table-primary-value">{{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
+                    <span class="table-inline-highlight">
+                      {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
+                      x
+                    </span>
+                    {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}
+                  </span>
+                  <span class="metrics-cell numeric">
+                    <span
+                      class="table-primary-value"
+                      [class.value-positive]="symbolGroup.metrics.gainAmount > 0"
+                      [class.value-negative]="symbolGroup.metrics.gainAmount < 0"
+                    >{{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                    @if (symbolGroup.metrics.gainPercentage !== 0) {
+                      <span
+                        class="value-with-arrow"
+                        [class.value-positive]="symbolGroup.metrics.gainPercentage > 0"
+                        [class.value-negative]="symbolGroup.metrics.gainPercentage < 0"
+                      >
+                        @if (symbolGroup.metrics.gainPercentage > 0) {
+                          <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                        } @else if (symbolGroup.metrics.gainPercentage < 0) {
+                          <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                        }
+                        {{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      </span>
+                    } @else {
+                      <span class="value-with-arrow">-</span>
+                    }
+                  </span>
+                  <span class="metrics-cell numeric">
+                    <span
+                      class="table-primary-value"
+                      [class.value-positive]="symbolGroup.metrics.realizedAmount > 0"
+                      [class.value-negative]="symbolGroup.metrics.realizedAmount < 0"
+                    >{{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                    @if (symbolGroup.metrics.realizedPercentage !== 0) {
+                      <span
+                        class="value-with-arrow"
+                        [class.value-positive]="symbolGroup.metrics.realizedPercentage > 0"
+                        [class.value-negative]="symbolGroup.metrics.realizedPercentage < 0"
+                      >
+                        @if (symbolGroup.metrics.realizedPercentage > 0) {
+                          <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                        } @else if (symbolGroup.metrics.realizedPercentage < 0) {
+                          <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                        }
+                        {{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                      </span>
+                    } @else {
+                      <span class="value-with-arrow">-</span>
+                    }
+                  </span>
+                  <span class="metrics-cell numeric">
+                    <span class="table-primary-value">{{ symbolGroup.metrics.allocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+                  </span>
+                </summary>
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th class="numeric">Quantity</th>
+                        <th class="numeric">Sold Quantity</th>
+                        <th class="numeric">Unit price</th>
+                        <th class="numeric">Total value</th>
+                        <th class="numeric">Fee</th>
+                        <th class="numeric">Total with fee</th>
+                        <th class="numeric">Gain %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of symbolGroup.entries; track $index) {
+                        <tr
+                          [class.buy-row-expandable]="entry.type === 'BUY' && entry.sellDetails.length > 0"
+                          [class.buy-row-expanded]="entry.type === 'BUY' && isEntryExpanded(entry)"
+                          (click)="entry.type === 'BUY' && entry.sellDetails.length > 0 && toggleEntry(entry)"
+                        >
+                          <td
+                            [class.activity-type-buy]="entry.type === 'BUY'"
+                            [class.activity-type-sell]="entry.type === 'SELL'"
+                          >
+                            @if (entry.type === 'BUY' && entry.sellDetails.length > 0) {
+                              <span class="buy-row-expand-icon" [class.buy-row-expand-icon-open]="isEntryExpanded(entry)">▸</span>
+                            }
+                            {{ entry.type }}
+                          </td>
+                          <td>
+                            @if (entry.date) {
+                              {{ entry.date | date: 'yyyy-MM-dd' }}
+                            } @else {
+                              -
+                            }
+                          </td>
+                          <td class="numeric"><span class="table-inline-highlight">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span></td>
+                          <td class="numeric">
+                            @if (entry.soldQuantity !== null && entry.soldQuantity !== 0) {
+                              <span class="table-inline-highlight">{{ entry.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span>
+                            } @else {
+                              <span class="table-inline-highlight">-</span>
+                            }
+                          </td>
+                          <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                          <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                          <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                          <td
+                            class="numeric strong-cell"
+                            [class.activity-type-buy]="entry.type === 'BUY'"
+                            [class.activity-type-sell]="entry.type === 'SELL'"
+                          >
+                            {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}
+                          </td>
+                          <td class="numeric">
+                            @if (entry.gainAmount !== null && entry.gainPercentage !== null) {
+                              <span
+                                class="table-primary-value"
+                                [class.value-positive]="entry.gainAmount > 0"
+                                [class.value-negative]="entry.gainAmount < 0"
+                              >{{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                              @if (entry.gainPercentage !== 0) {
+                                <span
+                                  class="value-with-arrow"
+                                  [class.value-positive]="entry.gainPercentage > 0"
+                                  [class.value-negative]="entry.gainPercentage < 0"
+                                >
+                                  @if (entry.gainPercentage > 0) {
+                                    <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                                  } @else if (entry.gainPercentage < 0) {
+                                    <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                                  }
+                                  {{ absolute(entry.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                </span>
+                              } @else {
+                                <span class="value-with-arrow">-</span>
+                              }
+                            } @else {
+                              <span class="value-with-arrow">-</span>
+                            }
+                          </td>
+                        </tr>
+                        @if (entry.type === 'BUY' && entry.sellDetails.length > 0 && isEntryExpanded(entry)) {
+                          <tr class="sell-details-row">
+                            <td colspan="9" class="sell-details-cell">
+                              <table class="sell-details-table">
+                                <thead>
+                                  <tr>
+                                    <th>Date</th>
+                                    <th class="numeric">Sold Quantity</th>
+                                    <th class="numeric">Unit price</th>
+                                    <th class="numeric">Total value</th>
+                                    <th class="numeric">Realized</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  @for (sell of entry.sellDetails; track $index) {
+                                    <tr>
+                                      <td>
+                                        @if (sell.date) {
+                                          {{ sell.date | date: 'yyyy-MM-dd' }}
+                                        } @else {
+                                          -
+                                        }
+                                      </td>
+                                      <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
+                                      <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                                      <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                                      <td class="numeric">
+                                        <span
+                                          class="table-primary-value"
+                                          [class.value-positive]="sell.realizedAmount > 0"
+                                          [class.value-negative]="sell.realizedAmount < 0"
+                                        >{{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                                        @if (sell.realizedPercentage !== 0) {
+                                        <span
+                                          class="value-with-arrow"
+                                          [class.value-positive]="sell.realizedPercentage > 0"
+                                          [class.value-negative]="sell.realizedPercentage < 0"
+                                        >
+                                          @if (sell.realizedPercentage > 0) {
+                                            <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                                          } @else if (sell.realizedPercentage < 0) {
+                                            <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                                          }
+                                          {{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                        </span>
+                                        } @else {
+                                        <span class="value-with-arrow">-</span>
+                                        }
+                                      </td>
+                                    </tr>
+                                  }
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        }
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            }
+          }
+        </section>
+      }
+    }
+  </section>
+</main>

@@ -112,6 +112,39 @@
   padding: 0.75rem 1rem;
 }
 
+.app-menu {
+  align-items: center;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow);
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.75rem auto 0;
+  max-width: 1280px;
+  padding: 0.75rem 1rem;
+}
+
+.app-menu-link {
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  color: var(--app-muted-text);
+  font-weight: 600;
+  padding: 0.55rem 0.9rem;
+  text-decoration: none;
+}
+
+.app-menu-link:hover {
+  background: var(--app-surface-soft);
+  color: var(--app-text);
+}
+
+.app-menu-link-active {
+  background: var(--app-primary-soft);
+  border-color: var(--app-border);
+  color: var(--app-primary-text);
+}
+
 @media (max-width: 960px) {
   .app-toolbar {
     flex-wrap: wrap;
@@ -120,5 +153,9 @@
   .toolbar-actions {
     justify-content: flex-end;
     width: 100%;
+  }
+
+  .app-menu {
+    flex-wrap: wrap;
   }
 }
