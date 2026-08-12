@@ -1,0 +1,148 @@
+@use '../shared-page-styles';
+
+:host {
+  display: block;
+}
+
+.page {
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 2rem 1rem 3rem;
+}
+
+h2 {
+  color: var(--app-text);
+  margin: 0;
+}
+
+.section-header p,
+.field small,
+.stat small {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+.retire-phase-sections {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.retire-phase-section {
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.retire-phase-header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.retire-phase-header h3 {
+  color: var(--app-text);
+  margin: 0;
+}
+
+.retire-phase-header p {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+.retire-form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
+.field input,
+.field select {
+  box-sizing: border-box;
+  height: 3rem;
+  min-height: 3rem;
+  width: 100%;
+}
+
+.field span,
+.stat span {
+  color: var(--app-muted-text);
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+input,
+select {
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-border-strong);
+  border-radius: 0.75rem;
+  color: var(--app-text);
+  font: inherit;
+  padding: 0.8rem 0.95rem;
+}
+
+.stats {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1.5rem;
+}
+
+.stat {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0;
+}
+
+.stat strong {
+  color: var(--app-text);
+  font-size: 1.05rem;
+}
+
+.portfolio-performance-chart {
+  min-height: 320px;
+}
+
+.message {
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.message-error {
+  background: var(--app-error-bg);
+  color: var(--app-error-text);
+}
+
+.message-info {
+  background: var(--app-primary-soft);
+  color: var(--app-primary-text);
+}
+
+.empty-state {
+  color: var(--app-muted-text);
+  margin: 0;
+}
+
+@media (max-width: 1180px) {
+  .retire-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .retire-phase-sections,
+  .retire-form-grid,
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

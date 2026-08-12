@@ -355,7 +355,7 @@ function roundToTwo(value: number): number {
 }
 
 function readChartColorScheme(document: Document): ColorScheme {
-  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'DARK' : 'LIGHT';
+  return document.documentElement.dataset["theme"] === 'dark' ? 'DARK' : 'LIGHT';
 }
 
 function getCutoffDate(range: TimeRange): Date | null {

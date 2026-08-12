@@ -284,10 +284,14 @@ export function getTooltipOptions<T extends ChartType>({
 export function getValueAxisOptions({
   colorScheme,
   display = true,
+  drawGrid = true,
+  position = 'right',
   tickCallback
 }: {
   colorScheme: ColorScheme;
   display?: boolean;
+  drawGrid?: boolean;
+  position?: 'left' | 'right';
   tickCallback: (
     tickValue: number | string,
     index: number,
@@ -300,6 +304,7 @@ export function getValueAxisOptions({
     },
     display,
     grid: {
+      drawOnChartArea: drawGrid,
       color: ({ scale, tick }) => {
         if (
           tick.value === 0 ||
@@ -312,7 +317,7 @@ export function getValueAxisOptions({
         return 'transparent';
       }
     },
-    position: 'right',
+    position,
     ticks: {
       callback: tickCallback,
       display,
@@ -359,12 +364,13 @@ export function getVerticalHoverLinePlugin<T extends 'line' | 'bar'>(
 }
 
 export function getZeroLineAnnotation(
-  colorScheme: ColorScheme
+  colorScheme: ColorScheme,
+  scaleID: string = 'yPrimary'
 ): AnnotationOptions<'line'> {
   return {
     borderColor: getChartBorderColor(colorScheme),
     borderWidth: 1,
-    scaleID: 'y',
+    scaleID,
     type: 'line',
     value: 0
   };

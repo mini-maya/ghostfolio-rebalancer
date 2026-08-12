@@ -1,0 +1,251 @@
+<main class="page">
+  <section class="card">
+    <div class="section-header section-header-stack">
+      <div>
+        <h2>Retire</h2>
+        <p>
+          The current portfolio value is used as starting capital, can grow until
+          {{ withdrawalStartLabel() }}, and is then projected through the withdrawal phase.
+        </p>
+      </div>
+    </div>
+
+    <div class="retire-phase-sections">
+      <section class="retire-phase-section">
+        <div class="retire-phase-header">
+          <h3>Before withdrawals</h3>
+          <p>Configure the savings phase until the first withdrawal starts.</p>
+        </div>
+
+        <div class="retire-form-grid">
+          <label class="field">
+            <span>Withdrawal start (month/year)</span>
+            <input
+              type="month"
+              [value]="withdrawalStartMonth()"
+              (input)="updateWithdrawalStartMonth($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Lead time before withdrawals (years)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.25"
+              [value]="leadTimeYears()"
+              (input)="updateLeadTimeYears($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Monthly savings during lead time</span>
+            <input
+              type="number"
+              min="0"
+              step="10"
+              [value]="monthlySavingsRate()"
+              (input)="updateMonthlySavingsRate($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Expected annual return during savings phase %</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              [value]="accumulationAnnualReturnPercentage()"
+              (input)="updateAccumulationAnnualReturnPercentage($event)"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section class="retire-phase-section">
+        <div class="retire-phase-header">
+          <h3>During withdrawals</h3>
+          <p>Configure the payout assumptions after the retirement phase begins.</p>
+        </div>
+
+        <div class="retire-form-grid">
+          <label class="field">
+            <span>Payout period</span>
+            <select [value]="frequency()" (change)="updateFrequency($event)">
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Capital preservation at end %</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              [value]="capitalPreservationPercentage()"
+              (input)="updateCapitalPreservationPercentage($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Annual withdrawal increase for inflation %</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              [value]="annualInflationPercentage()"
+              (input)="updateAnnualInflationPercentage($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Expected annual return during withdrawals %</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              [value]="withdrawalAnnualReturnPercentage()"
+              (input)="updateWithdrawalAnnualReturnPercentage($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Withdrawal period in years</span>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              [value]="projectionYears()"
+              (input)="updateProjectionYears($event)"
+            />
+          </label>
+        </div>
+      </section>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="message message-error">{{ errorMessage() }}</p>
+    }
+
+    @if (infoMessage()) {
+      <p class="message message-info">{{ infoMessage() }}</p>
+    }
+  </section>
+
+  <section class="stats">
+    <article class="card stat">
+      <span>Current portfolio value / starting capital</span>
+      <strong>
+        {{ startCapital() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>@if (lastLoadedUrl()) { Loaded from {{ lastLoadedUrl() }} }</small>
+    </article>
+
+    <article class="card stat">
+      <span>Capital at withdrawal start</span>
+      <strong>
+        {{ projection().capitalAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>Starts in {{ withdrawalStartLabel() }}</small>
+    </article>
+
+    <article class="card stat">
+      <span>First withdrawal</span>
+      <strong>
+        {{ projection().firstWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>{{ frequency() === 'monthly' ? 'per month' : 'per year' }}</small>
+    </article>
+
+    <article class="card stat">
+      <span>Last withdrawal</span>
+      <strong>
+        {{ projection().lastWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>Projected in {{ projectionEndLabel() }}</small>
+    </article>
+
+    <article class="card stat">
+      <span>Total savings contributions</span>
+      <strong>
+        {{ projection().totalContributions | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>Added before withdrawals begin</small>
+    </article>
+
+    <article class="card stat">
+      <span>Total withdrawals</span>
+      <strong>
+        {{ projection().totalWithdrawals | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>Across {{ projectionYears() }} years</small>
+    </article>
+
+    <article class="card stat">
+      <span>Projected portfolio growth</span>
+      <strong>
+        {{ projection().totalGrowth | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>Expected cumulative returns</small>
+    </article>
+
+    <article class="card stat">
+      <span>Projected ending capital</span>
+      <strong>
+        {{ projection().endingCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        Target
+        {{ projection().targetCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+        ({{ targetCapitalGap() >= 0 ? '+' : '' }}{{ targetCapitalGap() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }})
+      </small>
+    </article>
+  </section>
+
+  <section class="card">
+    <div class="section-header section-header-stack">
+      <div>
+        <h2>Projection</h2>
+        <p>
+          Savings are compounded monthly until {{ withdrawalStartLabel() }}. From then on,
+          withdrawals are recalculated every {{ frequency() === 'monthly' ? 'month' : 'year' }}
+          using the remaining capital, remaining duration, withdrawal-phase return and
+          the selected end-capital target.
+        </p>
+      </div>
+    </div>
+
+    @if (!projection().points.length) {
+      <p class="empty-state">No projection available yet.</p>
+    } @else {
+      <div class="portfolio-performance-chart">
+        <gf-investment-chart
+          [benchmarkDataItems]="withdrawalChartItems()"
+          [benchmarkDataLabel]="'Withdrawals'"
+          [benchmarkDisplayType]="'bar'"
+          [benchmarkStepped]="false"
+          [colorScheme]="portfolioChartColorScheme()"
+          [currency]="currency()"
+          [groupBy]="chartGroupBy()"
+          [historicalDataItems]="balanceChartItems()"
+          [historicalDataLabel]="'Portfolio value'"
+          [isLoading]="isLoading()"
+          [timeRangeMode]="'leading'"
+          [timeRange]="selectedChartTimeRange()"
+          (timeRangeChange)="onChartTimeRangeChange($event)"
+        />
+      </div>
+    }
+  </section>
+</main>
