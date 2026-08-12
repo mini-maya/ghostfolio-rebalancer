@@ -3,10 +3,48 @@
 Standalone Angular web app for loading holdings from a remote Ghostfolio instance
 and calculating a contribution-based rebalancing plan.
 
+## Rebalancing Tool
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="screenshot_dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="screenshot_light.png">
-  <img alt="Screenshot" src="screenshot_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_rebalancer_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_rebalancer_light.png">
+  <img alt="Screenshot" src="screenshot_rebalancer_light.png">
+</picture>
+
+## Activity View
+### Investment chart
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_activity1_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_activity1_light.png">
+  <img alt="Screenshot" src="screenshot_activity1_light.png">
+</picture>
+
+### Buy- and sell table
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_activity2_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_activity2_light.png">
+  <img alt="Screenshot" src="screenshot_activity2_light.png">
+</picture>
+
+## Retirement View
+### Set up retire plan
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_retire1_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_retire1_light.png">
+  <img alt="Screenshot" src="screenshot_retire1_light.png">
+</picture>
+
+### Calculate retire projection
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_retire2_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_retire2_light.png">
+  <img alt="Screenshot" src="screenshot_retire2_light.png">
+</picture>
+
+## Optional login screen
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_login_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_login_light.png">
+  <img alt="Screenshot" src="screenshot_login_light.png">
 </picture>
 
 ## Quick Start (pre-built image)
