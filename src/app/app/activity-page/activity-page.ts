@@ -1,5 +1,5 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { startOfYear, sub } from 'date-fns';
 
 import { GfInvestmentChartComponent } from '../../shared/investment-chart/public-api';
@@ -85,7 +85,7 @@ type MetricsSortColumn =
   templateUrl: './activity-page.html',
   styleUrl: './activity-page.scss'
 })
-export class ActivityPage {
+export class ActivityPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly portfolioDataStore = inject(PortfolioDataStore);
@@ -94,7 +94,7 @@ export class ActivityPage {
   protected readonly isLoading = this.portfolioDataStore.isLoading;
   protected readonly portfolioPerformanceData = this.portfolioDataStore.portfolioPerformanceData;
   protected readonly portfolioChartColorScheme = signal<ColorScheme>(readChartColorScheme(this.document));
-  protected readonly selectedChartTimeRange = signal<TimeRange>('MAX');
+  protected readonly selectedChartTimeRange = signal<TimeRange>('YTD');
   protected readonly metricsSortColumn = signal<MetricsSortColumn>('name');
   protected readonly metricsSortDirection = signal<SortDirection>('asc');
   private readonly expandedEntrySet = signal(new Set<ActivityDetailRow>());
@@ -261,6 +261,18 @@ export class ActivityPage {
     this.destroyRef.onDestroy(() => {
       themeObserver.disconnect();
     });
+
+  }
+
+  ngOnInit(): void {
+    if (
+      !this.holdings().length &&
+      !this.activities().length &&
+      !this.portfolioPerformanceData().length &&
+      !this.isLoading()
+    ) {
+      void this.portfolioDataStore.loadPortfolioData();
+    }
   }
 
   protected isMetricsSortColumn(column: MetricsSortColumn): boolean {

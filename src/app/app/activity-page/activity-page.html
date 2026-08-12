@@ -1,3 +1,11 @@
+<ng-template #arrowUpIcon>
+  <svg class="arrow-icon arrow-up" viewBox="0 -28 320 568" preserveAspectRatio="xMidYMid meet" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+</ng-template>
+
+<ng-template #arrowDownIcon>
+  <svg class="arrow-icon arrow-down" viewBox="0 -28 320 568" preserveAspectRatio="xMidYMid meet" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+</ng-template>
+
 <main class="page">
   <section class="card">
     <div class="section-header">
@@ -29,8 +37,6 @@
             <span>Gain</span>
             <strong
               class="value-bold"
-              [class.value-positive]="maxRangePortfolioSummary().gainAmount > 0"
-              [class.value-negative]="maxRangePortfolioSummary().gainAmount < 0"
             >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
             @if (maxRangePortfolioSummary().gainPercentage !== 0) {
               <span
@@ -39,13 +45,13 @@
                 [class.value-negative]="maxRangePortfolioSummary().gainPercentage < 0"
               >
                 @if (maxRangePortfolioSummary().gainPercentage > 0) {
-                  <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                  <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
                 } @else if (maxRangePortfolioSummary().gainPercentage < 0) {
-                  <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                  <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
                 }
                 {{ absolute(maxRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
             } @else {
-              <span class="value-with-arrow">0.00%</span>
+              <span class="value-with-arrow">-</span>
             }
           </article>
 
@@ -55,8 +61,6 @@
             <span>Gain %</span>
             <strong
               class="value-bold"
-              [class.value-positive]="selectedRangePortfolioSummary().gainAmount > 0"
-              [class.value-negative]="selectedRangePortfolioSummary().gainAmount < 0"
             >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
             @if (selectedRangePortfolioSummary().gainPercentage !== 0) {
               <span
@@ -65,13 +69,13 @@
                 [class.value-negative]="selectedRangePortfolioSummary().gainPercentage < 0"
               >
                 @if (selectedRangePortfolioSummary().gainPercentage > 0) {
-                  <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                  <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
                 } @else if (selectedRangePortfolioSummary().gainPercentage < 0) {
-                  <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                  <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
                 }
                 {{ absolute(selectedRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
             } @else {
-              <span class="value-with-arrow">0.00%</span>
+              <span class="value-with-arrow">-</span>
             }
           </article>
         </div>
@@ -165,8 +169,6 @@
                   <span class="metrics-cell numeric">
                     <span
                       class="table-primary-value"
-                      [class.value-positive]="symbolGroup.metrics.gainAmount > 0"
-                      [class.value-negative]="symbolGroup.metrics.gainAmount < 0"
                     >{{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                     @if (symbolGroup.metrics.gainPercentage !== 0) {
@@ -176,9 +178,9 @@
                         [class.value-negative]="symbolGroup.metrics.gainPercentage < 0"
                       >
                         @if (symbolGroup.metrics.gainPercentage > 0) {
-                          <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                          <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
                         } @else if (symbolGroup.metrics.gainPercentage < 0) {
-                          <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                          <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
                         }
                         {{ absolute(symbolGroup.metrics.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                       </span>
@@ -189,8 +191,6 @@
                   <span class="metrics-cell numeric">
                     <span
                       class="table-primary-value"
-                      [class.value-positive]="symbolGroup.metrics.realizedAmount > 0"
-                      [class.value-negative]="symbolGroup.metrics.realizedAmount < 0"
                     >{{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                     @if (symbolGroup.metrics.realizedPercentage !== 0) {
@@ -200,9 +200,9 @@
                         [class.value-negative]="symbolGroup.metrics.realizedPercentage < 0"
                       >
                         @if (symbolGroup.metrics.realizedPercentage > 0) {
-                          <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                          <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
                         } @else if (symbolGroup.metrics.realizedPercentage < 0) {
-                          <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                          <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
                         }
                         {{ absolute(symbolGroup.metrics.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                       </span>
@@ -274,8 +274,6 @@
                             @if (entry.gainAmount !== null && entry.gainPercentage !== null) {
                               <span
                                 class="table-primary-value"
-                                [class.value-positive]="entry.gainAmount > 0"
-                                [class.value-negative]="entry.gainAmount < 0"
                               >{{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                               @if (entry.gainPercentage !== 0) {
                                 <span
@@ -284,9 +282,9 @@
                                   [class.value-negative]="entry.gainPercentage < 0"
                                 >
                                   @if (entry.gainPercentage > 0) {
-                                    <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                                    <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
                                   } @else if (entry.gainPercentage < 0) {
-                                    <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                                    <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
                                   }
                                   {{ absolute(entry.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                                 </span>
@@ -327,8 +325,6 @@
                                       <td class="numeric">
                                         <span
                                           class="table-primary-value"
-                                          [class.value-positive]="sell.realizedAmount > 0"
-                                          [class.value-negative]="sell.realizedAmount < 0"
                                         >{{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                                         @if (sell.realizedPercentage !== 0) {
                                         <span
@@ -337,9 +333,9 @@
                                           [class.value-negative]="sell.realizedPercentage < 0"
                                         >
                                           @if (sell.realizedPercentage > 0) {
-                                            <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+                                            <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
                                           } @else if (sell.realizedPercentage < 0) {
-                                            <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+                                            <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
                                           }
                                           {{ absolute(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                                         </span>

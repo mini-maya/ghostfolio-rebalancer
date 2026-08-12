@@ -102,26 +102,32 @@ tbody tr:last-child td {
 
 .value-with-arrow {
   align-items: center;
+  width: fit-content;
   border-radius: 0.4rem;
   display: inline-flex;
   gap: 0.35rem;
+  line-height: 1;
   padding: 0.2rem 0.4rem;
 }
 
 .arrow-icon {
   display: inline-block;
   flex-shrink: 0;
-  height: 1em;
-  width: 1em;
+  height: 0.85em;
+  overflow: visible;
+  vertical-align: middle;
+  width: 0.85em;
 }
 
-.value-positive {
-  background: var(--app-primary-soft);
+.value-with-arrow.value-positive,
+.stat .value-with-arrow.value-positive {
+  background-color: var(--app-primary-soft);
   color: var(--app-primary-text);
 }
 
-.value-negative {
-  background: var(--app-error-bg);
+.value-with-arrow.value-negative,
+.stat .value-with-arrow.value-negative {
+  background-color: var(--app-error-bg);
   color: var(--app-error-text);
 }
 
