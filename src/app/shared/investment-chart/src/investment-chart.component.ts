@@ -39,11 +39,12 @@ import {
   primaryColorRgb,
   registerChartConfiguration,
   secondaryColorRgb,
-  transformTickToAbbreviation
+  transformTickToAbbreviation,
+  getLocale,
+  parseDate
 } from './investment-chart.helpers';
 import type { InvestmentItem, LineChartItem } from './investment-chart.interfaces';
 import type { ColorScheme, GroupBy, TimeRange } from './investment-chart.types';
-import { getLocale, parseDate } from './investment-chart.helpers';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -160,8 +161,8 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
     const filteredBenchmarkItems = this.getFilteredData(this.benchmarkDataItems);
     const filteredHistoricalItems = this.getFilteredData(this.historicalDataItems);
 
-    this.investments = filteredBenchmarkItems.map((item) => Object.assign({}, item));
-    this.values = filteredHistoricalItems.map((item) => Object.assign({}, item));
+    this.investments = filteredBenchmarkItems.map((item) => ({...item}));
+    this.values = filteredHistoricalItems.map((item) => ({...item}));
 
     const chartData: ChartData<'bar' | 'line'> = {
       labels: filteredHistoricalItems.map(({ date }) => {

@@ -70,6 +70,17 @@ h2 {
   min-height: 320px;
 }
 
+.portfolio-summary-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.portfolio-summary-card {
+  margin-top: 0;
+}
+
 .quick-actions {
   align-items: end;
   display: grid;
@@ -424,10 +435,12 @@ tbody tr:last-child td {
 }
 
 .value-positive {
+  background: var(--app-primary-soft);
   color: var(--app-primary-text);
 }
 
 .value-negative {
+  background: var(--app-error-bg);
   color: var(--app-error-text);
 }
 
@@ -573,6 +586,7 @@ code {
 @media (max-width: 960px) {
   .hero,
   .stats,
+  .portfolio-summary-grid,
   .form-grid,
   .quick-actions {
     grid-template-columns: 1fr;

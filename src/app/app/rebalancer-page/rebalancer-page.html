@@ -161,7 +161,63 @@
           [currency]="portfolioChartCurrency()"
           [historicalDataItems]="investmentChartHistoricalDataItems()"
           [isLoading]="isLoading()"
+          [timeRange]="selectedChartTimeRange()"
+          (timeRangeChange)="onChartTimeRangeChange($event)"
         />
+      </div>
+
+      <div class="portfolio-summary-grid">
+        <article class="card stat portfolio-summary-card">
+          <span>Total Period (MAX)</span>
+          <strong>{{ maxRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+          <span>Gain</span>
+          <strong
+            class="value-bold"
+            [class.value-positive]="maxRangePortfolioSummary().gainAmount > 0"
+            [class.value-negative]="maxRangePortfolioSummary().gainAmount < 0"
+          >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+          @if (maxRangePortfolioSummary().gainPercentage !== 0) {
+            <span
+              class="value-with-arrow"
+              [class.value-positive]="maxRangePortfolioSummary().gainPercentage > 0"
+              [class.value-negative]="maxRangePortfolioSummary().gainPercentage < 0"
+            >
+              @if (maxRangePortfolioSummary().gainPercentage > 0) {
+                <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+              } @else if (maxRangePortfolioSummary().gainPercentage < 0) {
+                <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+              }
+              {{ absolute(maxRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+          } @else {
+            <span class="value-with-arrow">0.00%</span>
+          }
+        </article>
+
+        <article class="card stat portfolio-summary-card">
+          <span>Selected Range ({{ selectedChartTimeRange() }})</span>
+          <strong>{{ selectedRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+          <span>Gain %</span>
+          <strong
+            class="value-bold"
+            [class.value-positive]="selectedRangePortfolioSummary().gainAmount > 0"
+            [class.value-negative]="selectedRangePortfolioSummary().gainAmount < 0"
+          >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+          @if (selectedRangePortfolioSummary().gainPercentage !== 0) {
+            <span
+              class="value-with-arrow"
+              [class.value-positive]="selectedRangePortfolioSummary().gainPercentage > 0"
+              [class.value-negative]="selectedRangePortfolioSummary().gainPercentage < 0"
+            >
+              @if (selectedRangePortfolioSummary().gainPercentage > 0) {
+                <svg class="arrow-icon arrow-up" viewBox="0 0 320 512" role="img" aria-label="positive"><path fill="currentColor" d="M182.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-128 128c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L128 77.3 128 512c0 17.7 14.3 32 32 32s32-14.3 32-32l0-434.7 73.4 73.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-128-128z"></path></svg>
+              } @else if (selectedRangePortfolioSummary().gainPercentage < 0) {
+                <svg class="arrow-icon arrow-down" viewBox="0 0 320 512" role="img" aria-label="negative"><path fill="currentColor" d="M137.4 534.6c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 434.7 192 0c0-17.7-14.3-32-32-32S128-17.7 128 0l0 434.7-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128z"></path></svg>
+              }
+              {{ absolute(selectedRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+          } @else {
+            <span class="value-with-arrow">0.00%</span>
+          }
+        </article>
       </div>
     }
 

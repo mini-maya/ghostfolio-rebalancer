@@ -1,13 +1,14 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { startOfYear, sub } from 'date-fns';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { RuntimeConfigService } from '../runtime-config';
 import { GfInvestmentChartComponent } from '../../shared/investment-chart/public-api';
 import type { InvestmentItem, LineChartItem } from '../../shared/investment-chart/src/investment-chart.interfaces';
-import type { ColorScheme } from '../../shared/investment-chart/src/investment-chart.types';
+import type { ColorScheme, TimeRange } from '../../shared/investment-chart/src/investment-chart.types';
 import { GhostfolioApi, type Activity, type Holding, type PortfolioPerformanceChartItem } from '../services/ghostfolio-api';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 
@@ -122,6 +123,13 @@ interface PortfolioPerformanceData {
   };
 }
 
+interface PortfolioSummaryMetrics {
+  currentValue: number;
+  gainAmount: number;
+  gainPercentage: number;
+  hasData: boolean;
+}
+
 type SortColumn =
   | 'symbol'
   | 'name'
@@ -168,6 +176,7 @@ export class RebalancerPage {
   );
   protected readonly portfolioPerformanceData = signal<PortfolioPerformanceChartItem[]>([]);
   protected readonly portfolioChartColorScheme = signal<ColorScheme>(readChartColorScheme(this.document));
+  protected readonly selectedChartTimeRange = signal<TimeRange>('MAX');
   protected readonly isLoading = signal(false);
   protected readonly lastLoadedUrl = signal('');
   protected readonly minimumBuyAmount = signal(10);
@@ -277,6 +286,18 @@ export class RebalancerPage {
 
   protected readonly portfolioChartCurrency = computed(() => {
     return this.holdings()[0]?.currency ?? '???';
+  });
+
+  protected readonly maxRangePortfolioSummary = computed<PortfolioSummaryMetrics>(() => {
+    return calculatePortfolioSummaryMetrics({
+      performanceData: this.portfolioPerformanceData()
+    });
+  });
+
+  protected readonly selectedRangePortfolioSummary = computed<PortfolioSummaryMetrics>(() => {
+    return calculatePortfolioSummaryMetrics({
+      performanceData: this.getPerformanceDataByRange(this.selectedChartTimeRange())
+    });
   });
 
   protected readonly allocationTotalIsValid = computed(() => {
@@ -612,6 +633,10 @@ export class RebalancerPage {
     return symbols[currency.toUpperCase()] ?? currency;
   }
 
+  protected onChartTimeRangeChange(range: TimeRange): void {
+    this.selectedChartTimeRange.set(range);
+  }
+
   protected toggleEntry(entry: ActivityDetailRow) {
     this.expandedEntrySet.update((set) => {
       const next = new Set(set);
@@ -632,6 +657,20 @@ export class RebalancerPage {
 
   protected absolute(value: number): number {
     return Math.abs(value);
+  }
+
+  private getPerformanceDataByRange(range: TimeRange): PortfolioPerformanceChartItem[] {
+    const cutoffDate = getCutoffDate(range);
+
+    if (!cutoffDate) {
+      return this.portfolioPerformanceData();
+    }
+
+    return this.portfolioPerformanceData().filter((item) => {
+      const itemDate = parseChartDate(item.date);
+
+      return itemDate ? itemDate >= cutoffDate : false;
+    });
   }
 
   protected async loadHoldings() {
@@ -775,6 +814,70 @@ function normalizeAllocationPercentage(value: number): number {
   }
 
   return nonNegativeValue;
+}
+
+function getCutoffDate(range: TimeRange): Date | null {
+  const now = new Date();
+
+  switch (range) {
+    case '1M':
+      return sub(now, { months: 1 });
+    case '3M':
+      return sub(now, { months: 3 });
+    case '6M':
+      return sub(now, { months: 6 });
+    case '1J':
+      return sub(now, { years: 1 });
+    case '3J':
+      return sub(now, { years: 3 });
+    case '5J':
+      return sub(now, { years: 5 });
+    case 'YTD':
+      return startOfYear(now);
+    case 'MAX':
+    default:
+      return null;
+  }
+}
+
+function parseChartDate(date: string): Date | null {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate;
+}
+
+function calculatePortfolioSummaryMetrics({
+  performanceData
+}: {
+  performanceData: PortfolioPerformanceChartItem[];
+}): PortfolioSummaryMetrics {
+  if (!performanceData.length) {
+    return {
+      currentValue: 0,
+      gainAmount: 0,
+      gainPercentage: 0,
+      hasData: false
+    };
+  }
+
+  const firstPoint = performanceData[0];
+  const lastPoint = performanceData[performanceData.length - 1];
+  const currentValue = lastPoint.value;
+  const valueDelta = lastPoint.value - firstPoint.value;
+  const investmentDelta = lastPoint.investment - firstPoint.investment;
+  const gainAmount = valueDelta - investmentDelta;
+  const gainPercentage = investmentDelta !== 0 ? ((valueDelta - investmentDelta) / investmentDelta) * 100 : 0;
+
+  return {
+    currentValue: roundToTwo(currentValue),
+    gainAmount: roundToTwo(gainAmount),
+    gainPercentage: roundToTwo(gainPercentage),
+    hasData: true
+  };
 }
 
 interface FifoLot {
