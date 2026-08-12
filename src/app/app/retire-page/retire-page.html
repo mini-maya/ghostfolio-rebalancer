@@ -216,6 +216,108 @@
   <section class="card">
     <div class="section-header section-header-stack">
       <div>
+        <h2>Next withdrawal by symbol</h2>
+        <p>
+          The first projected withdrawal is distributed across symbols using your rebalancing
+          target allocations, prioritizing overweight positions.
+        </p>
+      </div>
+    </div>
+
+    @if (allocationState().errors.length) {
+      <div class="message message-error">
+        @for (error of allocationState().errors; track error) {
+          <p>{{ error }}</p>
+        }
+      </div>
+    } @else if (!hasValidAllocationTarget()) {
+      <p class="message message-info">
+        Retire needs valid target allocations with a total of 100%. Current total:
+        {{ allocationState().total | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%.
+      </p>
+    } @else {
+      <section class="stats stats-sell-plan">
+        <article class="card stat">
+          <span>Requested withdrawal</span>
+          <strong>
+            {{ nextWithdrawalSellPlan().requestedSellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+            {{ currencySymbol(currency()) }}
+          </strong>
+        </article>
+        <article class="card stat">
+          <span>Planned symbol sales</span>
+          <strong>
+            {{ nextWithdrawalSellPlan().totalPlannedSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+            {{ currencySymbol(currency()) }}
+          </strong>
+        </article>
+        <article class="card stat">
+          <span>Unplanned remainder</span>
+          <strong>
+            {{ nextWithdrawalSellPlan().remainingUnplannedSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+            {{ currencySymbol(currency()) }}
+          </strong>
+        </article>
+      </section>
+
+      <div class="table-wrapper">
+        <table class="sell-plan-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th class="numeric">Current</th>
+              <th class="numeric">Target %</th>
+              <th class="numeric">Sell quantity</th>
+              <th class="numeric">Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of nextWithdrawalSellPlan().rows; track row.symbol) {
+              <tr>
+                <td>
+                  <strong>{{ row.symbol }}</strong><br />
+                  <span class="name-secondary">{{ row.name }}</span>
+                </td>
+                <td class="numeric">
+                  {{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol(row.currency) }}
+                </td>
+                <td class="numeric">
+                  {{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                </td>
+                <td class="numeric">
+                  <span class="table-inline-highlight">
+                    {{ row.sharesToSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x
+                  </span>
+                  <span class="sell-plan-unit-price">
+                    {{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
+                    {{ currencySymbol(row.currency) }}
+                  </span><br />
+                  <span class="sell-plan-secondary">
+                    {{ row.sellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ currencySymbol(row.currency) }}
+                  </span>
+                </td>
+                <td class="numeric">
+                  <span class="sell-plan-primary">
+                    {{ row.remainingAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  </span><br />
+                  <span class="sell-plan-secondary">
+                    {{ row.remainingValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ currencySymbol(row.currency) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="section-header section-header-stack">
+      <div>
         <h2>Projection</h2>
         <p>
           Savings are compounded monthly until {{ withdrawalStartLabel() }}. From then on,

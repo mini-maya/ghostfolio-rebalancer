@@ -5,13 +5,17 @@ import { format } from 'date-fns';
 import { GfInvestmentChartComponent } from '../../shared/investment-chart/public-api';
 import type { InvestmentItem, LineChartItem } from '../../shared/investment-chart/src/investment-chart.interfaces';
 import type { ColorScheme, GroupBy, TimeRange } from '../../shared/investment-chart/src/investment-chart.types';
+import { AuthService } from '../auth/auth.service';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
+import { RuntimeConfigService } from '../runtime-config';
+import { parseAllocationsText } from '../services/allocations';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
 import {
   calculateRetirementProjection,
   type RetirementProjectionResult,
   type WithdrawalFrequency
 } from './retire-calculator';
+import { calculateNextWithdrawalSellPlan } from './retire-withdrawal-plan';
 import {
   formatWithdrawalStartMonth,
   getAccumulationMonths,
@@ -28,10 +32,13 @@ import {
   styleUrl: './retire-page.scss',
 })
 export class RetirePage implements OnInit {
+  private readonly authService = inject(AuthService);
   private readonly projectionBaseDate = getRetirementBaseDate();
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly portfolioDataStore = inject(PortfolioDataStore);
+  private readonly runtimeConfigService = inject(RuntimeConfigService);
+  private readonly runtimeConfig = this.runtimeConfigService.config;
   protected readonly errorMessage = this.portfolioDataStore.errorMessage;
   protected readonly holdings = this.portfolioDataStore.holdings;
   protected readonly infoMessage = this.portfolioDataStore.infoMessage;
@@ -67,6 +74,16 @@ export class RetirePage implements OnInit {
   });
   protected readonly leadTimeYears = computed(() => {
     return getLeadTimeYears(this.accumulationMonths());
+  });
+  protected readonly targetAllocationsText = computed(() => {
+    if (this.authService.sessionMode() === 'account') {
+      return this.authService.allocationsText();
+    }
+
+    return this.runtimeConfig().allocationsText;
+  });
+  protected readonly allocationState = computed(() => {
+    return parseAllocationsText(this.targetAllocationsText());
   });
   protected readonly projection = computed<RetirementProjectionResult>(() => {
     return calculateRetirementProjection({
@@ -106,6 +123,20 @@ export class RetirePage implements OnInit {
     const lastPoint = this.projection().points.at(-1);
 
     return lastPoint ? format(new Date(lastPoint.date), 'MMM yyyy') : 'n/a';
+  });
+  protected readonly nextWithdrawalSellPlan = computed(() => {
+    return calculateNextWithdrawalSellPlan({
+      allocations: this.allocationState().items,
+      holdings: this.holdings(),
+      withdrawalAmount: this.projection().firstWithdrawal
+    });
+  });
+  protected readonly hasValidAllocationTarget = computed(() => {
+    return (
+      this.allocationState().items.length > 0 &&
+      this.allocationState().errors.length === 0 &&
+      Math.abs(this.allocationState().total - 100) <= 0.001
+    );
   });
 
   constructor() {

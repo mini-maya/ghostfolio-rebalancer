@@ -4,19 +4,9 @@ import { Component, computed, DestroyRef, effect, inject, signal } from '@angula
 import { AuthService } from '../auth/auth.service';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 import { RuntimeConfigService } from '../runtime-config';
+import { parseAllocationsText, type AllocationState } from '../services/allocations';
 import type { Holding } from '../services/ghostfolio-api';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
-
-interface AllocationItem {
-  percentage: number;
-  symbol: string;
-}
-
-interface AllocationState {
-  errors: string[];
-  items: AllocationItem[];
-  total: number;
-}
 
 interface AllocationDialogRow {
   currentAllocationPercentage: number;
@@ -104,40 +94,7 @@ export class RebalancerPage {
   }
 
   protected readonly allocationState = computed<AllocationState>(() => {
-    const errors: string[] = [];
-    const items: AllocationItem[] = [];
-    let total = 0;
-
-    for (const [index, rawEntry] of this.allocationsText().split('|').entries()) {
-      const entry = rawEntry.trim();
-
-      if (!entry) {
-        continue;
-      }
-
-      const [symbol, percentageText, ...rest] = entry.split(',').map((value) => value.trim());
-
-      if (!symbol || !percentageText || rest.length > 0) {
-        errors.push(`Entry ${index + 1} must use "SYMBOL,PERCENT|SYMBOL,PERCENT".`);
-        continue;
-      }
-
-      const percentage = Number(percentageText);
-
-      if (!Number.isFinite(percentage) || percentage < 0) {
-        errors.push(`Entry ${index + 1} has an invalid percentage.`);
-        continue;
-      }
-
-      items.push({ percentage, symbol });
-      total += percentage;
-    }
-
-    return {
-      errors,
-      items,
-      total: roundToTwo(total)
-    };
+    return parseAllocationsText(this.allocationsText());
   });
   protected readonly portfolioTotal = computed(() => {
     return roundToTwo(
