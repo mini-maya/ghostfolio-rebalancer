@@ -18,47 +18,73 @@
         </div>
 
         <div class="retire-form-grid">
-          <label class="field">
-            <span>Withdrawal start (month/year)</span>
-            <input
-              type="month"
-              [value]="withdrawalStartMonth()"
-              (input)="updateWithdrawalStartMonth($event)"
-            />
-          </label>
+          @if (developerMode()) {
+            <label class="field" data-testid="developer-date-field">
+              <span>Developer current date</span>
+              <input
+                type="date"
+                [value]="developerDateValue()"
+                (input)="updateCurrentDate($event)"
+              />
+            </label>
+          }
 
-          <label class="field">
-            <span>Lead time before withdrawals (years)</span>
-            <input
-              type="number"
-              min="0"
-              step="0.25"
-              [value]="leadTimeYears()"
-              (input)="updateLeadTimeYears($event)"
-            />
-          </label>
+          <div class="withdrawal-start-row">
+            <label
+              class="switch-field"
+              title="When enabled, withdrawals start immediately and the projection uses the current withdrawal phase. When disabled, the portfolio continues to grow until the configured withdrawal start month."
+            >
+              <input
+                class="switch-control"
+                type="checkbox"
+                [checked]="withdrawalStarted()"
+                (change)="updateWithdrawalStarted($event)"
+                aria-label="Withdrawals started"
+              />
+              <span>Withdrawals started</span>
+            </label>
 
-          <label class="field">
-            <span>Monthly savings during lead time</span>
-            <input
-              type="number"
-              min="0"
-              step="10"
-              [value]="monthlySavingsRate()"
-              (input)="updateMonthlySavingsRate($event)"
-            />
-          </label>
+            @if (!withdrawalStarted()) {
+              <label class="field withdrawal-start-date-field" data-testid="withdrawal-start-field">
+                <span>Withdrawal start (month/year)</span>
+                <input
+                  type="month"
+                  [value]="withdrawalStartMonth()"
+                  [class.is-invalid]="withdrawalStartMonthHasError()"
+                  (input)="updateWithdrawalStartMonth($event)"
+                />
+              </label>
+              @if (withdrawalStartMonthErrorMessage()) {
+                <small class="field-error" data-testid="withdrawal-start-error">
+                  {{ withdrawalStartMonthErrorMessage() }}
+                </small>
+              }
+            }
+          </div>
 
-          <label class="field">
-            <span>Expected annual return during savings phase %</span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              [value]="accumulationAnnualReturnPercentage()"
-              (input)="updateAccumulationAnnualReturnPercentage($event)"
-            />
-          </label>
+          @if (!withdrawalStarted()) {
+            <label class="field" data-testid="monthly-savings-field">
+              <span>Monthly savings during savings phase</span>
+              <input
+                type="number"
+                min="0"
+                step="10"
+                [value]="monthlySavingsRate()"
+                (input)="updateMonthlySavingsRate($event)"
+              />
+            </label>
+
+            <label class="field" data-testid="accumulation-return-field">
+              <span>Expected annual return during savings phase %</span>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                [value]="accumulationAnnualReturnPercentage()"
+                (input)="updateAccumulationAnnualReturnPercentage($event)"
+              />
+            </label>
+          }
         </div>
       </section>
 
@@ -90,17 +116,6 @@
           </label>
 
           <label class="field">
-            <span>Annual withdrawal increase for inflation %</span>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              [value]="annualInflationPercentage()"
-              (input)="updateAnnualInflationPercentage($event)"
-            />
-          </label>
-
-          <label class="field">
             <span>Expected annual return during withdrawals %</span>
             <input
               type="number"
@@ -112,15 +127,32 @@
           </label>
 
           <label class="field">
-            <span>Withdrawal period in years</span>
+            <span>Annual withdrawal increase for inflation %</span>
             <input
               type="number"
-              min="1"
-              step="1"
-              [value]="projectionYears()"
-              (input)="updateProjectionYears($event)"
+              min="0"
+              step="0.1"
+              [value]="annualInflationPercentage()"
+              (input)="updateAnnualInflationPercentage($event)"
             />
           </label>
+
+          <div class="projection-years-row">
+            <label class="field projection-years-field">
+              <span>Withdrawal period in years</span>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                [value]="projectionYears()"
+                (input)="updateProjectionYears($event)"
+              />
+            </label>
+
+            <span class="projection-years-end">
+              Expected end: {{ withdrawalEndLabel() }}
+            </span>
+          </div>
         </div>
       </section>
     </div>
@@ -136,7 +168,7 @@
 
   <section class="stats">
     <article class="card stat">
-      <span>Current portfolio value / starting capital</span>
+      <span>Portfolio value</span>
       <strong>
         {{ startCapital() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
@@ -154,30 +186,32 @@
     </article>
 
     <article class="card stat">
-      <span>First withdrawal</span>
+      <span>Projected ending capital</span>
+      <strong>
+        {{ projection().endingCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        {{ capitalPreservationPercentage() }}% of capital at withdrawal start
+      </small>
+    </article>
+
+    <article class="card stat">
+      <span>Initial withdrawal</span>
       <strong>
         {{ projection().firstWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>{{ frequency() === 'monthly' ? 'per month' : 'per year' }}</small>
+      <small>Starts in {{ withdrawalStartLabel() }}</small>
     </article>
 
     <article class="card stat">
-      <span>Last withdrawal</span>
+      <span>Final withdrawal</span>
       <strong>
         {{ projection().lastWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>Projected in {{ projectionEndLabel() }}</small>
-    </article>
-
-    <article class="card stat">
-      <span>Total savings contributions</span>
-      <strong>
-        {{ projection().totalContributions | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
-      </strong>
-      <small>Added before withdrawals begin</small>
+      <small>Projected in {{ projectionEndLabel() | date: 'MMM yyyy' }}</small>
     </article>
 
     <article class="card stat">
@@ -186,7 +220,7 @@
         {{ projection().totalWithdrawals | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>Across {{ projectionYears() }} years</small>
+      <small>Across {{ withdrawalDisplayYears() | localeNumber: {minFractionDigits: 0, maxFractionDigits: 2} }} years</small>
     </article>
 
     <article class="card stat">
@@ -196,20 +230,6 @@
         {{ currencySymbol(currency()) }}
       </strong>
       <small>Expected cumulative returns</small>
-    </article>
-
-    <article class="card stat">
-      <span>Projected ending capital</span>
-      <strong>
-        {{ projection().endingCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
-      </strong>
-      <small>
-        Target
-        {{ projection().targetCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
-        ({{ targetCapitalGap() >= 0 ? '+' : '' }}{{ targetCapitalGap() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }})
-      </small>
     </article>
   </section>
 
@@ -238,6 +258,10 @@
     } @else {
       <section class="stats stats-sell-plan">
         <article class="card stat">
+          <span>Next withdrawal</span>
+          <strong>{{ nextWithdrawalLabel() }}</strong>
+        </article>
+        <article class="card stat">
           <span>Requested withdrawal</span>
           <strong>
             {{ nextWithdrawalSellPlan().requestedSellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
@@ -248,13 +272,6 @@
           <span>Planned symbol sales</span>
           <strong>
             {{ nextWithdrawalSellPlan().totalPlannedSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-            {{ currencySymbol(currency()) }}
-          </strong>
-        </article>
-        <article class="card stat">
-          <span>Unplanned remainder</span>
-          <strong>
-            {{ nextWithdrawalSellPlan().remainingUnplannedSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
             {{ currencySymbol(currency()) }}
           </strong>
         </article>
@@ -312,6 +329,7 @@
           </tbody>
         </table>
       </div>
+
     }
   </section>
 
@@ -347,6 +365,42 @@
           [timeRange]="selectedChartTimeRange()"
           (timeRangeChange)="onChartTimeRangeChange($event)"
         />
+      </div>
+
+      <div class="table-wrapper">
+        <table class="withdrawal-schedule-table">
+          <thead>
+          <tr>
+            <th>Period</th>
+            <th>Withdrawal date</th>
+            <th class="numeric">Withdrawal</th>
+            <th class="numeric">Ending balance</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (row of withdrawalScheduleRows(); track row.trackKey) {
+              <tr [class.is-completed]="row.isCompleted" [class.is-year-summary]="row.isYearSummary">
+                <td>
+                  @if (row.isCurrent) {
+                    <span class="row-status" aria-hidden="true">➡️</span>
+                  } @else if (row.isCompleted) {
+                    <span class="row-status" aria-hidden="true">✅</span>
+                  }
+                  <span>{{ row.periodLabel }}</span>
+                </td>
+                <td>{{ row.dateLabel }}</td>
+                <td class="numeric">
+                  {{ row.withdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol(currency()) }}
+                </td>
+                <td class="numeric">
+                  {{ row.endingBalance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol(currency()) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
   </section>

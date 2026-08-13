@@ -90,7 +90,6 @@ describe('calculateNextWithdrawalSellPlan', () => {
 
     expect(plan.requestedSellAmount).toBe(50);
     expect(plan.totalPlannedSell).toBe(50);
-    expect(plan.remainingUnplannedSell).toBe(0);
     expect(plan.rows[0].sharesToSell).toBe(5);
   });
 });

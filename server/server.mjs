@@ -12,6 +12,7 @@ import {
   fetchPortfolioPerformance,
   normalizeBaseUrl
 } from './lib/ghostfolio-client.mjs';
+import { createRetireStore } from './lib/retire-store.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDirectory = path.resolve(__dirname, '../dist/ghostfolio-rebalancer/browser');
@@ -25,6 +26,13 @@ const accountStore = createAccountStore({
   accountsFilePath: path.join(accountsDirectory, 'accounts.csv'),
   encryptionKey: process.env.ACCOUNT_ENCRYPTION_KEY ?? ''
 });
+const retireStore = createRetireStore({
+  retireFilePath: path.join(accountsDirectory, 'retire.csv')
+});
+
+function readBooleanEnv(name) {
+  return process.env[name]?.trim().toLowerCase() === 'true';
+}
 
 const app = express();
 
@@ -37,12 +45,14 @@ app.get('/api/runtime-config', async (_request, response, next) => {
     const baseUrl = process.env.BASE_URL ?? '';
     const accessToken = hasStoredAccounts ? '' : process.env.ACCESS_TOKEN ?? '';
     const allocationsText = process.env.ALLOCATIONS_TEXT ?? '';
+    const developerMode = readBooleanEnv('DEVELOPER_MODE');
 
     response.json({
       accessToken,
       allocationsText,
       baseUrl,
-      hasInjectedDefaults: Boolean(baseUrl || accessToken || allocationsText),
+      developerMode,
+      hasInjectedDefaults: Boolean(baseUrl || accessToken || allocationsText || developerMode),
       hasStoredAccounts
     });
   } catch (error) {
@@ -62,6 +72,7 @@ app.get('/api/session', async (request, response, next) => {
             authenticated: true,
             baseUrl: session.baseUrl,
             loginSource: session.loginSource ?? '',
+            retireConfig: session.retireConfig ?? {},
             user: session.user ?? ''
           }
         : {
@@ -70,6 +81,7 @@ app.get('/api/session', async (request, response, next) => {
             authenticated: false,
             baseUrl: '',
             loginSource: '',
+            retireConfig: {},
             user: ''
           }
     );
@@ -89,6 +101,7 @@ app.post('/api/auth/access-token-login', async (request, response, next) => {
       bearerToken: authentication.authToken,
       loginSource: readLoginSource(request.body?.source),
       mode: 'token',
+      retireConfig: {},
       user: ''
     };
 
@@ -143,10 +156,12 @@ app.post('/api/auth/register', async (request, response, next) => {
       user
     });
 
+    const retireConfig = await retireStore.getRetireConfig(user);
     const session = {
       allocationsText: '',
       baseUrl: authentication.baseUrl,
       mode: 'account',
+      retireConfig: retireConfig ?? {},
       user
     };
 
@@ -171,6 +186,7 @@ app.post('/api/auth/user-login', async (request, response, next) => {
       allocationsText: account.allocationsText,
       baseUrl: account.baseUrl,
       mode: 'account',
+      retireConfig: (await retireStore.getRetireConfig(user)) ?? {},
       user: account.user
     };
 
@@ -206,6 +222,26 @@ app.put('/api/account/allocations-text', async (request, response, next) => {
     session.allocationsText = allocationsText;
 
     response.json({ allocationsText });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/account/retire-config', async (request, response, next) => {
+  try {
+    const sessionId = getSessionIdFromCookie(request.headers.cookie ?? '');
+    const session = sessionId ? sessions.get(sessionId) : null;
+
+    if (!session || session.mode !== 'account' || !session.user) {
+      throw new HttpError(403, 'Saving retire settings is only available for stored accounts.');
+    }
+
+    const retireConfig = readRetireConfig(request.body?.retireConfig);
+
+    await retireStore.updateRetireConfig(session.user, retireConfig);
+    session.retireConfig = retireConfig;
+
+    response.json({ retireConfig });
   } catch (error) {
     next(error);
   }
@@ -333,6 +369,7 @@ function buildSessionResponse(session) {
     authenticated: true,
     baseUrl: session.baseUrl,
     loginSource: session.loginSource ?? '',
+    retireConfig: session.retireConfig ?? {},
     user: session.user ?? ''
   };
 }
@@ -392,7 +429,8 @@ async function getSession(request) {
     return {
       ...session,
       allocationsText: account.allocationsText,
-      baseUrl: account.baseUrl
+      baseUrl: account.baseUrl,
+      retireConfig: session.retireConfig ?? (await retireStore.getRetireConfig(session.user)) ?? {}
     };
   }
 
@@ -443,6 +481,63 @@ function readAllocationsText(value) {
   }
 
   return value.trim();
+}
+
+function readRetireConfig(value) {
+  if (typeof value !== 'object' || value === null) {
+    throw new HttpError(400, 'Retire settings must be provided as an object.');
+  }
+
+  const withdrawalStartMonth = readRetireMonth(value.withdrawalStartMonth);
+
+  return {
+    accumulationAnnualReturnPercentage: readNonNegativeNumber(
+      value.accumulationAnnualReturnPercentage,
+      6
+    ),
+    annualInflationPercentage: readNonNegativeNumber(value.annualInflationPercentage, 2),
+    capitalAtWithdrawalStart: readNonNegativeNumber(value.capitalAtWithdrawalStart, 0),
+    capitalPreservationPercentage: readPercentage(value.capitalPreservationPercentage, 10),
+    frequency: value.frequency === 'yearly' ? 'yearly' : 'monthly',
+    monthlySavingsRate: readNonNegativeNumber(value.monthlySavingsRate, 1750),
+    projectionYears: readPositiveInteger(value.projectionYears, 25),
+    withdrawalAnnualReturnPercentage: readNonNegativeNumber(
+      value.withdrawalAnnualReturnPercentage,
+      6
+    ),
+    withdrawalStarted: value.withdrawalStarted === true,
+    withdrawalStartMonth
+  };
+}
+
+function readNonNegativeNumber(value, fallback) {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : fallback;
+}
+
+function readPercentage(value, fallback) {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) && numberValue >= 0 && numberValue <= 100
+    ? numberValue
+    : fallback;
+}
+
+function readPositiveInteger(value, fallback) {
+  const numberValue = Math.round(Number(value));
+
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback;
+}
+
+function readRetireMonth(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmedValue = value.trim();
+
+  return /^\d{4}-\d{2}$/.test(trimmedValue) ? trimmedValue : '';
 }
 
 function readTokenPayload(payload) {

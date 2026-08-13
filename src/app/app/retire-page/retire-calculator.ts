@@ -7,6 +7,7 @@ export interface RetirementProjectionInput {
   accumulationMonthlyContribution: number;
   accumulationMonths: number;
   annualInflationPercentage: number;
+  capitalAtWithdrawalStart?: number;
   capitalPreservationPercentage: number;
   frequency: WithdrawalFrequency;
   projectionYears: number;
@@ -31,7 +32,6 @@ export interface RetirementProjectionResult {
   lastWithdrawal: number;
   points: RetirementProjectionPoint[];
   targetCapital: number;
-  totalContributions: number;
   totalGrowth: number;
   totalWithdrawals: number;
 }
@@ -57,7 +57,6 @@ export function calculateRetirementProjection(
   const accumulationMonthlyContribution = Math.max(input.accumulationMonthlyContribution, 0);
   const accumulationPeriodicReturnRate = Math.pow(1 + accumulationAnnualReturnRate, 1 / 12) - 1;
   const periodicReturnRate = Math.pow(1 + withdrawalAnnualReturnRate, 1 / periodsPerYear) - 1;
-  const targetCapital = roundToTwo(startingCapital * capitalPreservationRatio);
   const points: RetirementProjectionPoint[] = [];
   let capital = startingCapital;
 
@@ -83,7 +82,10 @@ export function calculateRetirementProjection(
     capital = endingBalance;
   }
 
-  const capitalAtWithdrawalStart = roundToTwo(capital);
+  const capitalAtWithdrawalStart = roundToTwo(
+    Math.max(input.capitalAtWithdrawalStart ?? capital, 0)
+  );
+  const targetCapital = roundToTwo(capitalAtWithdrawalStart * capitalPreservationRatio);
   const withdrawalStartDate = addMonths(startDate, accumulationMonths);
   const withdrawalPoints: RetirementProjectionPoint[] = [];
 
@@ -133,7 +135,6 @@ export function calculateRetirementProjection(
     lastWithdrawal: withdrawalPoints.at(-1)?.withdrawal ?? 0,
     points,
     targetCapital,
-    totalContributions: roundToTwo(points.reduce((sum, point) => sum + point.contribution, 0)),
     totalGrowth: roundToTwo(points.reduce((sum, point) => sum + point.growth, 0)),
     totalWithdrawals: roundToTwo(points.reduce((sum, point) => sum + point.withdrawal, 0))
   };
@@ -156,6 +157,10 @@ function solveWithdrawalAmount({
   remainingPeriods: number;
   targetCapital: number;
 }): number {
+  if (capital <= targetCapital) {
+    return 0;
+  }
+
   const grossFutureCapital = capital * Math.pow(1 + periodicReturnRate, remainingPeriods);
   const weightedWithdrawalFactor = Array.from({ length: remainingPeriods }, (_, offset) => {
     const inflationSteps =
@@ -172,7 +177,9 @@ function solveWithdrawalAmount({
     return 0;
   }
 
-  return (grossFutureCapital - targetCapital) / weightedWithdrawalFactor;
+  const candidateWithdrawal = (grossFutureCapital - targetCapital) / weightedWithdrawalFactor;
+
+  return Math.max(candidateWithdrawal, 0);
 }
 
 function formatProjectionDate({

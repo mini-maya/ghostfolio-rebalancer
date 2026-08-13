@@ -8,6 +8,7 @@ export interface RuntimeConfig {
   baseUrl: string;
   hasInjectedDefaults: boolean;
   hasStoredAccounts: boolean;
+  developerMode: boolean;
 }
 
 const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
@@ -15,7 +16,8 @@ const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   allocationsText: '',
   baseUrl: '',
   hasInjectedDefaults: false,
-  hasStoredAccounts: false
+  hasStoredAccounts: false,
+  developerMode: false
 };
 
 @Injectable({

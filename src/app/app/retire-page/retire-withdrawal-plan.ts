@@ -19,7 +19,6 @@ export interface NextWithdrawalSellRow {
 export interface NextWithdrawalSellPlan {
   portfolioAfterSell: number;
   portfolioTotal: number;
-  remainingUnplannedSell: number;
   requestedSellAmount: number;
   rows: NextWithdrawalSellRow[];
   totalPlannedSell: number;
@@ -44,7 +43,6 @@ export function calculateNextWithdrawalSellPlan({
     return {
       portfolioAfterSell: roundToTwo(portfolioAfterSell),
       portfolioTotal: roundToTwo(portfolioTotal),
-      remainingUnplannedSell: roundToTwo(requestedSellAmount),
       requestedSellAmount: roundToTwo(requestedSellAmount),
       rows: [],
       totalPlannedSell: 0
@@ -139,7 +137,6 @@ export function calculateNextWithdrawalSellPlan({
   return {
     portfolioAfterSell: roundToTwo(portfolioAfterSell),
     portfolioTotal: roundToTwo(portfolioTotal),
-    remainingUnplannedSell: roundToTwo(Math.max(requestedSellAmount - totalPlannedSell, 0)),
     requestedSellAmount: roundToTwo(requestedSellAmount),
     rows: resultRows,
     totalPlannedSell: roundToTwo(totalPlannedSell)

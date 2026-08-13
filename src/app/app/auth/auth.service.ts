@@ -2,12 +2,15 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import type { RetireConfig } from '../services/retire-config';
+
 interface SessionResponse {
   allocationsText: string;
   authMode: string;
   authenticated: boolean;
   baseUrl: string;
   loginSource: string;
+  retireConfig: Partial<RetireConfig>;
   user: string;
 }
 
@@ -31,6 +34,7 @@ export class AuthService {
   private readonly _isAuthenticated = signal(false);
   private readonly _loginSource = signal('');
   private readonly _sessionMode = signal('');
+  private readonly _retireConfig = signal<Partial<RetireConfig>>({});
   private readonly _user = signal('');
   private initializePromise?: Promise<void>;
   private isInitialized = false;
@@ -39,6 +43,7 @@ export class AuthService {
   public readonly allocationsText = this._allocationsText.asReadonly();
   public readonly isAuthenticated = this._isAuthenticated.asReadonly();
   public readonly loginSource = this._loginSource.asReadonly();
+  public readonly retireConfig = this._retireConfig.asReadonly();
   public readonly sessionMode = this._sessionMode.asReadonly();
   public readonly user = this._user.asReadonly();
 
@@ -150,6 +155,16 @@ export class AuthService {
     this._allocationsText.set(response.allocationsText);
   }
 
+  public async updateAccountRetireConfig(retireConfig: RetireConfig): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.put<{ retireConfig: Partial<RetireConfig> }>('/api/account/retire-config', {
+        retireConfig
+      })
+    );
+
+    this._retireConfig.set(response.retireConfig);
+  }
+
   private applySession(session: SessionResponse): void {
     if (!session.authenticated) {
       this.resetSession();
@@ -160,6 +175,7 @@ export class AuthService {
     this._baseUrl.set(session.baseUrl);
     this._user.set(session.user);
     this._loginSource.set(session.loginSource);
+    this._retireConfig.set(session.retireConfig ?? {});
     this._sessionMode.set(session.authMode);
     this._isAuthenticated.set(true);
     this.isInitialized = true;
@@ -169,6 +185,7 @@ export class AuthService {
     this._allocationsText.set('');
     this._baseUrl.set('');
     this._loginSource.set('');
+    this._retireConfig.set({});
     this._sessionMode.set('');
     this._user.set('');
     this._isAuthenticated.set(false);

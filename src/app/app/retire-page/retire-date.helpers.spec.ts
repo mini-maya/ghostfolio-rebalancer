@@ -1,9 +1,10 @@
 import {
   formatWithdrawalStartMonth,
   getAccumulationMonths,
-  getLeadTimeYears,
   getRetirementBaseDate,
-  getWithdrawalStartFromLeadTimeYears,
+  formatWithdrawalEndMonth,
+  getWithdrawalEndFromProjectionYears,
+  parseStoredWithdrawalStartMonth,
   parseWithdrawalStartMonth
 } from './retire-date.helpers';
 
@@ -18,12 +19,15 @@ describe('retire date helpers', () => {
     expect(baseDate.getDate()).toBe(1);
   });
 
-  it('converts lead time years into a withdrawal start month and back', () => {
-    const withdrawalStartDate = getWithdrawalStartFromLeadTimeYears(1.5, referenceDate);
+  it('converts projection years into a withdrawal end month', () => {
+    const withdrawalStartDate = new Date('2030-01-01T00:00:00.000Z');
 
-    expect(formatWithdrawalStartMonth(withdrawalStartDate)).toBe('2028-02');
-    expect(getAccumulationMonths(withdrawalStartDate, referenceDate)).toBe(18);
-    expect(getLeadTimeYears(18)).toBe(1.5);
+    const withdrawalEndDate = getWithdrawalEndFromProjectionYears(withdrawalStartDate, 25);
+
+    expect(withdrawalEndDate.getFullYear()).toBe(2055);
+    expect(withdrawalEndDate.getMonth()).toBe(0);
+    expect(withdrawalEndDate.getDate()).toBe(1);
+    expect(formatWithdrawalEndMonth(withdrawalStartDate, 25)).toBe('2055-01');
   });
 
   it('clamps parsed withdrawal months to the current month or later', () => {
@@ -31,4 +35,11 @@ describe('retire date helpers', () => {
       '2026-08'
     );
   });
+
+  it('keeps the stored withdrawal month without clamping', () => {
+    expect(
+      formatWithdrawalStartMonth(parseStoredWithdrawalStartMonth('2026-05', referenceDate))
+    ).toBe('2026-05');
+  });
+
 });

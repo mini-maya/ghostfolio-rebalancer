@@ -1,4 +1,4 @@
-import { addMonths, differenceInCalendarMonths, format, isValid, parse, startOfMonth } from 'date-fns';
+import { addYears, differenceInCalendarMonths, format, isValid, parse, startOfMonth } from 'date-fns';
 
 const MONTH_INPUT_FORMAT = 'yyyy-MM';
 
@@ -20,6 +20,19 @@ export function parseWithdrawalStartMonth(value: string, referenceDate = new Dat
   return coerceWithdrawalStartDate(parsedDate, referenceDate);
 }
 
+export function parseStoredWithdrawalStartMonth(
+  value: string,
+  referenceDate = new Date()
+): Date {
+  const parsedDate = parse(value, MONTH_INPUT_FORMAT, getRetirementBaseDate(referenceDate));
+
+  if (!isValid(parsedDate)) {
+    return getRetirementBaseDate(referenceDate);
+  }
+
+  return startOfMonth(parsedDate);
+}
+
 export function getAccumulationMonths(withdrawalStartDate: Date, referenceDate = new Date()): number {
   return Math.max(
     differenceInCalendarMonths(
@@ -30,18 +43,25 @@ export function getAccumulationMonths(withdrawalStartDate: Date, referenceDate =
   );
 }
 
-export function getLeadTimeYears(accumulationMonths: number): number {
-  return roundToTwo(Math.max(accumulationMonths, 0) / 12);
+export function getWithdrawalEndFromProjectionYears(
+  withdrawalStartDate: Date,
+  projectionYears: number
+): Date {
+  return addYears(
+    startOfMonth(withdrawalStartDate),
+    Math.max(Math.round(Math.max(projectionYears, 0)), 1)
+  );
 }
 
-export function getWithdrawalStartFromLeadTimeYears(
-  leadTimeYears: number,
-  referenceDate = new Date()
-): Date {
-  return addMonths(
-    getRetirementBaseDate(referenceDate),
-    Math.max(Math.round(Math.max(leadTimeYears, 0) * 12), 0)
-  );
+export function formatWithdrawalEndMonth(
+  withdrawalStartDate: Date,
+  projectionYears: number
+): string {
+  return format(getWithdrawalEndFromProjectionYears(withdrawalStartDate, projectionYears), MONTH_INPUT_FORMAT);
+}
+
+export function isWithdrawalMonthReached(withdrawalDate: string, referenceDate = new Date()): boolean {
+  return startOfMonth(new Date(withdrawalDate)) <= getRetirementBaseDate(referenceDate);
 }
 
 function coerceWithdrawalStartDate(withdrawalStartDate: Date, referenceDate: Date): Date {
@@ -49,8 +69,4 @@ function coerceWithdrawalStartDate(withdrawalStartDate: Date, referenceDate: Dat
   const minimumDate = getRetirementBaseDate(referenceDate);
 
   return normalizedDate < minimumDate ? minimumDate : normalizedDate;
-}
-
-function roundToTwo(value: number): number {
-  return Math.round(value * 100) / 100;
 }

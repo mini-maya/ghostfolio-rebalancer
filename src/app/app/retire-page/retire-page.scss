@@ -56,6 +56,81 @@ h2 {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.withdrawal-start-row {
+  align-items: end;
+  display: flex;
+  gap: 1rem;
+}
+
+.projection-years-row {
+  align-items: end;
+  display: flex;
+  gap: 1rem;
+}
+
+.withdrawal-start-date-field {
+  flex: 1 1 auto;
+}
+
+.projection-years-field {
+  flex: 1 1 auto;
+}
+
+.projection-years-end {
+  color: var(--app-muted-text);
+  font-weight: 600;
+  padding-bottom: 0.85rem;
+  white-space: nowrap;
+}
+
+.switch-field {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.75rem;
+  min-height: 3rem;
+  white-space: nowrap;
+}
+
+.switch-control {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--app-border-strong);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 1.75rem;
+  padding: 0;
+  position: relative;
+  transition: background-color 0.2s ease;
+  width: 3.25rem;
+}
+
+.switch-control::before {
+  background: var(--app-surface);
+  border-radius: 50%;
+  content: '';
+  height: 1.25rem;
+  left: 0.25rem;
+  position: absolute;
+  top: 0.25rem;
+  transition: transform 0.2s ease;
+  width: 1.25rem;
+}
+
+.switch-control:checked {
+  background: var(--app-primary);
+}
+
+.switch-control:checked::before {
+  transform: translateX(1.5rem);
+}
+
+.switch-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .field {
   display: grid;
   gap: 0.5rem;
@@ -68,6 +143,22 @@ h2 {
   height: 3rem;
   min-height: 3rem;
   width: 100%;
+}
+
+.field input.is-invalid {
+  border-color: var(--app-error-text);
+}
+
+.withdrawal-schedule-table tr.is-completed {
+  color: var(--app-muted-text);
+}
+
+.withdrawal-schedule-table tr.is-year-summary {
+  font-weight: 600;
+}
+
+.row-status {
+  margin-right: 0.4rem;
 }
 
 .field span,
@@ -123,6 +214,12 @@ select {
   color: var(--app-error-text);
 }
 
+.field-error {
+  color: var(--app-error-text);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
 .message-info {
   background: var(--app-primary-soft);
   color: var(--app-primary-text);
@@ -143,6 +240,13 @@ select {
   width: 100%;
 }
 
+.withdrawal-schedule-table {
+  border-collapse: collapse;
+  margin-top: 1rem;
+  min-width: 560px;
+  width: 100%;
+}
+
 .sell-plan-table th,
 .sell-plan-table td {
   border-bottom: 1px solid var(--app-border);
@@ -151,7 +255,19 @@ select {
   vertical-align: top;
 }
 
+.withdrawal-schedule-table th,
+.withdrawal-schedule-table td {
+  border-bottom: 1px solid var(--app-border);
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
 .sell-plan-table .numeric {
+  text-align: right;
+}
+
+.withdrawal-schedule-table .numeric {
   text-align: right;
 }
 
@@ -184,6 +300,20 @@ select {
 }
 
 @media (max-width: 720px) {
+  .withdrawal-start-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .projection-years-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .projection-years-end {
+    padding-bottom: 0;
+  }
+
   .retire-phase-sections,
   .retire-form-grid,
   .stats {
