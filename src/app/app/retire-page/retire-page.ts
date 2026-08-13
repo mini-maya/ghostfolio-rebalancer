@@ -1,6 +1,6 @@
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { addMonths, format, startOfMonth } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 
 import { GfInvestmentChartComponent } from '../../shared/investment-chart/public-api';
 import type { InvestmentItem, LineChartItem } from '../../shared/investment-chart/src/investment-chart.interfaces';
@@ -19,6 +19,7 @@ import {
   type RetirementProjectionResult,
   type WithdrawalFrequency
 } from './retire-calculator';
+import { RetireDeveloperDateService } from './retire-developer-date.service';
 import { calculateNextWithdrawalSellPlan } from './retire-withdrawal-plan';
 import {
   formatWithdrawalEndMonth,
@@ -53,6 +54,7 @@ export class RetirePage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly portfolioDataStore = inject(PortfolioDataStore);
+  private readonly retireDeveloperDateService = inject(RetireDeveloperDateService);
   private readonly runtimeConfigService = inject(RuntimeConfigService);
   private readonly runtimeConfig = this.runtimeConfigService.config;
   private readonly initialRetireConfig = normalizeRetireConfig(this.authService.retireConfig());
@@ -78,7 +80,7 @@ export class RetirePage implements OnInit {
   protected readonly monthlySavingsRate = signal(this.initialRetireConfig.monthlySavingsRate);
   protected readonly projectionYears = signal(this.initialRetireConfig.projectionYears);
   protected readonly withdrawalStarted = signal(this.initialRetireConfig.withdrawalStarted);
-  protected readonly currentDate = signal(this.initialCurrentDate);
+  protected readonly currentDate = this.retireDeveloperDateService.currentDate;
   protected readonly withdrawalStartMonth = signal(
     this.initialRetireConfig.withdrawalStartMonth || formatWithdrawalStartMonth(this.initialCurrentDate)
   );
@@ -90,7 +92,6 @@ export class RetirePage implements OnInit {
   protected readonly portfolioChartColorScheme = signal<ColorScheme>(readChartColorScheme(this.document));
   protected readonly selectedChartTimeRange = signal<TimeRange>('MAX');
   private retireConfigSaveTimeout: number | null = null;
-  private currentDateRefreshTimeout: number | null = null;
   protected readonly startCapital = computed(() => {
     return roundToTwo(
       this.holdings().reduce((sum, holding) => {
@@ -305,14 +306,8 @@ export class RetirePage implements OnInit {
     });
 
     this.destroyRef.onDestroy(() => {
-      if (this.currentDateRefreshTimeout !== null) {
-        window.clearTimeout(this.currentDateRefreshTimeout);
-      }
-
       themeObserver.disconnect();
     });
-
-    this.scheduleCurrentDateRefresh();
   }
 
   public ngOnInit(): void {
@@ -340,8 +335,7 @@ export class RetirePage implements OnInit {
       return;
     }
 
-    this.currentDate.set(startOfMonth(parsedDate));
-    this.scheduleCurrentDateRefresh();
+    this.retireDeveloperDateService.setCurrentDate(parsedDate);
   }
 
   protected updateWithdrawalStartMonth(event: Event) {
@@ -464,33 +458,6 @@ export class RetirePage implements OnInit {
 
   private parseWithdrawalStartMonthForValidation(): Date {
     return parseStoredWithdrawalStartMonth(this.withdrawalStartMonth(), this.currentDate());
-  }
-
-  private scheduleCurrentDateRefresh(): void {
-    if (this.developerMode()) {
-      return;
-    }
-
-    if (this.currentDateRefreshTimeout !== null) {
-      window.clearTimeout(this.currentDateRefreshTimeout);
-    }
-
-    const nextMonthStart = startOfMonth(addMonths(this.currentDate(), 1));
-    const delay = Math.max(nextMonthStart.getTime() - Date.now(), 1000);
-
-    this.currentDateRefreshTimeout = window.setTimeout(() => {
-      this.currentDateRefreshTimeout = null;
-      this.syncCurrentDateToCurrentMonth();
-    }, delay);
-  }
-
-  protected syncCurrentDateToCurrentMonth(): void {
-    if (this.developerMode()) {
-      return;
-    }
-
-    this.currentDate.set(startOfMonth(new Date()));
-    this.scheduleCurrentDateRefresh();
   }
 
   protected currencySymbol(currency: string): string {
