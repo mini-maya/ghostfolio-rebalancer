@@ -74,6 +74,7 @@ Then open **http://localhost:8080** in your browser.
 | `ACCOUNT_ENCRYPTION_KEY` | Encryption key for stored local accounts and cached Ghostfolio bearer tokens | `replace-with-a-long-secret` |
 | `ACCOUNTS_DIR` | Directory containing the encrypted account CSV file | `/data` |
 | `GHOSTFOLIO_CA_CERT_PATH` | Optional path to a trusted CA certificate used for outbound Ghostfolio HTTPS requests | `/data/ca.crt` |
+| `DEVELOPER_MODE` | Enables the Retire page's manual current-date override for debugging and testing | `true` |
 
 `BASE_URL`, `ACCESS_TOKEN`, and `ALLOCATIONS_TEXT` are optional runtime defaults and
 can be changed in the UI without restarting the container. `BASE_URL` always pre-fills
@@ -142,6 +143,8 @@ npm start
 Run `npm run start:server` in one terminal and `npm start` in a second terminal. The
 Angular dev server proxies `/api/*` requests to the local backend on port `3000`.
 Set `ACCOUNT_ENCRYPTION_KEY` before creating or using stored local accounts.
+Set `DEVELOPER_MODE=true` if you want to manually control the current date on the
+Retire page while testing withdrawal scenarios.
 
 To calculate a rebalancing plan, the app needs:
 
