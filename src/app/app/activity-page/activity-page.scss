@@ -187,3 +187,43 @@ h4 {
 .buy-row-expand-icon-open {
   transform: rotate(90deg);
 }
+
+@media (max-width: 1180px) {
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .portfolio-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .activity-type-group {
+    overflow-x: auto;
+  }
+
+  .metrics-grid {
+    grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
+    min-width: 900px;
+  }
+}
+
+@media (max-width: 860px) {
+  .metrics-grid {
+    min-width: 840px;
+  }
+
+  .metrics-header-cell,
+  .metrics-cell {
+    padding-left: 0.62rem;
+    padding-right: 0.62rem;
+  }
+
+  .metrics-grid-header .metrics-header-cell:first-child,
+  .metrics-name-cell {
+    padding-left: 1.4rem;
+  }
+
+  .metrics-name-cell::before {
+    left: 0.55rem;
+  }
+}

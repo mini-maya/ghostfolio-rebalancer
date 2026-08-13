@@ -53,13 +53,16 @@ h2 {
 .retire-form-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .withdrawal-start-row {
   align-items: end;
-  display: flex;
+  display: grid;
   gap: 1rem;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  width: 100%;
 }
 
 .projection-years-row {
@@ -69,7 +72,9 @@ h2 {
 }
 
 .withdrawal-start-date-field {
-  flex: 1 1 auto;
+  flex: 1 1 320px;
+  min-width: min(320px, 100%);
+  width: 100%;
 }
 
 .projection-years-field {
@@ -88,7 +93,9 @@ h2 {
   display: inline-flex;
   gap: 0.75rem;
   min-height: 3rem;
-  white-space: nowrap;
+  min-width: 0;
+  white-space: normal;
+  width: 100%;
 }
 
 .switch-control {
@@ -294,15 +301,55 @@ select {
 }
 
 @media (max-width: 1180px) {
-  .retire-form-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .retire-phase-sections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .withdrawal-start-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .projection-years-row {
+    flex-wrap: wrap;
+  }
+
+  .withdrawal-start-date-field,
+  .projection-years-field {
+    flex-basis: min(420px, 100%);
   }
 }
 
 @media (max-width: 720px) {
   .withdrawal-start-row {
-    flex-direction: column;
     align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .switch-field,
+  .withdrawal-start-date-field {
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .withdrawal-start-date-field {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
   .projection-years-row {

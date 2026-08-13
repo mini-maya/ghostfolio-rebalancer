@@ -274,3 +274,53 @@ code {
 .allocation-dialog-valid .allocation-dialog-total-accent {
   color: inherit;
 }
+
+@media (max-width: 1180px) {
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-actions .primary-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .col-sticky-1 {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 860px) {
+  .quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .allocation-dialog-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .allocation-dialog-footer .primary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

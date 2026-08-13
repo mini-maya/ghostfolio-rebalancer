@@ -16,6 +16,7 @@
   max-width: 1280px;
   padding: 1.1rem 1.5rem;
   position: relative;
+  width: calc(100% - 2rem);
   z-index: 20;
 }
 
@@ -110,6 +111,7 @@
   margin: 0.75rem auto 0;
   max-width: 1280px;
   padding: 0.75rem 1rem;
+  width: calc(100% - 2rem);
 }
 
 .app-menu {
@@ -123,6 +125,7 @@
   margin: 0.75rem auto 0;
   max-width: 1280px;
   padding: 0.75rem 1rem;
+  width: calc(100% - 2rem);
 }
 
 .app-menu-link {
@@ -157,5 +160,43 @@
 
   .app-menu {
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1180px) {
+  .app-toolbar {
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .app-menu {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .theme-picker span {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .toolbar-actions {
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: flex-start;
+  }
+
+  .theme-picker {
+    width: 100%;
+  }
+
+  .theme-picker select {
+    flex: 1 1 auto;
+  }
+
+  .app-menu-link {
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: 8.5rem;
+    text-align: center;
+    width: auto;
   }
 }
