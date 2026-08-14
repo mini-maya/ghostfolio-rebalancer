@@ -1,5 +1,20 @@
 # Investment Chart
 
+This component is based on the Investment Chart component
+from Ghostfolio.
+
+Original project:
+https://github.com/ghostfolio/ghostfolio
+
+Original component:
+apps/client/src/app/components/investment-chart/
+
+Copyright © 2021–2026 Ghostfolio contributors
+
+Licensed under the GNU Affero General Public License v3.0.
+
+Modified by mini-maya for ghostfolio-rebalancer.
+
 This folder contains a standalone Angular component for an investment chart that can be copied into another Angular project.
 
 ## What is included?
