@@ -1,7 +1,8 @@
 # Ghostfolio Rebalancer
 
-Standalone Angular web app for loading holdings from a remote Ghostfolio instance
-and calculating a contribution-based rebalancing plan.
+A powerful portfolio companion for Ghostfolio — optimize contributions, calculate rebalancing buy plans, track investment activity, and project your path to retirement.
+
+What if your next contribution could automatically tell you what to buy?
 
 ## Rebalancing Tool
 <picture>
