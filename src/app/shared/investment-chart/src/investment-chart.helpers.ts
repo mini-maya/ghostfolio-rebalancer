@@ -1,7 +1,21 @@
+/*
+ * Based on the Investment Chart component from Ghostfolio.
+ *
+ * Original project:
+ * https://github.com/ghostfolio/ghostfolio
+ *
+ * Original component:
+ * apps/client/src/app/components/investment-chart/
+ *
+ * Copyright © 2021–2026 Ghostfolio contributors
+ *
+ * Licensed under the GNU Affero General Public License v3.0.
+ *
+ * Modified by mini-maya for ghostfolio-rebalancer, 2026.
+ */
 import type { ElementRef } from '@angular/core';
 import type {
   Chart as ChartInstance,
-  ChartData,
   ChartOptions,
   ChartType,
   ControllerDatasetOptions,
