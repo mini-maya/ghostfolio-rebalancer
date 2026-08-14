@@ -1,7 +1,23 @@
 <header class="app-toolbar card">
   <div class="toolbar-copy">
-    <p class="eyebrow">A Standalone Ghostfolio tool</p>
-    <strong>Ghostfolio Rebalancer</strong>
+    <div>
+      <p class="eyebrow">A Standalone Ghostfolio tool</p>
+      <strong>Ghostfolio Rebalancer</strong>
+    </div>
+    <button
+      class="about-header-button"
+      type="button"
+      aria-label="About / License"
+      title="About / License"
+      (click)="openAboutDialog()"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+          fill="currentColor"
+        />
+      </svg>
+    </button>
   </div>
 
   <div class="toolbar-actions">
@@ -76,13 +92,6 @@
     >
       Retire
     </a>
-    <button
-      class="app-menu-link"
-      type="button"
-      (click)="openAboutDialog()"
-    >
-      About / License
-    </button>
   </nav>
 }
 
@@ -108,6 +117,7 @@
       <div class="about-dialog-content">
         <p>Ghostfolio Rebalancer</p>
         <p>Copyright © 2026 mini-maya</p>
+        <p>GitHub project:<br /><a href="https://github.com/mini-maya/ghostfolio-rebalancer" target="_blank" rel="noopener noreferrer">https://github.com/mini-maya/ghostfolio-rebalancer</a></p>
         <p>This software is licensed under the<br />GNU Affero General Public License v3.0 (AGPL-3.0).</p>
         <p>This application contains a modified version of the<br />Investment Chart component from Ghostfolio.</p>
         <p>Copyright © 2021–2026 Ghostfolio contributors</p>

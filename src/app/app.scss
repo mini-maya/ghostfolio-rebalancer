@@ -65,6 +65,12 @@
 }
 
 .toolbar-copy {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.toolbar-copy > div {
   display: grid;
   gap: 0.25rem;
 }
@@ -81,6 +87,29 @@
 .toolbar-copy strong {
   color: var(--app-text);
   font-size: 1.05rem;
+}
+
+.about-header-button {
+  background: none;
+  border: none;
+  color: var(--app-muted-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.25rem;
+  width: 1.25rem;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.about-header-button:hover {
+  color: var(--app-primary);
+}
+
+.about-header-button svg {
+  height: 1.25rem;
+  width: 1.25rem;
 }
 
 .theme-picker {
@@ -135,9 +164,6 @@
   font-weight: 600;
   padding: 0.55rem 0.9rem;
   text-decoration: none;
-  background: none;
-  cursor: pointer;
-  font: inherit;
 }
 
 .app-menu-link:hover {
