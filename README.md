@@ -2,6 +2,10 @@
 
 A powerful portfolio companion for Ghostfolio — optimize contributions, calculate rebalancing buy plans, track investment activity, and project your path to retirement.
 
+Ghostfolio Rebalancer is an open-source portfolio rebalancing tool for Ghostfolio.
+It analyzes your current portfolio allocation and calculates a contribution-based buy plan to help you reach your target asset allocation without unnecessary selling.
+Use it to rebalance ETFs, stocks and other assets based on your Ghostfolio portfolio, while keeping track of investment activity and long-term retirement projections.
+
 What if your next contribution could automatically tell you what to buy?
 
 ## Rebalancing Tool
