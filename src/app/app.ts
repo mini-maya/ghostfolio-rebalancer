@@ -67,6 +67,7 @@ export class App {
   protected readonly canOpenGhostfolio = computed(() => {
     return this.showGhostfolioButton() && !this.isGhostfolioLoading();
   });
+  protected readonly isAboutDialogOpen = signal(false);
   private readonly systemPrefersDark = signal(readSystemPrefersDark());
 
   constructor() {
@@ -161,6 +162,14 @@ export class App {
     } finally {
       this.isLoggingOut.set(false);
     }
+  }
+
+  protected openAboutDialog() {
+    this.isAboutDialogOpen.set(true);
+  }
+
+  protected closeAboutDialog() {
+    this.isAboutDialogOpen.set(false);
   }
 }
 

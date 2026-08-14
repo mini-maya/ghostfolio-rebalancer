@@ -13,7 +13,7 @@ Copyright © 2021–2026 Ghostfolio contributors
 
 Licensed under the GNU Affero General Public License v3.0.
 
-Modified by mini-maya for ghostfolio-rebalancer.
+Modified by mini-maya for ghostfolio-rebalancer, 2026.
 
 This folder contains a standalone Angular component for an investment chart that can be copied into another Angular project.
 

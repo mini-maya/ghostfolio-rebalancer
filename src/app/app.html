@@ -76,7 +76,48 @@
     >
       Retire
     </a>
+    <button
+      class="app-menu-link"
+      type="button"
+      (click)="openAboutDialog()"
+    >
+      About / License
+    </button>
   </nav>
+}
+
+@if (isAboutDialogOpen()) {
+  <div class="about-dialog-backdrop" (click)="closeAboutDialog()">
+    <section class="about-dialog" (click)="$event.stopPropagation()">
+      <div class="about-dialog-header">
+        <h3>About / License</h3>
+        <button
+          class="about-dialog-close-button"
+          type="button"
+          aria-label="Close dialog"
+          (click)="closeAboutDialog()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path
+              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="about-dialog-content">
+        <p>Ghostfolio Rebalancer</p>
+        <p>Copyright © 2026 mini-maya</p>
+        <p>This software is licensed under the<br />GNU Affero General Public License v3.0 (AGPL-3.0).</p>
+        <p>This application contains a modified version of the<br />Investment Chart component from Ghostfolio.</p>
+        <p>Copyright © 2021–2026 Ghostfolio contributors</p>
+        <p>Original project:<br /><a href="https://github.com/ghostfolio/ghostfolio" target="_blank" rel="noopener noreferrer">https://github.com/ghostfolio/ghostfolio</a></p>
+        <p>There is no warranty for this software, to the extent<br />permitted by applicable law.</p>
+        <p>You may redistribute and modify this software under<br />the terms of the GNU Affero General Public License v3.0.</p>
+        <p>See the LICENSE file for the complete license text.</p>
+      </div>
+    </section>
+  </div>
 }
 
 <router-outlet></router-outlet>

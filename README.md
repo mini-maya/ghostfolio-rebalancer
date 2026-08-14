@@ -49,6 +49,8 @@ and calculating a contribution-based rebalancing plan.
 
 ## Quick Start (pre-built image)
 
+The corresponding source code for this image is available in this repository under the GNU Affero General Public License v3.0.
+
 No build step required – pull the ready-made image directly from the GitHub
 Container Registry:
 
