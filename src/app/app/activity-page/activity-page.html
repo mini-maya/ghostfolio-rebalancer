@@ -32,51 +32,81 @@
 
         <div class="portfolio-summary-grid">
           <article class="card stat portfolio-summary-card">
-            <span>Total Period (MAX)</span>
-            <strong>{{ maxRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
-            <span>Gain</span>
-            <strong
-              class="value-bold"
-            >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
-            @if (maxRangePortfolioSummary().gainPercentage !== 0) {
-              <span
-                class="value-with-arrow"
-                [class.value-positive]="maxRangePortfolioSummary().gainPercentage > 0"
-                [class.value-negative]="maxRangePortfolioSummary().gainPercentage < 0"
-              >
-                @if (maxRangePortfolioSummary().gainPercentage > 0) {
-                  <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
-                } @else if (maxRangePortfolioSummary().gainPercentage < 0) {
-                  <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
+            <span class="card-title">Total Period (MAX)</span>
+            <div class="portfolio-summary-inner-grid">
+              <div class="summary-grid-cell">
+                <span class="cell-label">Initial Value</span>
+                <strong>{{ maxRangePortfolioSummary().initialValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+              </div>
+              <div class="summary-grid-cell">
+                <span class="cell-label">Current Value</span>
+                <strong>{{ maxRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+              </div>
+              <div class="summary-grid-cell">
+                <span class="cell-label">Investment</span>
+                <strong>{{ maxRangePortfolioSummary().investment | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+              </div>
+              <div class="summary-grid-cell">
+                <span class="cell-label">Gain</span>
+                <strong
+                  class="value-bold"
+                >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                @if (maxRangePortfolioSummary().gainPercentage !== 0) {
+                  <span
+                    class="value-with-arrow"
+                    [class.value-positive]="maxRangePortfolioSummary().gainPercentage > 0"
+                    [class.value-negative]="maxRangePortfolioSummary().gainPercentage < 0"
+                  >
+                    @if (maxRangePortfolioSummary().gainPercentage > 0) {
+                      <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
+                    } @else if (maxRangePortfolioSummary().gainPercentage < 0) {
+                      <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
+                    }
+                    {{ absolute(maxRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+                } @else {
+                  <span class="value-with-arrow">-</span>
                 }
-                {{ absolute(maxRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
-            } @else {
-              <span class="value-with-arrow">-</span>
-            }
+              </div>
+            </div>
           </article>
 
           <article class="card stat portfolio-summary-card">
-            <span>Selected Range ({{ selectedChartTimeRange() }})</span>
-            <strong>{{ selectedRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
-            <span>Gain %</span>
-            <strong
-              class="value-bold"
-            >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
-            @if (selectedRangePortfolioSummary().gainPercentage !== 0) {
-              <span
-                class="value-with-arrow"
-                [class.value-positive]="selectedRangePortfolioSummary().gainPercentage > 0"
-                [class.value-negative]="selectedRangePortfolioSummary().gainPercentage < 0"
-              >
-                @if (selectedRangePortfolioSummary().gainPercentage > 0) {
-                  <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
-                } @else if (selectedRangePortfolioSummary().gainPercentage < 0) {
-                  <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
+            <span class="card-title">Selected Range ({{ selectedChartTimeRange() }})</span>
+            <div class="portfolio-summary-inner-grid">
+              <div class="summary-grid-cell">
+                <span class="cell-label">Initial Value</span>
+                <strong>{{ selectedRangePortfolioSummary().initialValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+              </div>
+              <div class="summary-grid-cell">
+                <span class="cell-label">Current Value</span>
+                <strong>{{ selectedRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+              </div>
+              <div class="summary-grid-cell">
+                <span class="cell-label">Investment</span>
+                <strong>{{ selectedRangePortfolioSummary().investment | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+              </div>
+              <div class="summary-grid-cell">
+                <span class="cell-label">Gain</span>
+                <strong
+                  class="value-bold"
+                >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                @if (selectedRangePortfolioSummary().gainPercentage !== 0) {
+                  <span
+                    class="value-with-arrow"
+                    [class.value-positive]="selectedRangePortfolioSummary().gainPercentage > 0"
+                    [class.value-negative]="selectedRangePortfolioSummary().gainPercentage < 0"
+                  >
+                    @if (selectedRangePortfolioSummary().gainPercentage > 0) {
+                      <ng-container [ngTemplateOutlet]="arrowUpIcon"></ng-container>
+                    } @else if (selectedRangePortfolioSummary().gainPercentage < 0) {
+                      <ng-container [ngTemplateOutlet]="arrowDownIcon"></ng-container>
+                    }
+                    {{ absolute(selectedRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
+                } @else {
+                  <span class="value-with-arrow">-</span>
                 }
-                {{ absolute(selectedRangePortfolioSummary().gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
-            } @else {
-              <span class="value-with-arrow">-</span>
-            }
+              </div>
+            </div>
           </article>
         </div>
       }

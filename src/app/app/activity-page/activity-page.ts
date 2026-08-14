@@ -67,6 +67,8 @@ interface PortfolioSummaryMetrics {
   currentValue: number;
   gainAmount: number;
   gainPercentage: number;
+  initialValue: number;
+  investment: number;
   hasData: boolean;
 }
 
@@ -402,6 +404,8 @@ function calculatePortfolioSummaryMetrics({
       currentValue: 0,
       gainAmount: 0,
       gainPercentage: 0,
+      initialValue: 0,
+      investment: 0,
       hasData: false
     };
   }
@@ -409,6 +413,7 @@ function calculatePortfolioSummaryMetrics({
   const firstPoint = performanceData[0];
   const lastPoint = performanceData[performanceData.length - 1];
   const currentValue = lastPoint.value;
+  const initialValue = firstPoint.value;
   const valueDelta = lastPoint.value - firstPoint.value;
   const investmentDelta = lastPoint.investment - firstPoint.investment;
   const gainAmount = valueDelta - investmentDelta;
@@ -418,6 +423,8 @@ function calculatePortfolioSummaryMetrics({
     currentValue: roundToTwo(currentValue),
     gainAmount: roundToTwo(gainAmount),
     gainPercentage: roundToTwo(gainPercentage),
+    initialValue: roundToTwo(initialValue),
+    investment: roundToTwo(investmentDelta),
     hasData: true
   };
 }
