@@ -85,14 +85,22 @@ h4 {
 
 .metrics-grid {
   align-items: stretch;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
+  min-width: 900px;
+  width: max-content;
 }
 
 .metrics-grid-header {
   color: var(--app-muted-text);
   font-weight: 600;
   margin-bottom: 0.35rem;
+}
+
+.metrics-scroll-wrapper {
+  overflow-x: auto;
+  width: 100%;
 }
 
 .metrics-header-cell {
@@ -116,12 +124,21 @@ h4 {
   border: 1px solid var(--app-border);
   border-radius: 0.75rem;
   margin-bottom: 1rem;
+  min-width: 900px;
   overflow: hidden;
+  width: 100%;
 }
 
 .activity-details summary {
   cursor: pointer;
   list-style: none;
+}
+
+.activity-details summary.metrics-grid {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 900px;
+  width: 100%;
 }
 
 .activity-details summary::-webkit-details-marker {
@@ -231,18 +248,23 @@ h4 {
   }
 
   .activity-type-group {
+    overflow: visible;
+  }
+
+  .metrics-scroll-wrapper {
     overflow-x: auto;
   }
 
   .metrics-grid {
     grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
     min-width: 900px;
+    width: max-content;
   }
 }
 
 @media (max-width: 860px) {
   .metrics-grid {
-    min-width: 840px;
+    min-width: 900px;
   }
 
   .metrics-header-cell,

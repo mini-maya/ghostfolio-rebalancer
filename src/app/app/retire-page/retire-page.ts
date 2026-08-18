@@ -257,7 +257,7 @@ export class RetirePage implements OnInit {
         const lastPoint = yearPoints.at(-1);
 
         rows.push({
-          dateLabel: `${format(firstPoint.date, 'MMM yyyy')} – ${format(lastPoint?.date ?? firstPoint.date, 'MMM yyyy')}`,
+          dateLabel: `${format(firstPoint.date, 'MMMM yyyy')} – ${format(lastPoint?.date ?? firstPoint.date, 'MMMM yyyy')}`,
           endingBalance: roundToTwo(lastPoint?.endingBalance ?? 0),
           isCompleted: true,
           isCurrent: false,
@@ -272,7 +272,7 @@ export class RetirePage implements OnInit {
 
       for (const point of yearPoints) {
         rows.push({
-          dateLabel: format(point.date, 'MMM yyyy'),
+          dateLabel: format(point.date, 'MMMM yyyy'),
           endingBalance: roundToTwo(point.endingBalance),
           isCompleted: startOfMonth(point.date) < currentMonth,
           isCurrent: startOfMonth(point.date).getTime() === currentMonth.getTime(),

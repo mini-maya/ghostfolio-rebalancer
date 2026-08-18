@@ -137,7 +137,7 @@ describe('RetirePage', () => {
 
     expect(component.withdrawalStartLabel()).toBe('Apr 2027');
     expect(component.projectionEndLabel()).toBe('2052-04');
-    expect(component.withdrawalScheduleRows()[0].dateLabel).toBe('Apr 2027');
+    expect(component.withdrawalScheduleRows()[0].dateLabel).toBe('April 2027');
   });
 
   it('collapses past years into yearly summary rows and prefixes completed rows with a checkmark', () => {
@@ -161,10 +161,10 @@ describe('RetirePage', () => {
 
     expect(rows[0].isYearSummary).toBeTrue();
     expect(rows[0].periodLabel).toBe('Jahr 2048');
-    expect(rows[0].dateLabel).toBe('Jan 2048 – Dec 2048');
+    expect(rows[0].dateLabel).toBe('January 2048 – December 2048');
     expect(rows[0].isCompleted).toBeTrue();
     expect(rows[1].isYearSummary).toBeTrue();
-    expect(rows.some((row: any) => !row.isYearSummary && row.dateLabel === 'Jan 2050')).toBeTrue();
+    expect(rows.some((row: any) => !row.isYearSummary && row.dateLabel === 'January 2050')).toBeTrue();
     expect(
       fixture.nativeElement
         .querySelector('.withdrawal-schedule-table tbody tr .row-status')
@@ -190,11 +190,11 @@ describe('RetirePage', () => {
 
     const rows = component.withdrawalScheduleRows();
 
-    expect(rows[0].dateLabel).toBe('Jun 2050');
+    expect(rows[0].dateLabel).toBe('June 2050');
     expect(rows[0].isCompleted).toBeTrue();
-    expect(rows[3].dateLabel).toBe('Sep 2050');
+    expect(rows[3].dateLabel).toBe('September 2050');
     expect(rows[3].isCompleted).toBeTrue();
-    expect(rows[4].dateLabel).toBe('Oct 2050');
+    expect(rows[4].dateLabel).toBe('October 2050');
     expect(rows[4].isCompleted).toBeFalse();
     expect(rows[4].isCurrent).toBeTrue();
     expect(rows[4].periodIndex).toBe(5);
@@ -202,7 +202,7 @@ describe('RetirePage', () => {
     expect(component.withdrawalDisplayYears()).toBe(25);
     const currentRow = Array.from<Element>(
       fixture.nativeElement.querySelectorAll('.withdrawal-schedule-table tbody tr')
-    ).find((row: Element) => row.textContent?.includes('Oct 2050'));
+    ).find((row: Element) => row.textContent?.includes('October 2050'));
 
     expect(currentRow?.textContent?.includes('➡️')).toBeTrue();
   });
@@ -261,8 +261,8 @@ describe('RetirePage', () => {
     expect(rows).toHaveSize(300);
     expect(rows[0].periodIndex).toBe(1);
     expect(rows.at(-1)?.periodIndex).toBe(300);
-    expect(rows[0].dateLabel).toBe(format(currentMonth, 'MMM yyyy'));
-    expect(rows.at(-1)?.dateLabel).toBe(format(addMonths(currentMonth, 299), 'MMM yyyy'));
+    expect(rows[0].dateLabel).toBe(format(currentMonth, 'MMMM yyyy'));
+    expect(rows.at(-1)?.dateLabel).toBe(format(addMonths(currentMonth, 299), 'MMMM yyyy'));
   });
 
   it('hides savings-phase fields when withdrawals start immediately', () => {
@@ -293,7 +293,7 @@ describe('RetirePage', () => {
 
     const firstVisibleRow = component.withdrawalScheduleRows()[0];
 
-    expect(firstVisibleRow.dateLabel).toBe(format(currentMonth, 'MMM yyyy'));
+    expect(firstVisibleRow.dateLabel).toBe(format(currentMonth, 'MMMM yyyy'));
     expect(firstVisibleRow.periodIndex).toBe(1);
   });
 
@@ -305,7 +305,7 @@ describe('RetirePage', () => {
 
     component.withdrawalStartMonth.set(format(futureMonth, 'yyyy-MM'));
 
-    expect(component.withdrawalScheduleRows()[0].dateLabel).toBe(format(futureMonth, 'MMM yyyy'));
+    expect(component.withdrawalScheduleRows()[0].dateLabel).toBe(format(futureMonth, 'MMMM yyyy'));
   });
 
   it('derives the expected end from a future withdrawal start month', () => {
@@ -346,7 +346,7 @@ describe('RetirePage', () => {
 
     const rows = component.withdrawalScheduleRows();
 
-    expect(rows[0].dateLabel).toBe(format(futureMonth, 'MMM yyyy'));
-    expect(rows.at(-1)?.dateLabel).toBe(format(addMonths(futureMonth, 11), 'MMM yyyy'));
+    expect(rows[0].dateLabel).toBe(format(futureMonth, 'MMMM yyyy'));
+    expect(rows.at(-1)?.dateLabel).toBe(format(addMonths(futureMonth, 11), 'MMMM yyyy'));
   });
 });
