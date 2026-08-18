@@ -2,7 +2,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { decryptJson, encryptJson, hashPassword, verifyPassword } from './crypto.mjs';
-import { parseAccountCsv, stringifyAccountCsv } from './csv.mjs';
 import { ConfigurationError, HttpError } from './errors.mjs';
 
 export function createAccountStore({ accountsFilePath, encryptionKey }) {
@@ -25,17 +24,11 @@ export function createAccountStore({ accountsFilePath, encryptionKey }) {
 
       const { hash, salt } = hashPassword(password);
       records.push({
+        accessToken: encryptJson({ accessToken }, encryptionKey),
         allocationsText,
         baseUrl,
-        payload: encryptJson(
-          {
-            accessToken,
-            bearerToken,
-            passwordHash: hash,
-            passwordSalt: salt
-          },
-          encryptionKey
-        ),
+        bearerToken: encryptJson({ bearerToken }, encryptionKey),
+        password: encryptJson({ passwordHash: hash, passwordSalt: salt }, encryptionKey),
         user
       });
 
@@ -69,12 +62,12 @@ export function createAccountStore({ accountsFilePath, encryptionKey }) {
         const account = deserializeAccount(record, encryptionKey);
 
         return {
+          accessToken: encryptJson({ accessToken: account.accessToken }, encryptionKey),
           allocationsText: account.allocationsText,
           baseUrl: account.baseUrl,
-          payload: encryptJson(
+          bearerToken: encryptJson({ bearerToken }, encryptionKey),
+          password: encryptJson(
             {
-              accessToken: account.accessToken,
-              bearerToken,
               passwordHash: account.passwordHash,
               passwordSalt: account.passwordSalt
             },
@@ -128,7 +121,7 @@ async function ensureStorageFile(accountsFilePath) {
     await readFile(accountsFilePath, 'utf8');
   } catch (error) {
     if (isMissingFileError(error)) {
-      await writeFile(accountsFilePath, stringifyAccountCsv([]), 'utf8');
+      await writeFile(accountsFilePath, '[]', 'utf8');
       return;
     }
 
@@ -143,17 +136,27 @@ function deserializeAccount(record, encryptionKey) {
     );
   }
 
-  const payload = decryptJson(record.payload, encryptionKey);
+  const accessToken = decryptRequiredJson(record.accessToken, encryptionKey);
+  const bearerToken = decryptRequiredJson(record.bearerToken, encryptionKey);
+  const password = decryptRequiredJson(record.password, encryptionKey);
 
   return {
-    accessToken: payload.accessToken ?? '',
+    accessToken: accessToken?.accessToken ?? '',
     allocationsText: record.allocationsText ?? '',
     baseUrl: record.baseUrl,
-    bearerToken: payload.bearerToken ?? '',
-    passwordHash: payload.passwordHash ?? '',
-    passwordSalt: payload.passwordSalt ?? '',
+    bearerToken: bearerToken?.bearerToken ?? '',
+    passwordHash: password?.passwordHash ?? '',
+    passwordSalt: password?.passwordSalt ?? '',
     user: record.user
   };
+}
+
+function decryptRequiredJson(value, encryptionKey) {
+  if (!value || typeof value !== 'string') {
+    throw new ConfigurationError('The stored account data is malformed.');
+  }
+
+  return decryptJson(value, encryptionKey);
 }
 
 function isMissingFileError(error) {
@@ -170,9 +173,23 @@ async function readRecords(accountsFilePath) {
 
   const fileContent = await readFile(accountsFilePath, 'utf8');
 
-  return parseAccountCsv(fileContent);
+  return parseAccountJson(fileContent);
 }
 
 async function writeRecords(accountsFilePath, records) {
-  await writeFile(accountsFilePath, stringifyAccountCsv(records), 'utf8');
+  await writeFile(accountsFilePath, JSON.stringify(records, null, 2), 'utf8');
+}
+
+function parseAccountJson(text) {
+  if (!text.trim()) {
+    return [];
+  }
+
+  const parsed = JSON.parse(text);
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('The stored account file has an unexpected format.');
+  }
+
+  return parsed;
 }

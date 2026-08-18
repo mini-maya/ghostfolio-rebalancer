@@ -79,7 +79,7 @@ Then open **http://localhost:8080** in your browser.
 | `ACCESS_TOKEN` | Ghostfolio account access token | `abc123` |
 | `ALLOCATIONS_TEXT` | Target allocations (`SYMBOL,PERCENT` pairs separated by `|`) | `SPPW.DE,80|IUSN.DE,10|IS3N.DE,10` |
 | `ACCOUNT_ENCRYPTION_KEY` | Encryption key for stored local accounts and cached Ghostfolio bearer tokens | `replace-with-a-long-secret` |
-| `ACCOUNTS_DIR` | Directory containing the encrypted account CSV file | `/data` |
+| `ACCOUNTS_DIR` | Directory containing the JSON-backed local account files | `/data` |
 | `GHOSTFOLIO_CA_CERT_PATH` | Optional path to a trusted CA certificate used for outbound Ghostfolio HTTPS requests | `/data/ca.crt` |
 | `DEVELOPER_MODE` | Enables the Retire page's manual current-date override for debugging and testing | `true` |
 
@@ -89,11 +89,10 @@ the Ghostfolio URL field on the login page when set. `ACCESS_TOKEN` only pre-fil
 (and auto-connects) while no stored local account exists. `ALLOCATIONS_TEXT` pre-fills
 the **Target allocations** field in **Advanced settings**.
 
-Stored local accounts are written to `ACCOUNTS_DIR/accounts.csv` as a semicolon-
-separated CSV file with the required columns `user;baseUrl;allocationsText;payload`.
-Only the local user name, `baseUrl`, and the plain-text per-account `allocationsText`
-stay outside the encrypted payload; the Ghostfolio access token, the local password
-data, and the cached Ghostfolio bearer token are encrypted with
+Stored local accounts are written to `ACCOUNTS_DIR/accounts.json` as a JSON array.
+Each stored account keeps its `user`, `baseUrl`, and plain-text `allocationsText`
+alongside dedicated encrypted fields for the Ghostfolio access token, cached bearer
+token, and password data. The stored account data is encrypted with
 `ACCOUNT_ENCRYPTION_KEY`.
 
 If your Ghostfolio instance uses a private CA or self-signed certificate, place the

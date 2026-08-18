@@ -23,11 +23,11 @@ const accountsDirectory = process.env.ACCOUNTS_DIR?.trim()
   ? path.resolve(process.env.ACCOUNTS_DIR)
   : path.resolve(__dirname, '../data');
 const accountStore = createAccountStore({
-  accountsFilePath: path.join(accountsDirectory, 'accounts.csv'),
+  accountsFilePath: path.join(accountsDirectory, 'accounts.json'),
   encryptionKey: process.env.ACCOUNT_ENCRYPTION_KEY ?? ''
 });
 const retireStore = createRetireStore({
-  retireFilePath: path.join(accountsDirectory, 'retire.csv')
+  retireFilePath: path.join(accountsDirectory, 'retire.json')
 });
 
 function readBooleanEnv(name) {
