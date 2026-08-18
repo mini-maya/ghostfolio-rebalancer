@@ -162,6 +162,7 @@
           step="10"
           [value]="savingsRate()"
           (input)="updateSavingsRate($event)"
+          (change)="updateSavingsRate($event)"
         />
       </label>
 
@@ -173,6 +174,7 @@
           step="5"
           [value]="minimumBuyAmount()"
           (input)="updateMinimumBuyAmount($event)"
+          (change)="updateMinimumBuyAmount($event)"
         />
       </label>
 
@@ -184,6 +186,7 @@
           step="5"
           [value]="roundingStep()"
           (input)="updateRoundingStep($event)"
+          (change)="updateRoundingStep($event)"
         />
       </label>
 

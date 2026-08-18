@@ -65,19 +65,24 @@ export class RebalancerPage {
   protected readonly infoMessage = this.portfolioDataStore.infoMessage;
   protected readonly isLoading = this.portfolioDataStore.isLoading;
   protected readonly lastLoadedUrl = this.portfolioDataStore.lastLoadedUrl;
-  protected readonly minimumBuyAmount = signal(10);
+  protected readonly minimumBuyAmount = signal(this.authService.minimumBuyAmount());
   protected readonly allocationDialogRows = signal<AllocationDialogRow[]>([]);
   protected readonly isAllocationDialogOpen = signal(false);
   protected readonly sortColumn = signal<SortColumn>('name');
   protected readonly sortDirection = signal<SortDirection>('asc');
-  protected readonly roundingStep = signal(10);
-  protected readonly savingsRate = signal(1750);
+  protected readonly roundingStep = signal(this.authService.roundingStep());
+  protected readonly savingsRate = signal(this.authService.monthlySavingsRate());
   private allocationsSaveTimeout: number | null = null;
+  private rebalancerSettingsSaveTimeout: number | null = null;
 
   constructor() {
     this.destroyRef.onDestroy(() => {
       if (this.allocationsSaveTimeout !== null) {
         window.clearTimeout(this.allocationsSaveTimeout);
+      }
+
+      if (this.rebalancerSettingsSaveTimeout !== null) {
+        window.clearTimeout(this.rebalancerSettingsSaveTimeout);
       }
     });
 
@@ -252,16 +257,19 @@ export class RebalancerPage {
   protected updateSavingsRate(event: Event) {
     const value = Number(readInputValue(event));
     this.savingsRate.set(Number.isFinite(value) && value > 0 ? value : 0);
+    this.scheduleRebalancerSettingsSave();
   }
 
   protected updateMinimumBuyAmount(event: Event) {
     const value = Number(readInputValue(event));
     this.minimumBuyAmount.set(Number.isFinite(value) && value >= 0 ? value : 10);
+    this.scheduleRebalancerSettingsSave();
   }
 
   protected updateRoundingStep(event: Event) {
     const value = Number(readInputValue(event));
     this.roundingStep.set(Number.isFinite(value) && value >= 0 ? value : 10);
+    this.scheduleRebalancerSettingsSave();
   }
 
   protected isSortColumn(column: SortColumn): boolean {
@@ -347,11 +355,38 @@ export class RebalancerPage {
     }, 300);
   }
 
+  private scheduleRebalancerSettingsSave() {
+    if (this.authService.sessionMode() !== 'account') {
+      return;
+    }
+
+    if (this.rebalancerSettingsSaveTimeout !== null) {
+      window.clearTimeout(this.rebalancerSettingsSaveTimeout);
+    }
+
+    this.rebalancerSettingsSaveTimeout = window.setTimeout(() => {
+      this.rebalancerSettingsSaveTimeout = null;
+      void this.saveRebalancerSettings();
+    }, 300);
+  }
+
   private async saveAllocationsText() {
     try {
       await this.authService.updateAccountAllocationsText(this.allocationsText());
     } catch {
       this.errorMessage.set('Saving target allocations to the account failed.');
+    }
+  }
+
+  private async saveRebalancerSettings() {
+    try {
+      await this.authService.updateAccountRebalancerSettings({
+        minimumBuyAmount: this.minimumBuyAmount(),
+        monthlySavingsRate: this.savingsRate(),
+        roundingStep: this.roundingStep()
+      });
+    } catch {
+      this.errorMessage.set('Saving rebalancer settings to the account failed.');
     }
   }
 }

@@ -90,7 +90,8 @@ the Ghostfolio URL field on the login page when set. `ACCESS_TOKEN` only pre-fil
 the **Target allocations** field in **Advanced settings**.
 
 Stored local accounts are written to `ACCOUNTS_DIR/accounts.json` as a JSON array.
-Each stored account keeps its `user`, `baseUrl`, and plain-text `allocationsText`
+Each stored account keeps its `user`, `baseUrl`, plain-text `allocationsText`, and
+`rebalancerSettings` (`monthlySavingsRate`, `minimumBuyAmount`, `roundingStep`)
 alongside dedicated encrypted fields for the Ghostfolio access token, cached bearer
 token, and password data. The stored account data is encrypted with
 `ACCOUNT_ENCRYPTION_KEY`.
@@ -224,11 +225,12 @@ runtime defaults. `BASE_URL` is always used as the login-page URL default when s
 `ACCESS_TOKEN` is only used on the login page until at least one stored account
 exists. `ALLOCATIONS_TEXT` is loaded as editable default in **Advanced settings** for
 non-account sessions; stored accounts persist their own target allocations in
-`accounts.csv`.
+`accounts.json`.
 
 The main view directly shows **Monthly rate**, **Minimum buy amount**, **Rounding
 step**, and **Load holdings**. The collapsed **Advanced settings** area contains
-the editable **Target allocations** field.
+the editable **Target allocations** field. For stored local accounts, these three
+values are saved automatically to `accounts.json` and restored on the next login.
 
 `ALLOCATIONS_TEXT` and the visible text field both expect the compact format
 `SYMBOL,PERCENT|SYMBOL,PERCENT`.

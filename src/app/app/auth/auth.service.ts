@@ -4,12 +4,19 @@ import { firstValueFrom } from 'rxjs';
 
 import type { RetireConfig } from '../services/retire-config';
 
+interface RebalancerSettings {
+  minimumBuyAmount: number;
+  monthlySavingsRate: number;
+  roundingStep: number;
+}
+
 interface SessionResponse {
   allocationsText: string;
   authMode: string;
   authenticated: boolean;
   baseUrl: string;
   loginSource: string;
+  rebalancerSettings: Partial<RebalancerSettings>;
   retireConfig: Partial<RetireConfig>;
   user: string;
 }
@@ -23,6 +30,16 @@ interface AllocationsTextResponse {
   allocationsText: string;
 }
 
+interface RebalancerSettingsResponse {
+  rebalancerSettings: RebalancerSettings;
+}
+
+const DEFAULT_REBALANCER_SETTINGS: RebalancerSettings = {
+  minimumBuyAmount: 10,
+  monthlySavingsRate: 1750,
+  roundingStep: 10
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,6 +50,9 @@ export class AuthService {
   private readonly _allocationsText = signal('');
   private readonly _isAuthenticated = signal(false);
   private readonly _loginSource = signal('');
+  private readonly _minimumBuyAmount = signal(DEFAULT_REBALANCER_SETTINGS.minimumBuyAmount);
+  private readonly _monthlySavingsRate = signal(DEFAULT_REBALANCER_SETTINGS.monthlySavingsRate);
+  private readonly _roundingStep = signal(DEFAULT_REBALANCER_SETTINGS.roundingStep);
   private readonly _sessionMode = signal('');
   private readonly _retireConfig = signal<Partial<RetireConfig>>({});
   private readonly _user = signal('');
@@ -43,7 +63,10 @@ export class AuthService {
   public readonly allocationsText = this._allocationsText.asReadonly();
   public readonly isAuthenticated = this._isAuthenticated.asReadonly();
   public readonly loginSource = this._loginSource.asReadonly();
+  public readonly minimumBuyAmount = this._minimumBuyAmount.asReadonly();
+  public readonly monthlySavingsRate = this._monthlySavingsRate.asReadonly();
   public readonly retireConfig = this._retireConfig.asReadonly();
+  public readonly roundingStep = this._roundingStep.asReadonly();
   public readonly sessionMode = this._sessionMode.asReadonly();
   public readonly user = this._user.asReadonly();
 
@@ -155,6 +178,16 @@ export class AuthService {
     this._allocationsText.set(response.allocationsText);
   }
 
+  public async updateAccountRebalancerSettings(rebalancerSettings: RebalancerSettings): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.put<RebalancerSettingsResponse>('/api/account/rebalancer-settings', {
+        rebalancerSettings
+      })
+    );
+
+    this.applyRebalancerSettings(response.rebalancerSettings);
+  }
+
   public async updateAccountRetireConfig(retireConfig: RetireConfig): Promise<void> {
     const response = await firstValueFrom(
       this.http.put<{ retireConfig: Partial<RetireConfig> }>('/api/account/retire-config', {
@@ -175,16 +208,29 @@ export class AuthService {
     this._baseUrl.set(session.baseUrl);
     this._user.set(session.user);
     this._loginSource.set(session.loginSource);
+    this.applyRebalancerSettings(session.rebalancerSettings ?? DEFAULT_REBALANCER_SETTINGS);
     this._retireConfig.set(session.retireConfig ?? {});
     this._sessionMode.set(session.authMode);
     this._isAuthenticated.set(true);
     this.isInitialized = true;
   }
 
+  private applyRebalancerSettings(rebalancerSettings: Partial<RebalancerSettings>): void {
+    const normalizedSettings = {
+      ...DEFAULT_REBALANCER_SETTINGS,
+      ...rebalancerSettings
+    };
+
+    this._minimumBuyAmount.set(normalizedSettings.minimumBuyAmount);
+    this._monthlySavingsRate.set(normalizedSettings.monthlySavingsRate);
+    this._roundingStep.set(normalizedSettings.roundingStep);
+  }
+
   private resetSession(): void {
     this._allocationsText.set('');
     this._baseUrl.set('');
     this._loginSource.set('');
+    this.applyRebalancerSettings(DEFAULT_REBALANCER_SETTINGS);
     this._retireConfig.set({});
     this._sessionMode.set('');
     this._user.set('');

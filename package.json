@@ -1,6 +1,6 @@
 {
   "name": "ghostfolio-rebalancer",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",

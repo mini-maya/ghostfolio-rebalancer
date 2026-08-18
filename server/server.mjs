@@ -22,6 +22,11 @@ const port = Number(process.env.PORT || 3000);
 const accountsDirectory = process.env.ACCOUNTS_DIR?.trim()
   ? path.resolve(process.env.ACCOUNTS_DIR)
   : path.resolve(__dirname, '../data');
+const defaultRebalancerSettings = Object.freeze({
+  minimumBuyAmount: 10,
+  monthlySavingsRate: 1750,
+  roundingStep: 10
+});
 const accountStore = createAccountStore({
   accountsFilePath: path.join(accountsDirectory, 'accounts.json'),
   encryptionKey: process.env.ACCOUNT_ENCRYPTION_KEY ?? ''
@@ -72,6 +77,7 @@ app.get('/api/session', async (request, response, next) => {
             authenticated: true,
             baseUrl: session.baseUrl,
             loginSource: session.loginSource ?? '',
+            rebalancerSettings: session.rebalancerSettings ?? defaultRebalancerSettings,
             retireConfig: session.retireConfig ?? {},
             user: session.user ?? ''
           }
@@ -81,6 +87,7 @@ app.get('/api/session', async (request, response, next) => {
             authenticated: false,
             baseUrl: '',
             loginSource: '',
+            rebalancerSettings: defaultRebalancerSettings,
             retireConfig: {},
             user: ''
           }
@@ -101,6 +108,7 @@ app.post('/api/auth/access-token-login', async (request, response, next) => {
       bearerToken: authentication.authToken,
       loginSource: readLoginSource(request.body?.source),
       mode: 'token',
+      rebalancerSettings: defaultRebalancerSettings,
       retireConfig: {},
       user: ''
     };
@@ -153,6 +161,7 @@ app.post('/api/auth/register', async (request, response, next) => {
       baseUrl: authentication.baseUrl,
       bearerToken: authentication.authToken,
       password,
+      rebalancerSettings: defaultRebalancerSettings,
       user
     });
 
@@ -161,6 +170,7 @@ app.post('/api/auth/register', async (request, response, next) => {
       allocationsText: '',
       baseUrl: authentication.baseUrl,
       mode: 'account',
+      rebalancerSettings: defaultRebalancerSettings,
       retireConfig: retireConfig ?? {},
       user
     };
@@ -186,6 +196,7 @@ app.post('/api/auth/user-login', async (request, response, next) => {
       allocationsText: account.allocationsText,
       baseUrl: account.baseUrl,
       mode: 'account',
+      rebalancerSettings: account.rebalancerSettings ?? defaultRebalancerSettings,
       retireConfig: (await retireStore.getRetireConfig(user)) ?? {},
       user: account.user
     };
@@ -222,6 +233,26 @@ app.put('/api/account/allocations-text', async (request, response, next) => {
     session.allocationsText = allocationsText;
 
     response.json({ allocationsText });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/account/rebalancer-settings', async (request, response, next) => {
+  try {
+    const sessionId = getSessionIdFromCookie(request.headers.cookie ?? '');
+    const session = sessionId ? sessions.get(sessionId) : null;
+
+    if (!session || session.mode !== 'account' || !session.user) {
+      throw new HttpError(403, 'Saving rebalancer settings is only available for stored accounts.');
+    }
+
+    const rebalancerSettings = readRebalancerSettings(request.body?.rebalancerSettings);
+
+    await accountStore.updateRebalancerSettings(session.user, rebalancerSettings);
+    session.rebalancerSettings = rebalancerSettings;
+
+    response.json({ rebalancerSettings });
   } catch (error) {
     next(error);
   }
@@ -369,6 +400,7 @@ function buildSessionResponse(session) {
     authenticated: true,
     baseUrl: session.baseUrl,
     loginSource: session.loginSource ?? '',
+    rebalancerSettings: session.rebalancerSettings ?? defaultRebalancerSettings,
     retireConfig: session.retireConfig ?? {},
     user: session.user ?? ''
   };
@@ -430,6 +462,7 @@ async function getSession(request) {
       ...session,
       allocationsText: account.allocationsText,
       baseUrl: account.baseUrl,
+      rebalancerSettings: session.rebalancerSettings ?? account.rebalancerSettings ?? defaultRebalancerSettings,
       retireConfig: session.retireConfig ?? (await retireStore.getRetireConfig(session.user)) ?? {}
     };
   }
@@ -481,6 +514,18 @@ function readAllocationsText(value) {
   }
 
   return value.trim();
+}
+
+function readRebalancerSettings(value) {
+  if (typeof value !== 'object' || value === null) {
+    throw new HttpError(400, 'Rebalancer settings must be provided as an object.');
+  }
+
+  return {
+    minimumBuyAmount: readNonNegativeNumber(value.minimumBuyAmount, 10),
+    monthlySavingsRate: readNonNegativeNumber(value.monthlySavingsRate, 1750),
+    roundingStep: readNonNegativeNumber(value.roundingStep, 10)
+  };
 }
 
 function readRetireConfig(value) {

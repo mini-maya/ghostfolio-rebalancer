@@ -4,6 +4,12 @@ import path from 'node:path';
 import { decryptJson, encryptJson, hashPassword, verifyPassword } from './crypto.mjs';
 import { ConfigurationError, HttpError } from './errors.mjs';
 
+const DEFAULT_REBALANCER_SETTINGS = Object.freeze({
+  minimumBuyAmount: 10,
+  monthlySavingsRate: 1750,
+  roundingStep: 10
+});
+
 export function createAccountStore({ accountsFilePath, encryptionKey }) {
   return {
     async createAccount({
@@ -12,6 +18,7 @@ export function createAccountStore({ accountsFilePath, encryptionKey }) {
       baseUrl,
       bearerToken,
       password,
+      rebalancerSettings = DEFAULT_REBALANCER_SETTINGS,
       user
     }) {
       await ensureStorageFile(accountsFilePath);
@@ -29,6 +36,10 @@ export function createAccountStore({ accountsFilePath, encryptionKey }) {
         baseUrl,
         bearerToken: encryptJson({ bearerToken }, encryptionKey),
         password: encryptJson({ passwordHash: hash, passwordSalt: salt }, encryptionKey),
+        rebalancerSettings: {
+          ...DEFAULT_REBALANCER_SETTINGS,
+          ...rebalancerSettings
+        },
         user
       });
 
@@ -73,6 +84,10 @@ export function createAccountStore({ accountsFilePath, encryptionKey }) {
             },
             encryptionKey
           ),
+          rebalancerSettings: {
+            ...DEFAULT_REBALANCER_SETTINGS,
+            ...account.rebalancerSettings
+          },
           user: account.user
         };
       });
@@ -90,6 +105,26 @@ export function createAccountStore({ accountsFilePath, encryptionKey }) {
         return {
           ...record,
           allocationsText
+        };
+      });
+
+      await writeRecords(accountsFilePath, nextRecords);
+    },
+
+    async updateRebalancerSettings(user, rebalancerSettings) {
+      const records = await readRecords(accountsFilePath);
+      const nextRecords = records.map((record) => {
+        if (record.user !== user) {
+          return record;
+        }
+
+        return {
+          ...record,
+          rebalancerSettings: {
+            ...DEFAULT_REBALANCER_SETTINGS,
+            ...record.rebalancerSettings,
+            ...rebalancerSettings
+          }
         };
       });
 
@@ -147,6 +182,10 @@ function deserializeAccount(record, encryptionKey) {
     bearerToken: bearerToken?.bearerToken ?? '',
     passwordHash: password?.passwordHash ?? '',
     passwordSalt: password?.passwordSalt ?? '',
+    rebalancerSettings: {
+      ...DEFAULT_REBALANCER_SETTINGS,
+      ...(record.rebalancerSettings ?? {})
+    },
     user: record.user
   };
 }
