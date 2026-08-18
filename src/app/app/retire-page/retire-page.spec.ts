@@ -101,7 +101,7 @@ describe('RetirePage', () => {
     expect(component.withdrawalStarted()).toBeTrue();
     expect(component.withdrawalStartMonth()).toBe(format(currentMonth, 'yyyy-MM'));
     expect(component.capitalAtWithdrawalStart()).toBe(10000);
-    expect(component.withdrawalStartLabel()).toBe(format(currentMonth, 'MMM yyyy'));
+    expect(component.withdrawalStartLabel()).toBe(format(currentMonth, 'MMMM yyyy'));
     expect(component.projectionEndLabel()).toBe(format(addYears(currentMonth, 25), 'yyyy-MM'));
   });
 
@@ -135,7 +135,7 @@ describe('RetirePage', () => {
       target: { checked: true }
     } as unknown as Event);
 
-    expect(component.withdrawalStartLabel()).toBe('Apr 2027');
+    expect(component.withdrawalStartLabel()).toBe('April 2027');
     expect(component.projectionEndLabel()).toBe('2052-04');
     expect(component.withdrawalScheduleRows()[0].dateLabel).toBe('April 2027');
   });
@@ -198,7 +198,7 @@ describe('RetirePage', () => {
     expect(rows[4].isCompleted).toBeFalse();
     expect(rows[4].isCurrent).toBeTrue();
     expect(rows[4].periodIndex).toBe(5);
-    expect(component.nextWithdrawalLabel()).toBe('Oct 2050');
+    expect(component.nextWithdrawalLabel()).toBe('October 2050');
     expect(component.withdrawalDisplayYears()).toBe(25);
     const currentRow = Array.from<Element>(
       fixture.nativeElement.querySelectorAll('.withdrawal-schedule-table tbody tr')
@@ -332,7 +332,7 @@ describe('RetirePage', () => {
     } as unknown as Event);
 
     expect(component.projectionEndLabel()).toBe(format(addYears(currentMonth, 25), 'yyyy-MM'));
-    expect(component.withdrawalStartLabel()).toBe(format(currentMonth, 'MMM yyyy'));
+    expect(component.withdrawalStartLabel()).toBe(format(currentMonth, 'MMMM yyyy'));
   });
 
   it('caps the visible withdrawal list at the expected end month', () => {

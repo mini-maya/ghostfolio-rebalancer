@@ -170,7 +170,7 @@ export class RetirePage implements OnInit {
     return this.frequency() === 'yearly' && this.accumulationMonths() === 0 ? 'year' : 'month';
   });
   protected readonly withdrawalStartLabel = computed(() => {
-    return format(this.displayWithdrawalStartDate(), 'MMM yyyy');
+    return format(this.displayWithdrawalStartDate(), 'MMMM yyyy');
   });
   protected readonly withdrawalDisplayYears = computed(() => {
     return roundToTwo(Math.max(Math.round(this.projectionYears()), 1));
@@ -211,7 +211,7 @@ export class RetirePage implements OnInit {
   protected readonly currentWithdrawalLabel = computed(() => {
     const currentWithdrawalPoint = this.currentWithdrawalPoint();
 
-    return currentWithdrawalPoint ? format(new Date(currentWithdrawalPoint.date), 'MMM yyyy') : 'n/a';
+    return currentWithdrawalPoint ? format(new Date(currentWithdrawalPoint.date), 'MMMM yyyy') : 'n/a';
   });
   protected readonly nextWithdrawalLabel = this.currentWithdrawalLabel;
   protected readonly nextWithdrawalSellPlan = computed(() => {

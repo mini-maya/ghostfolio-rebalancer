@@ -4,6 +4,7 @@ import { Component, DestroyRef, computed, effect, inject, signal } from '@angula
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
+import packageJson from '../../package.json';
 import { AuthService } from './app/auth/auth.service';
 import { RuntimeConfigService } from './app/runtime-config';
 import { GhostfolioApi } from './app/services/ghostfolio-api';
@@ -41,6 +42,7 @@ export class App {
   private readonly router = inject(Router);
   private readonly runtimeConfigService = inject(RuntimeConfigService);
   private readonly runtimeConfig = this.runtimeConfigService.config;
+  protected readonly appVersion = packageJson.version;
   protected readonly ghostfolioErrorMessage = signal('');
   protected readonly isGhostfolioLoading = signal(false);
   protected readonly isLoggingOut = signal(false);

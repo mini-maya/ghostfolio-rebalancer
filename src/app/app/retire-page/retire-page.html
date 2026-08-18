@@ -211,7 +211,7 @@
         {{ projection().lastWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>Projected in {{ projectionEndLabel() | date: 'MMM yyyy' }}</small>
+      <small>Projected in {{ projectionEndLabel() | date: 'MMMM yyyy' }}</small>
     </article>
 
     <article class="card stat">
