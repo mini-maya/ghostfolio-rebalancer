@@ -89,13 +89,15 @@ h4 {
   display: grid;
   grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
   min-width: 900px;
-  width: max-content;
+  width: 100%;
 }
 
 .metrics-grid-header {
   color: var(--app-muted-text);
   font-weight: 600;
   margin-bottom: 0.35rem;
+  min-width: 900px;
+  width: 100%;
 }
 
 .metrics-scroll-wrapper {
@@ -255,16 +257,26 @@ h4 {
     overflow-x: auto;
   }
 
+  .metrics-grid,
+  .metrics-grid-header,
+  .activity-details,
+  .activity-details summary.metrics-grid {
+    min-width: 900px;
+    width: 100%;
+  }
+
   .metrics-grid {
     grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
-    min-width: 900px;
-    width: max-content;
   }
 }
 
 @media (max-width: 860px) {
-  .metrics-grid {
+  .metrics-grid,
+  .metrics-grid-header,
+  .activity-details,
+  .activity-details summary.metrics-grid {
     min-width: 900px;
+    width: 100%;
   }
 
   .metrics-header-cell,

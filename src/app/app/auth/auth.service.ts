@@ -3,6 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type { RetireConfig } from '../services/retire-config';
+import type { TaxProfile } from '../services/tax-calculator';
 
 interface RebalancerSettings {
   minimumBuyAmount: number;
@@ -18,6 +19,7 @@ interface SessionResponse {
   loginSource: string;
   rebalancerSettings: Partial<RebalancerSettings>;
   retireConfig: Partial<RetireConfig>;
+  taxConfig: Partial<TaxProfile>;
   user: string;
 }
 
@@ -32,6 +34,10 @@ interface AllocationsTextResponse {
 
 interface RebalancerSettingsResponse {
   rebalancerSettings: RebalancerSettings;
+}
+
+interface TaxConfigResponse {
+  taxConfig: TaxProfile;
 }
 
 const DEFAULT_REBALANCER_SETTINGS: RebalancerSettings = {
@@ -55,6 +61,7 @@ export class AuthService {
   private readonly _roundingStep = signal(DEFAULT_REBALANCER_SETTINGS.roundingStep);
   private readonly _sessionMode = signal('');
   private readonly _retireConfig = signal<Partial<RetireConfig>>({});
+  private readonly _taxConfig = signal<Partial<TaxProfile>>({});
   private readonly _user = signal('');
   private initializePromise?: Promise<void>;
   private isInitialized = false;
@@ -69,6 +76,7 @@ export class AuthService {
   public readonly roundingStep = this._roundingStep.asReadonly();
   public readonly sessionMode = this._sessionMode.asReadonly();
   public readonly user = this._user.asReadonly();
+  public readonly taxConfig = this._taxConfig.asReadonly();
 
   public async initialize(force = false): Promise<void> {
     if (this.isInitialized && !force) {
@@ -198,6 +206,16 @@ export class AuthService {
     this._retireConfig.set(response.retireConfig);
   }
 
+  public async updateAccountTaxConfig(taxConfig: TaxProfile): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.put<TaxConfigResponse>('/api/account/tax-config', {
+        taxConfig
+      })
+    );
+
+    this._taxConfig.set(response.taxConfig);
+  }
+
   private applySession(session: SessionResponse): void {
     if (!session.authenticated) {
       this.resetSession();
@@ -210,6 +228,7 @@ export class AuthService {
     this._loginSource.set(session.loginSource);
     this.applyRebalancerSettings(session.rebalancerSettings ?? DEFAULT_REBALANCER_SETTINGS);
     this._retireConfig.set(session.retireConfig ?? {});
+    this._taxConfig.set(session.taxConfig ?? {});
     this._sessionMode.set(session.authMode);
     this._isAuthenticated.set(true);
     this.isInitialized = true;
@@ -232,6 +251,7 @@ export class AuthService {
     this._loginSource.set('');
     this.applyRebalancerSettings(DEFAULT_REBALANCER_SETTINGS);
     this._retireConfig.set({});
+    this._taxConfig.set({});
     this._sessionMode.set('');
     this._user.set('');
     this._isAuthenticated.set(false);

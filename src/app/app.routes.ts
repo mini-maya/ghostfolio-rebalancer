@@ -5,6 +5,7 @@ import { authGuard } from './app/auth/auth.guard';
 import { LoginPage } from './app/login-page/login-page';
 import { RebalancerPage } from './app/rebalancer-page/rebalancer-page';
 import { RetirePage } from './app/retire-page/retire-page';
+import { TaxPage } from './app/tax-page/tax-page';
 
 export const routes: Routes = [
   {
@@ -29,6 +30,12 @@ export const routes: Routes = [
     component: RetirePage,
     path: 'retire',
     title: 'Retire – Ghostfolio Rebalancer'
+  },
+  {
+    canActivate: [authGuard],
+    component: TaxPage,
+    path: 'tax',
+    title: 'Tax – Ghostfolio Rebalancer'
   },
   {
     component: LoginPage,

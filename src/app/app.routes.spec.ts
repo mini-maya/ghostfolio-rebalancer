@@ -8,4 +8,12 @@ describe('routes', () => {
     expect(retireRoute?.canActivate?.length).toBe(1);
     expect(retireRoute?.title).toBe('Retire – Ghostfolio Rebalancer');
   });
+
+  it('includes the tax page behind the auth guard', () => {
+    const taxRoute = routes.find(({ path }) => path === 'tax');
+
+    expect(taxRoute).toBeDefined();
+    expect(taxRoute?.canActivate?.length).toBe(1);
+    expect(taxRoute?.title).toBe('Tax – Ghostfolio Rebalancer');
+  });
 });

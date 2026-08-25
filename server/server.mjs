@@ -13,6 +13,8 @@ import {
   normalizeBaseUrl
 } from './lib/ghostfolio-client.mjs';
 import { createRetireStore } from './lib/retire-store.mjs';
+import { createTaxConfigStore } from './lib/tax-config-store.mjs';
+import { createTaxStore } from './lib/tax-store.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDirectory = path.resolve(__dirname, '../dist/ghostfolio-rebalancer/browser');
@@ -33,6 +35,12 @@ const accountStore = createAccountStore({
 });
 const retireStore = createRetireStore({
   retireFilePath: path.join(accountsDirectory, 'retire.json')
+});
+const taxConfigStore = createTaxConfigStore({
+  taxFilePath: path.join(accountsDirectory, 'tax.json')
+});
+const taxStore = createTaxStore({
+  taxFilePath: path.join(accountsDirectory, 'taxEvents.json')
 });
 
 function readBooleanEnv(name) {
@@ -72,14 +80,7 @@ app.get('/api/session', async (request, response, next) => {
     response.json(
       session
         ? {
-            allocationsText: session.allocationsText ?? '',
-            authMode: session.mode ?? '',
-            authenticated: true,
-            baseUrl: session.baseUrl,
-            loginSource: session.loginSource ?? '',
-            rebalancerSettings: session.rebalancerSettings ?? defaultRebalancerSettings,
-            retireConfig: session.retireConfig ?? {},
-            user: session.user ?? ''
+            ...(await buildSessionResponse(session))
           }
         : {
             allocationsText: '',
@@ -89,6 +90,7 @@ app.get('/api/session', async (request, response, next) => {
             loginSource: '',
             rebalancerSettings: defaultRebalancerSettings,
             retireConfig: {},
+            taxConfig: {},
             user: ''
           }
     );
@@ -110,11 +112,12 @@ app.post('/api/auth/access-token-login', async (request, response, next) => {
       mode: 'token',
       rebalancerSettings: defaultRebalancerSettings,
       retireConfig: {},
+      taxConfig: {},
       user: ''
     };
 
     issueSession(response, session);
-    response.json(buildSessionResponse(session));
+    response.json(await buildSessionResponse(session));
   } catch (error) {
     next(error);
   }
@@ -166,17 +169,19 @@ app.post('/api/auth/register', async (request, response, next) => {
     });
 
     const retireConfig = await retireStore.getRetireConfig(user);
+    const taxConfig = await taxConfigStore.getTaxConfig(user);
     const session = {
       allocationsText: '',
       baseUrl: authentication.baseUrl,
       mode: 'account',
       rebalancerSettings: defaultRebalancerSettings,
       retireConfig: retireConfig ?? {},
+      taxConfig: taxConfig ?? {},
       user
     };
 
     issueSession(response, session);
-    response.json(buildSessionResponse(session));
+    response.json(await buildSessionResponse(session));
   } catch (error) {
     next(error);
   }
@@ -198,11 +203,12 @@ app.post('/api/auth/user-login', async (request, response, next) => {
       mode: 'account',
       rebalancerSettings: account.rebalancerSettings ?? defaultRebalancerSettings,
       retireConfig: (await retireStore.getRetireConfig(user)) ?? {},
+      taxConfig: (await taxConfigStore.getTaxConfig(user)) ?? {},
       user: account.user
     };
 
     issueSession(response, session);
-    response.json(buildSessionResponse(session));
+    response.json(await buildSessionResponse(session));
   } catch (error) {
     next(error);
   }
@@ -273,6 +279,79 @@ app.put('/api/account/retire-config', async (request, response, next) => {
     session.retireConfig = retireConfig;
 
     response.json({ retireConfig });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/account/tax-config', async (request, response, next) => {
+  try {
+    const sessionId = getSessionIdFromCookie(request.headers.cookie ?? '');
+    const session = sessionId ? sessions.get(sessionId) : null;
+
+    if (!session || session.mode !== 'account' || !session.user) {
+      throw new HttpError(403, 'Saving tax settings is only available for stored accounts.');
+    }
+
+    const taxConfig = readTaxConfig(request.body?.taxConfig);
+
+    await taxConfigStore.updateTaxConfig(session.user, taxConfig);
+    session.taxConfig = taxConfig;
+
+    response.json({ taxConfig });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/tax-events', async (request, response, next) => {
+  try {
+    const payload = await withActiveGhostfolioSession(request, async () => {
+      return taxStore.listTaxEvents();
+    });
+
+    response.json({ taxEvents: payload });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/tax-events', async (request, response, next) => {
+  try {
+    const taxEvent = readTaxEvent(request.body?.taxEvent);
+    const payload = await withActiveGhostfolioSession(request, async () => {
+      return taxStore.createTaxEvent(taxEvent);
+    });
+
+    response.status(201).json({ taxEvent: payload });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/tax-events/:id', async (request, response, next) => {
+  try {
+    const taxEventId = readRequiredField(request.params.id, 'Please provide a tax event id.');
+    const taxEvent = readTaxEvent(request.body?.taxEvent);
+    const payload = await withActiveGhostfolioSession(request, async () => {
+      return taxStore.updateTaxEvent(taxEventId, taxEvent);
+    });
+
+    response.json({ taxEvent: payload });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/tax-events/:id', async (request, response, next) => {
+  try {
+    const taxEventId = readRequiredField(request.params.id, 'Please provide a tax event id.');
+
+    await withActiveGhostfolioSession(request, async () => {
+      await taxStore.deleteTaxEvent(taxEventId);
+    });
+
+    response.status(204).end();
   } catch (error) {
     next(error);
   }
@@ -393,7 +472,12 @@ async function assertUserDoesNotExist(user) {
   }
 }
 
-function buildSessionResponse(session) {
+async function buildSessionResponse(session) {
+  const taxConfig =
+    session.mode === 'account' && session.user
+      ? session.taxConfig ?? (await taxConfigStore.getTaxConfig(session.user)) ?? {}
+      : session.taxConfig ?? {};
+
   return {
     allocationsText: session.allocationsText ?? '',
     authMode: session.mode ?? '',
@@ -402,6 +486,7 @@ function buildSessionResponse(session) {
     loginSource: session.loginSource ?? '',
     rebalancerSettings: session.rebalancerSettings ?? defaultRebalancerSettings,
     retireConfig: session.retireConfig ?? {},
+    taxConfig,
     user: session.user ?? ''
   };
 }
@@ -545,7 +630,7 @@ function readRetireConfig(value) {
     capitalPreservationPercentage: readPercentage(value.capitalPreservationPercentage, 10),
     frequency: value.frequency === 'yearly' ? 'yearly' : 'monthly',
     monthlySavingsRate: readNonNegativeNumber(value.monthlySavingsRate, 1750),
-    projectionYears: readPositiveInteger(value.projectionYears, 25),
+    projectionYears: readPositiveIntegerFallback(value.projectionYears, 25),
     withdrawalAnnualReturnPercentage: readNonNegativeNumber(
       value.withdrawalAnnualReturnPercentage,
       6
@@ -555,10 +640,64 @@ function readRetireConfig(value) {
   };
 }
 
+function readTaxConfig(value) {
+  if (typeof value !== 'object' || value === null) {
+    throw new HttpError(400, 'Tax settings must be provided as an object.');
+  }
+
+  return {
+    capitalGainsTaxRate: readNonNegativeNumber(value.capitalGainsTaxRate, 0.25),
+    churchTaxRate: readNonNegativeNumber(value.churchTaxRate, 0),
+    partialExemptionRate: readNonNegativeNumber(value.partialExemptionRate, 0.3),
+    solidaritySurchargeRate: readNonNegativeNumber(value.solidaritySurchargeRate, 0.055)
+  };
+}
+
+function readTaxEvent(value) {
+  if (typeof value !== 'object' || value === null) {
+    throw new HttpError(400, 'Tax event data must be provided as an object.');
+  }
+
+  return {
+    accountId: readRequiredField(value.accountId, 'Please select a tax event account.'),
+    quantity: readPositiveNumber(value.quantity, 'The tax quantity must be greater than zero.'),
+    symbolId: readRequiredField(value.symbolId, 'Please select a tax event symbol.'),
+    taxYear: readPositiveIntegerStrict(value.taxYear, 'Please select a valid tax year.'),
+    vorabpauschalePerShare: readNonNegativeNumber(
+      value.vorabpauschalePerShare,
+      'The tax amount per share must be zero or greater.'
+    ),
+    vorabpauschalePerShareAfterTeilfreistellung: readNonNegativeNumber(
+      value.vorabpauschalePerShareAfterTeilfreistellung,
+      'The tax amount per share after partial exemption must be zero or greater.'
+    )
+  };
+}
+
 function readNonNegativeNumber(value, fallback) {
   const numberValue = Number(value);
 
   return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : fallback;
+}
+
+function readPositiveNumber(value, message) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue) || numberValue <= 0) {
+    throw new HttpError(400, message);
+  }
+
+  return numberValue;
+}
+
+function readPositiveIntegerStrict(value, message) {
+  const numberValue = Math.round(Number(value));
+
+  if (!Number.isFinite(numberValue) || numberValue <= 0) {
+    throw new HttpError(400, message);
+  }
+
+  return numberValue;
 }
 
 function readPercentage(value, fallback) {
@@ -569,7 +708,7 @@ function readPercentage(value, fallback) {
     : fallback;
 }
 
-function readPositiveInteger(value, fallback) {
+function readPositiveIntegerFallback(value, fallback) {
   const numberValue = Math.round(Number(value));
 
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback;

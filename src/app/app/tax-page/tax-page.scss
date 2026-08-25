@@ -1,0 +1,626 @@
+@use '../shared-page-styles';
+
+:host {
+  display: block
+}
+
+.wrap-cell {
+  white-space: normal
+}
+
+.tax-year-group[open] .tax-year-summary-toggle {
+  transform: rotate(90deg)
+}
+
+.tax-year-summary-toggle {
+  color: var(--app-primary-text);
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 120ms ease
+}
+
+.tax-year-summary-copy {
+  align-items: center;
+  display: inline-flex;
+  gap: .75rem
+}
+
+.tax-year-summary {
+  align-items: center;
+  display: flex;
+  justify-content: space-between
+}
+
+.tax-year-group td.wrap-cell,
+.tax-year-group td.wrap-cell span,
+.tax-year-group td.wrap-cell strong {
+  white-space: normal;
+  word-break: break-word
+}
+
+.page {
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 2rem 1rem 3rem
+}
+
+h2, h3, h4 {
+  color: var(--app-text);
+  margin: 0
+}
+
+.section-header p, .field small, .message p {
+  color: var(--app-muted-text);
+  margin: 0
+}
+
+.message {
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.message-error {
+  background: var(--app-error-bg);
+  color: var(--app-error-text);
+}
+
+.message-info {
+  background: var(--app-primary-soft);
+  color: var(--app-primary-text);
+}
+
+.tax-header {
+  gap: 1.25rem
+}
+
+.tax-profile-editor {
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: .75rem 0 1rem
+}
+
+.tax-profile-field {
+  margin: 0
+}
+
+.tax-controls {
+  align-items: end;
+  display: flex;
+  gap: 1rem
+}
+
+.tax-filter-field {
+  margin: 0;
+  min-width: 220px
+}
+
+.tax-summary-header {
+  margin-top: 1.25rem
+}
+
+.metrics-grid {
+  align-items: stretch;
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  width: 100%
+}
+
+.tax-metrics-grid {
+  grid-template-columns:minmax(220px, 1.6fr) repeat(7, minmax(100px, 1fr))
+}
+
+.metrics-grid-header {
+  color: var(--app-muted-text);
+  font-weight: 600;
+  margin-bottom: .35rem;
+  width: 100%
+}
+
+.metrics-scroll-wrapper {
+  overflow-x: auto;
+  width: 100%
+}
+
+.metrics-header-cell {
+  border-bottom: 1px solid var(--app-border);
+  display: flex;
+  justify-content: flex-start;
+  padding: .85rem .75rem;
+  white-space: nowrap;
+  width: 100%
+}
+
+.metrics-grid-header .metrics-header-cell.numeric {
+  justify-content: flex-end
+}
+
+.metrics-grid-header .metrics-header-cell:first-child {
+  padding-left: 1.75rem
+}
+
+.activity-details {
+  border: 1px solid var(--app-border);
+  border-radius: .75rem;
+  margin-bottom: 1rem;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%
+}
+
+.activity-details summary {
+  cursor: pointer;
+  list-style: none
+}
+
+.activity-details summary.metrics-grid {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  width: 100%
+}
+
+.activity-details summary::-webkit-details-marker {
+  display: none
+}
+
+.metrics-grid-row {
+  background: var(--app-surface)
+}
+
+.metrics-cell {
+  border-bottom: 1px solid var(--app-border);
+  display: block;
+  padding: .85rem .75rem
+}
+
+.activity-details[open] .metrics-cell {
+  border-bottom-color: transparent
+}
+
+.metrics-name-cell {
+  padding-left: 1.75rem;
+  position: relative;
+  white-space: normal
+}
+
+.metrics-name-cell::before {
+  color: var(--app-primary);
+  content: '▸';
+  left: .75rem;
+  position: absolute;
+  top: .95rem;
+  transition: transform 120ms ease
+}
+
+.activity-details[open] .metrics-name-cell::before {
+  transform: rotate(90deg)
+}
+
+.metrics-name-cell > span {
+  color: var(--app-muted-text)
+}
+
+.activity-type-buy {
+  color: var(--app-primary-text);
+  font-weight: 700
+}
+
+.activity-type-sell {
+  color: var(--app-error-text);
+  font-weight: 700
+}
+
+.table-wrapper {
+  overflow-x: auto
+}
+
+.table-wrapper > table {
+  table-layout: fixed;
+  width: 100%
+}
+
+.table-wrapper > table th,
+.table-wrapper > table td {
+  width: auto;
+  white-space: nowrap
+}
+
+.buy-row-expandable {
+  cursor: pointer
+}
+
+.buy-row-expandable:hover td {
+  background: var(--app-surface-soft)
+}
+
+.buy-row-expand-icon {
+  display: inline-block;
+  margin-right: .25rem;
+  transition: transform 120ms ease
+}
+
+.buy-row-expand-icon-open {
+  transform: rotate(90deg)
+}
+
+.sell-details-row {
+  background: var(--app-surface-soft)
+}
+
+.sell-details-cell {
+  padding: 0
+}
+
+.sell-details-table {
+  min-width: 0;
+  width: 100%
+}
+
+.sell-details-table th, .sell-details-table td {
+  border-bottom-color: var(--app-border);
+  font-size: .9rem;
+  padding: .5rem .75rem;
+  text-align: left
+}
+
+.sell-details-table tbody tr:last-child td {
+  border-bottom: 0
+}
+
+.numeric {
+  text-align: right
+}
+
+.table-primary-value {
+  font-weight: 700
+}
+
+.table-inline-highlight {
+  background: var(--app-surface-soft);
+  border-radius: .4rem;
+  display: inline-block;
+  padding: .1rem .35rem
+}
+
+.value-with-arrow {
+  align-items: center;
+  border-radius: .4rem;
+  display: inline-flex;
+  gap: .35rem;
+  line-height: 1;
+  padding: .2rem .4rem;
+  width: fit-content
+}
+
+.value-positive {
+  background-color: var(--app-primary-soft);
+  color: var(--app-primary-text)
+}
+
+.value-negative {
+  background-color: var(--app-error-bg);
+  color: var(--app-error-text)
+}
+
+@media (max-width: 1180px) {
+  .page {
+    padding-top: 1.5rem
+  }
+  .activity-type-group {
+    overflow: visible
+  }
+  .metrics-scroll-wrapper {
+    overflow-x: auto
+  }
+  .metrics-grid {
+    grid-template-columns:minmax(200px, 2fr) repeat(7, minmax(120px, 1fr));
+    min-width: 1280px;
+    width: max-content
+  }
+  .tax-controls {
+    flex-wrap: wrap
+  }
+  .tax-profile-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr))
+  }
+  .tax-metrics-grid {
+    min-width: 1280px;
+    width: 100%
+  }
+  .activity-details {
+    min-width: 1280px
+  }
+  .activity-details summary.metrics-grid {
+    min-width: 1280px
+  }
+}
+
+@media (max-width: 860px) {
+  .metrics-grid, .activity-details summary.metrics-grid {
+    min-width: 1280px
+  }
+  .activity-details {
+    min-width: 1280px
+  }
+  .metrics-header-cell, .metrics-cell {
+    padding-left: .62rem;
+    padding-right: .62rem
+  }
+  .tax-profile-editor {
+    grid-template-columns: 1fr
+  }
+  .metrics-grid-header .metrics-header-cell:first-child, .metrics-name-cell {
+    padding-left: 1.4rem
+  }
+  .metrics-name-cell::before {
+    left: .55rem
+  }
+}
+
+.empty-state {
+  color: var(--app-muted-text);
+  margin: 0
+}
+
+.tax-accent-button {
+  align-items: center;
+  background: var(--app-primary);
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  color: var(--app-surface);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: .75rem 1rem
+}
+
+.tax-accent-button:hover {
+  opacity: .92
+}
+
+.tax-accent-button:disabled {
+  cursor: wait;
+  opacity: .7
+}
+
+.tax-dialog-backdrop {
+  align-items: center;
+  background: rgb(0 0 0 / 55%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 40
+}
+
+.tax-dialog {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow);
+  display: grid;
+  gap: 0;
+  max-height: 90vh;
+  max-width: 780px;
+  overflow: hidden;
+  width: 100%
+}
+
+.tax-dialog-header {
+  border-bottom: 1px solid var(--app-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem
+}
+
+.tax-dialog-header h3 {
+  font-size: 1.25rem;
+  margin: 0 0 .35rem
+}
+
+.tax-dialog-header p {
+  color: var(--app-muted-text);
+  margin: 0
+}
+
+.dialog-close-button {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--app-muted-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  height: 1.5rem;
+  justify-content: center;
+  padding: 0;
+  width: 1.5rem
+}
+
+.tax-dialog-content {
+  display: grid;
+  gap: 1rem;
+  overflow: auto;
+  padding: 1.5rem
+}
+
+.dialog-grid, .readonly-summary-grid, .dialog-summary-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns:minmax(0, 1fr)
+}
+
+.dialog-summary-card {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  justify-content: space-between;
+  margin: 0;
+  min-height: 100%
+}
+
+.dialog-summary-card span {
+  color: var(--app-muted-text);
+  font-size: .95rem;
+  font-weight: 600
+}
+
+.dialog-summary-card strong {
+  color: var(--app-text);
+  font-size: 1.05rem
+}
+
+.dialog-summary-card small {
+  color: var(--app-muted-text)
+}
+
+.tax-dialog-footer {
+  align-items: center;
+  border-top: 1px solid var(--app-border);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: .9rem 1.5rem 1.25rem
+}
+
+.tax-actions-cell {
+  min-width: 7rem;
+  vertical-align: middle
+}
+
+.tax-actions-buttons {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem
+}
+
+.table-action-button {
+  background: var(--app-primary);
+  border: 0;
+  border-radius: .75rem;
+  color: var(--app-surface);
+  cursor: pointer;
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: .25rem .7rem
+}
+
+.secondary-button {
+  align-items: center;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-strong);
+  border-radius: .75rem;
+  color: var(--app-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: .95rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: .75rem 1rem
+}
+
+.table-action-button.danger {
+  background: var(--app-error-bg);
+  border: 1px solid transparent;
+  color: var(--app-error-text)
+}
+
+.secondary-button:hover, .table-action-button:hover {
+  opacity: .92
+}
+
+.secondary-button:disabled, .tax-accent-button:disabled, .table-action-button:disabled {
+  cursor: wait;
+  opacity: .7
+}
+
+input, select {
+  background: var(--app-input-bg);
+  border: 1px solid var(--app-border-strong);
+  border-radius: .75rem;
+  color: var(--app-text);
+  font: inherit;
+  padding: .8rem .95rem
+}
+
+.field {
+  display: grid;
+  gap: .5rem
+}
+
+.field span {
+  color: var(--app-muted-text);
+  font-size: .95rem;
+  font-weight: 600
+}
+
+.field input[type='number'] {
+  text-align: right
+}
+
+.field input, .field select {
+  box-sizing: border-box;
+  height: 3rem;
+  min-height: 3rem;
+  width: 100%
+}
+
+.tax-groups {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem
+}
+
+.tax-year-group {
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  overflow: hidden
+}
+
+.tax-year-group summary {
+  align-items: center;
+  background: var(--app-surface-soft);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 1rem 1.25rem
+}
+
+.tax-year-group summary::-webkit-details-marker {
+  display: none
+}
+
+.tax-year-summary {
+  align-items: center;
+  display: flex;
+  justify-content: space-between
+}
+
+.tax-year-summary-copy {
+  align-items: center;
+  display: inline-flex;
+  gap: .75rem
+}
+
+.tax-year-summary-hint {
+  color: var(--app-primary-text);
+  font-size: .9rem;
+  font-weight: 600
+}

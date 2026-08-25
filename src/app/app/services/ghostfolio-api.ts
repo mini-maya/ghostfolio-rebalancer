@@ -58,7 +58,13 @@ interface RemoteHolding {
   valueInBaseCurrency?: number;
 }
 
+interface RemoteAccount {
+  id?: string;
+  name?: string;
+}
+
 interface RemoteActivity extends Record<string, unknown> {
+  account?: RemoteAccount;
   assetProfile?: {
     assetClass?: string;
     assetSubClass?: string;
@@ -89,6 +95,8 @@ export interface Holding {
 }
 
 export interface Activity {
+  accountId: string;
+  accountName: string;
   assetClass: string;
   assetSubClass: string;
   currency: string;
@@ -151,8 +159,12 @@ export class GhostfolioApi {
           const assetClass = getStringValue(activity.assetProfile?.assetClass) || 'UNKNOWN';
           const assetSubClass = getStringValue(activity.assetProfile?.assetSubClass) || 'UNKNOWN';
           const name = getStringValue(activity.assetProfile?.name) || symbol;
+          const accountId = getStringValue(activity.account?.id);
+          const accountName = getStringValue(activity.account?.name);
 
           return {
+            accountId,
+            accountName,
             assetClass,
             assetSubClass,
             currency: getStringValue(activity.currency),

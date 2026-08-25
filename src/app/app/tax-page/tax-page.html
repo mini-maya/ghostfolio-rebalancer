@@ -1,0 +1,633 @@
+<main class="page">
+  <section class="card">
+    <div class="section-header section-header-stack tax-header">
+      <div>
+        <h2>Tax</h2>
+        <p>
+          VAP entries are grouped by year. You can only create new entries once holdings and
+          activities have loaded.
+        </p>
+        @if (canEditTaxProfile()) {
+          <div class="tax-profile-editor">
+            <label class="field tax-profile-field">
+              <span>Kapitalertragsteuer (%)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().capitalGainsTaxRate * 100"
+                (input)="updateTaxProfileCapitalGainsTaxRate($event)"
+              />
+            </label>
+
+            <label class="field tax-profile-field">
+              <span>Kirchensteuer (%)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().churchTaxRate * 100"
+                (input)="updateTaxProfileChurchTaxRate($event)"
+              />
+            </label>
+
+            <label class="field tax-profile-field">
+              <span>Teilfreistellung (%)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().partialExemptionRate * 100"
+                (input)="updateTaxProfilePartialExemptionRate($event)"
+              />
+            </label>
+
+            <label class="field tax-profile-field">
+              <span>Solidaritätszuschlag (%)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().solidaritySurchargeRate * 100"
+                (input)="updateTaxProfileSolidaritySurchargeRate($event)"
+              />
+            </label>
+          </div>
+        } @else {
+          <p class="secondary-value">The tax profile can only be edited by local users.</p>
+        }
+        <p class="secondary-value">Current filter: {{ selectedAccountLabel() }}</p>
+      </div>
+
+      <div class="tax-controls">
+        <label class="field tax-filter-field">
+          <span>Account</span>
+          <select [value]="selectedAccountId()" (change)="updateSelectedAccountId($event)">
+            <option value="all">All accounts</option>
+            @for (option of accountFilterOptions(); track option.id) {
+              <option [value]="option.id">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <button
+          class="tax-accent-button"
+          type="button"
+          [disabled]="!canCreateTaxEvent()"
+          (click)="openCreateDialog()"
+        >
+          Vorabpauschale hinzufügen
+        </button>
+      </div>
+    </div>
+
+    @if (taxErrorMessage()) {
+      <p class="message message-error">{{ taxErrorMessage() }}</p>
+    }
+
+    @if (taxInfoMessage()) {
+      <p class="message message-info">{{ taxInfoMessage() }}</p>
+    }
+
+    @if (infoMessage()) {
+      <p class="message message-info">{{ infoMessage() }}</p>
+    }
+
+    @if (!canCreateTaxEvent()) {
+      <p class="message message-info">
+        New VAP entries are only available after holdings and activities have loaded.
+      </p>
+    }
+
+    @if (isTaxEventsLoading()) {
+      <p class="message message-info">Loading tax events...</p>
+    }
+
+    <div class="tax-groups">
+      @if (!taxEventYearGroups().length) {
+        <p class="empty-state">No VAP entries recorded.</p>
+      }
+
+      @for (group of taxEventYearGroups(); track group.taxYear) {
+        <details
+          class="tax-year-group"
+          [open]="isYearExpanded(group.taxYear)"
+          (toggle)="setYearExpanded(group.taxYear, yearDetails.open)"
+          #yearDetails
+        >
+          <summary class="tax-year-summary">
+            <span class="tax-year-summary-copy">
+              <span class="tax-year-summary-toggle" aria-hidden="true">▸</span>
+              <strong>{{ group.taxYear }}</strong>
+              <span class="secondary-value">{{ group.events.length }} entries</span>
+            </span>
+          </summary>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+              <tr>
+                <th>Account</th>
+                <th>ETF</th>
+                <th class="numeric">Nominale</th>
+                <th class="numeric">VAP / Stück<br />VAP inkl. TF / Stück</th>
+                <th class="numeric">Summe<br />Summe inkl. TF</th>
+                <th class="numeric">Aktionen</th>
+              </tr>
+              </thead>
+              <tbody>
+                @for (row of group.events; track row.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ accountLabel(row.accountId) }}</strong><br />
+                    </td>
+                    <td class="wrap-cell">
+                      <strong>{{ row.symbolId }}</strong><br />
+                      <span class="secondary-value">{{ symbolLabel(row.symbolId) }}</span>
+                    </td>
+                    <td class="numeric">
+                      {{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}
+                    </td>
+                    <td class="numeric">
+                      {{ row.vorabpauschalePerShare | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                      {{ currencySymbol() }}<br />
+                      <span class="table-inline-highlight">
+                        {{ row.vorabpauschalePerShareAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ currencySymbol() }}
+                      </span>
+                    </td>
+                    <td class="numeric">
+                      <strong>{{ row.totalAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
+                      {{ currencySymbol() }}<br />
+                      <span class="table-inline-highlight">
+                        {{ row.totalAmountAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                        {{ currencySymbol() }}
+                      </span>
+                    </td>
+                    <td class="numeric tax-actions-cell">
+                      <div class="tax-actions-buttons">
+                        <button class="table-action-button" type="button" (click)="openEditDialog(row)">
+                          Edit
+                        </button>
+                        <button class="table-action-button danger" type="button" (click)="deleteTaxEvent(row)">
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      }
+    </div>
+
+    @if (!taxOverviewRows().length) {
+      <p class="empty-state">No tax overview available.</p>
+    } @else {
+      <div class="section-header section-header-stack tax-summary-header">
+        <div>
+          <h3>Overview</h3>
+        </div>
+      </div>
+
+      <div class="metrics-scroll-wrapper">
+        <div class="metrics-grid tax-metrics-grid metrics-grid-header">
+          <div class="metrics-header-cell">Name</div>
+          <div class="metrics-header-cell numeric">Entry <br />price</div>
+          <div class="metrics-header-cell numeric">Position <br />price</div>
+          <div class="metrics-header-cell numeric">Gain <br />%</div>
+          <div class="metrics-header-cell numeric">Realized <br />%</div>
+          <div class="metrics-header-cell numeric">Open tax <br /> Sold tax</div>
+          <div class="metrics-header-cell numeric">Total VAP <br /> Total paid VAP</div>
+          <div class="metrics-header-cell numeric">Used VAP <br /> Used paid VAP</div>
+        </div>
+
+        @for (row of taxOverviewRows(); track row.symbol) {
+          <details class="activity-details">
+            <summary class="metrics-grid tax-metrics-grid metrics-grid-row">
+              <span class="metrics-cell metrics-name-cell">
+                <strong>{{ row.symbol }}</strong><br />
+                <span>{{ row.name }}</span>
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">{{ row.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
+                {{ currencySymbol() }}<br />
+                {{ row.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
+                {{ currencySymbol() }}
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">{{ row.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
+                {{ currencySymbol() }}<br />
+                <span class="table-inline-highlight">
+                  {{ row.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} x
+                </span>
+                {{ row.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
+                {{ currencySymbol() }}
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">
+                  {{ row.gainAmount > 0 ? '+' : row.gainAmount < 0 ? '-' : '' }}{{ abs(row.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span><br />
+                @if (row.gainPercentage !== 0) {
+                  <span
+                    class="value-with-arrow"
+                    [class.value-positive]="row.gainPercentage > 0"
+                    [class.value-negative]="row.gainPercentage < 0"
+                  >
+                    @if (row.gainPercentage > 0) {
+                      <span>▲</span>
+                    } @else if (row.gainPercentage < 0) {
+                      <span>▼</span>
+                    }
+                    {{ abs(row.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  </span>
+                } @else {
+                  <span class="value-with-arrow">-</span>
+                }
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">
+                  {{ row.realizedAmount > 0 ? '+' : row.realizedAmount < 0 ? '-' : '' }}{{ abs(row.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span><br />
+                @if (row.realizedPercentage !== 0) {
+                  <span
+                    class="value-with-arrow"
+                    [class.value-positive]="row.realizedPercentage > 0"
+                    [class.value-negative]="row.realizedPercentage < 0"
+                  >
+                    @if (row.realizedPercentage > 0) {
+                      <span>▲</span>
+                    } @else if (row.realizedPercentage < 0) {
+                      <span>▼</span>
+                    }
+                    {{ abs(row.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                  </span>
+                } @else {
+                  <span class="value-with-arrow">-</span>
+                }
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">
+                  {{ row.potentialTaxes | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span><br />
+                <span class="table-inline-highlight">
+                  {{ row.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span>
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
+                {{ currencySymbol() }}<br />
+                <span class="table-inline-highlight">
+                  {{ row.totalPaidVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span>
+              </span>
+
+              <span class="metrics-cell numeric">
+                <span class="table-primary-value">
+                  {{ row.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span><br />
+                <span class="table-inline-highlight">
+                  {{ row.usedPaidVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </span>
+              </span>
+
+            </summary>
+
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th class="numeric">Quantity /<br />Sold Quantity</th>
+                    <th class="numeric">Unit price</th>
+                    <th class="numeric">Total value</th>
+                    <th class="numeric">Gain %</th>
+                    <th class="numeric">VAP <br />paid VAP</th>
+                    <th class="numeric">Open tax</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (activity of row.activities; track $index) {
+                    <tr
+                      [class.buy-row-expandable]="activity.type === 'BUY' && activity.sellDetails.length > 0"
+                      [class.buy-row-expanded]="activity.type === 'BUY' && isEntryExpanded(activity)"
+                      (click)="activity.type === 'BUY' && activity.sellDetails.length > 0 && toggleEntry(activity)"
+                    >
+                      <td
+                        [class.activity-type-buy]="activity.type === 'BUY'"
+                        [class.activity-type-sell]="activity.type === 'SELL'"
+                      >
+                        @if (activity.type === 'BUY' && activity.sellDetails.length > 0) {
+                          <span class="buy-row-expand-icon" [class.buy-row-expand-icon-open]="isEntryExpanded(activity)">▸</span>
+                        }
+                        {{ activity.type }}
+                      </td>
+                      <td>
+                        @if (activity.date) {
+                          {{ activity.date | date: 'yyyy-MM-dd' }}
+                        } @else {
+                          -
+                        }
+                      </td>
+                      <td class="numeric">
+                        <span class="table-inline-highlight">{{ activity.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span><br />
+                        @if (activity.soldQuantity !== null && activity.soldQuantity !== 0) {
+                          <span class="table-inline-highlight">{{ activity.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span>
+                        } @else {
+                          <span class="table-inline-highlight">-</span>
+                        }
+                      </td>
+                      <td class="numeric">{{ activity.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol() }}</td>
+                      <td class="numeric">{{ activity.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                      <td class="numeric">
+                        @if (activity.gainAmount !== null && activity.gainPercentage !== null) {
+                          <span class="table-primary-value">
+                            {{ activity.gainAmount > 0 ? '+' : activity.gainAmount < 0 ? '-' : '' }}{{ abs(activity.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                          </span><br />
+                          @if (activity.gainPercentage !== 0) {
+                            <span
+                              class="value-with-arrow"
+                              [class.value-positive]="activity.gainPercentage > 0"
+                              [class.value-negative]="activity.gainPercentage < 0"
+                            >
+                              @if (activity.gainPercentage > 0) {
+                                <span>▲</span>
+                              } @else if (activity.gainPercentage < 0) {
+                                <span>▼</span>
+                              }
+                              {{ abs(activity.gainPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                            </span>
+                          } @else {
+                            <span class="value-with-arrow">-</span>
+                          }
+                        } @else {
+                          <span class="value-with-arrow">-</span>
+                        }
+                      </td>
+                      <td class="numeric">
+                        @if (activity.type === 'BUY') {
+                          <span class="table-primary-value">{{ activity.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
+                          {{ currencySymbol() }}<br />
+                          <span class="table-inline-highlight">
+                            {{ activity.totalPaidVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                            {{ currencySymbol() }}
+                          </span>
+                        } @else {
+                          <span class="table-primary-value">-</span>
+                        }
+                      </td>
+                      <td class="numeric">
+                        @if (activity.type === 'BUY') {
+                          <span class="table-primary-value">
+                            {{ activity.potentialTaxes | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                            {{ currencySymbol() }}
+                          </span>
+                        } @else {
+                          <span class="table-primary-value">-</span>
+                        }
+                      </td>
+                    </tr>
+
+                    @if (activity.type === 'BUY' && activity.sellDetails.length > 0 && isEntryExpanded(activity)) {
+                      <tr class="sell-details-row">
+                        <td colspan="8" class="sell-details-cell">
+                          <table class="sell-details-table">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th class="numeric">Sold Quantity</th>
+                                <th class="numeric">Unit price</th>
+                                <th class="numeric">Total value</th>
+                                <th class="numeric">Realized</th>
+                                <th class="numeric">Sold tax</th>
+                                <th class="numeric">Used VAP <br /> Used paid VAP</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              @for (sell of activity.sellDetails; track $index) {
+                                <tr>
+                                  <td>
+                                    @if (sell.date) {
+                                      {{ sell.date | date: 'yyyy-MM-dd' }}
+                                    } @else {
+                                      -
+                                    }
+                                  </td>
+                                  <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
+                                  <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol() }}</td>
+                                  <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                                  <td class="numeric">
+                                    <span class="table-primary-value">
+                                      {{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ abs(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    </span><br />
+                                    @if (sell.realizedPercentage !== 0) {
+                                      <span
+                                        class="value-with-arrow"
+                                        [class.value-positive]="sell.realizedPercentage > 0"
+                                        [class.value-negative]="sell.realizedPercentage < 0"
+                                      >
+                                        @if (sell.realizedPercentage > 0) {
+                                          <span>▲</span>
+                                        } @else if (sell.realizedPercentage < 0) {
+                                          <span>▼</span>
+                                        }
+                                        {{ abs(sell.realizedPercentage) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
+                                      </span>
+                                    } @else {
+                                      <span class="value-with-arrow">-</span>
+                                    }
+                                  </td>
+                                  <td class="numeric">{{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                                  <td class="numeric">
+                                    <span class="table-primary-value">
+                                      {{ sell.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    </span><br />
+                                    <span class="table-inline-highlight">
+                                      {{ sell.usedPaidVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    </span>
+                                  </td>
+                                </tr>
+                              }
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          </details>
+        }
+      </div>
+    }
+  </section>
+
+  @if (isDialogOpen()) {
+    <div class="tax-dialog-backdrop">
+      <section class="tax-dialog">
+        <div class="tax-dialog-header">
+          <div>
+            <h3>
+              @if (isCreateDialogMode()) {
+                Vorabpauschale hinzufügen
+              } @else {
+                Vorabpauschale bearbeiten
+              }
+            </h3>
+            <p>
+              @if (isCreateDialogMode()) {
+                Choose the account, ETF, and tax year, then enter the values from the broker statement.
+              } @else {
+                The account, ETF, and tax year stay fixed; only the numbers are updated.
+              }
+            </p>
+          </div>
+          <button class="dialog-close-button" type="button" aria-label="Close dialog" (click)="closeDialog()">
+            ✕
+          </button>
+        </div>
+
+        <div class="tax-dialog-content">
+          @if (dialogErrorMessage()) {
+            <p class="message message-error">{{ dialogErrorMessage() }}</p>
+          }
+
+          @if (isCreateDialogMode()) {
+            <div class="dialog-grid">
+              <label class="field">
+                <span>Account</span>
+                <select [value]="dialogAccountId()" (change)="updateDialogAccountId($event)">
+                  @for (option of createAccountOptions(); track option.id) {
+                    <option [value]="option.id">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Symbol / ETF</span>
+                <select [value]="dialogSymbolId()" (change)="updateDialogSymbolId($event)">
+                  @for (option of createSymbolOptions(); track option.id) {
+                    <option [value]="option.id">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Steuerjahr</span>
+                <select [value]="dialogTaxYear()" (change)="updateDialogTaxYear($event)">
+                  @for (year of taxYearOptions(); track year) {
+                    <option [value]="year">{{ formatYearOption(year) }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+          } @else {
+            <div class="readonly-summary-grid">
+              <article class="card dialog-summary-card">
+                <span>Account</span>
+                <strong>{{ accountLabel(dialogAccountId()) }}</strong>
+                <small>{{ dialogAccountId() }}</small>
+              </article>
+
+              <article class="card dialog-summary-card">
+                <span>ETF</span>
+                <strong>{{ symbolLabel(dialogSymbolId()) }}</strong>
+                <small>{{ dialogSymbolId() }}</small>
+              </article>
+
+              <article class="card dialog-summary-card">
+                <span>Steuerjahr</span>
+                <strong>{{ dialogTaxYear() }}</strong>
+              </article>
+            </div>
+          }
+
+          <div class="dialog-grid dialog-grid-two">
+            <label class="field">
+              <span>Nominale</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="dialogQuantity()"
+                (input)="updateDialogQuantity($event)"
+              />
+            </label>
+
+            <label class="field">
+              <span>Vorabpauschale / Stück</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="dialogVorabpauschalePerShare()"
+                (input)="updateDialogVorabpauschalePerShare($event)"
+              />
+            </label>
+
+            <label class="field">
+              <span>Vorabpauschale inkl. Teilfreistellung / Stück</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="dialogVorabpauschalePerShareAfterTeilfreistellung()"
+                (input)="updateDialogVorabpauschalePerShareAfterTeilfreistellung($event)"
+              />
+            </label>
+          </div>
+
+          <div class="dialog-summary-grid">
+            <article class="card dialog-summary-card">
+              <span>Gesamt-Vorabpauschale</span>
+              <strong>
+                {{ dialogTotalAmount() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                {{ currencySymbol() }}
+              </strong>
+            </article>
+
+            <article class="card dialog-summary-card">
+              <span>Gesamt-Vorabpauschale inkl. TF</span>
+              <strong>
+                {{ dialogTotalAmountAfterTeilfreistellung() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                {{ currencySymbol() }}
+              </strong>
+            </article>
+          </div>
+        </div>
+
+        <div class="tax-dialog-footer">
+          <button class="secondary-button" type="button" (click)="closeDialog()">Cancel</button>
+          <button class="tax-accent-button" type="button" (click)="submitDialog()" [disabled]="isSaving()">
+            @if (isSaving()) {
+              Saving...
+            } @else {
+              @if (isCreateDialogMode()) {
+                Save
+              } @else {
+                Update
+              }
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>
