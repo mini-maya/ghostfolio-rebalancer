@@ -26,12 +26,25 @@ export interface PotentialTaxInput {
   usedVap?: number;
 }
 
-export interface UsedVapInput {
-  accountId: string;
-  soldQuantity: number;
-  symbolId: string;
-  taxEvents: TaxEvent[];
-  taxYear?: number;
+export function calculateVapMonthFactor({
+  acquisitionDate
+}: {
+  acquisitionDate?: Date | string | null;
+}): number {
+  if (!acquisitionDate) {
+    return 1;
+  }
+
+  const date = acquisitionDate instanceof Date ? acquisitionDate : new Date(acquisitionDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return 1;
+  }
+
+  const month = date.getMonth() + 1;
+  const monthsBeforeAcquisition = Math.max(month - 1, 0);
+
+  return (12 - monthsBeforeAcquisition) / 12;
 }
 
 export interface TaxForSaleInput {
@@ -84,18 +97,24 @@ export function calculateTotalVapAfterTeilfreistellung(
 
 export function calculatePaidVap({
   taxProfile = DEFAULT_TAX_PROFILE,
+  grossVap,
   taxableVap
 }: {
   taxProfile?: TaxProfile;
-  taxableVap: number;
+  grossVap?: number;
+  taxableVap?: number;
 }): number {
-  if (taxableVap <= 0) {
+  const calculatedTaxableVap =
+    taxableVap ??
+    (grossVap !== undefined ? grossVap * (1 - taxProfile.partialExemptionRate) : 0);
+
+  if (calculatedTaxableVap <= 0) {
     return 0;
   }
 
-  const taxOnVap = taxableVap * taxProfile.capitalGainsTaxRate;
+  const taxOnVap = calculatedTaxableVap * taxProfile.capitalGainsTaxRate;
   const solidaritySurcharge = taxOnVap * taxProfile.solidaritySurchargeRate;
-  const churchTax = taxableVap * taxProfile.churchTaxRate;
+  const churchTax = calculatedTaxableVap * taxProfile.churchTaxRate;
 
   return roundMoney(taxOnVap + solidaritySurcharge + churchTax);
 }
@@ -126,7 +145,8 @@ export function calculateVapForQuantity({
   symbolId,
   taxEvents,
   taxYear,
-  useAfterTeilfreistellung = false
+  useAfterTeilfreistellung = false,
+  acquisitionDate
 }: {
   accountId: string;
   quantity: number;
@@ -134,12 +154,14 @@ export function calculateVapForQuantity({
   taxEvents: TaxEvent[];
   taxYear?: number;
   useAfterTeilfreistellung?: boolean;
+  acquisitionDate?: Date | string | null;
 }): number {
   if (quantity <= 0) {
     return 0;
   }
 
-  let remainingQuantity = quantity;
+  const weightedQuantity = quantity * calculateVapMonthFactor({ acquisitionDate });
+  let remainingQuantity = weightedQuantity;
   let vap = 0;
 
   for (const taxEvent of taxEvents
@@ -173,7 +195,8 @@ export function calculateVapForBuyLot({
   symbolId,
   taxEvents,
   taxYear,
-  useAfterTeilfreistellung = false
+  useAfterTeilfreistellung = false,
+  acquisitionDate
 }: {
   accountId: string;
   quantity: number;
@@ -181,11 +204,13 @@ export function calculateVapForBuyLot({
   taxEvents: TaxEvent[];
   taxYear?: number;
   useAfterTeilfreistellung?: boolean;
+  acquisitionDate?: Date | string | null;
 }): number {
   if (quantity <= 0) {
     return 0;
   }
 
+  const weightedQuantity = quantity * calculateVapMonthFactor({ acquisitionDate });
   const matchingTaxEvents = taxEvents.filter((event) => {
     return (
       event.accountId === accountId &&
@@ -207,33 +232,7 @@ export function calculateVapForBuyLot({
     );
   }, 0);
 
-  return roundMoney(quantity * totalPerShareVap);
-}
-
-export function calculateUsedVap({
-  accountId,
-  soldQuantity,
-  symbolId,
-  taxEvents,
-  taxYear
-}: UsedVapInput): number {
-  const matchingTaxEvents = taxEvents.filter((taxEvent) => {
-    return (
-      taxEvent.accountId === accountId &&
-      taxEvent.symbolId === symbolId &&
-      (taxYear === undefined || taxEvent.taxYear >= taxYear)
-    );
-  });
-  const totalAvailableVap = calculateTotalVap(matchingTaxEvents);
-  const usedVap = calculateVapForQuantity({
-    accountId,
-    quantity: soldQuantity,
-    symbolId,
-    taxEvents,
-    taxYear
-  });
-
-  return roundMoney(Math.min(usedVap, totalAvailableVap));
+  return roundMoney(weightedQuantity * totalPerShareVap);
 }
 
 export function calculateTaxForSale({
@@ -254,16 +253,6 @@ export function calculateTaxForSale({
   const churchTax = taxableGain * taxProfile.churchTaxRate;
 
   return roundMoney(taxOnGain + solidaritySurcharge + churchTax);
-}
-
-export function calculateTotalTaxImpact({
-  taxForSelling,
-  usedVapForSelling
-}: {
-  taxForSelling: number;
-  usedVapForSelling: number;
-}): number {
-  return roundMoney(taxForSelling + usedVapForSelling);
 }
 
 function roundMoney(value: number): number {

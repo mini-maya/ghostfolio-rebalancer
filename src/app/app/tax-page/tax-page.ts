@@ -6,15 +6,11 @@ import { AuthService } from '../auth/auth.service';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
 import {
-  calculatePaidVap,
   calculatePotentialTax,
   calculateTaxForSale,
-  calculateTotalTaxImpact,
   calculateTotalVap,
   calculateTotalVapAfterTeilfreistellung,
-  calculateUsedVap,
   calculateVapForBuyLot,
-  calculateVapForQuantity,
   DEFAULT_TAX_PROFILE,
   type TaxProfile
 } from '../services/tax-calculator';
@@ -47,7 +43,6 @@ interface TaxSellDetailRow {
   realizedPercentage: number;
   soldQuantity: number;
   taxForSelling: number;
-  totalTaxImpact: number;
   totalValue: number;
   unitPrice: number;
   usedPaidVapForSelling: number;
@@ -66,7 +61,7 @@ interface TaxActivityRow {
   sellDetails: TaxSellDetailRow[];
   soldQuantity: number | null;
   symbol: string;
-  totalPaidVap: number;
+  totalTaxableVap: number;
   totalVap: number;
   totalVapAfterTeilfreistellung: number;
   totalValue: number;
@@ -93,8 +88,7 @@ interface TaxOverviewRow {
   realizedPercentage: number;
   symbol: string;
   taxForSelling: number;
-  totalPaidVap: number;
-  totalTaxImpact: number;
+  totalTaxableVap: number;
   usedPaidVapForSelling: number;
   totalVap: number;
   totalVapAfterTeilfreistellung: number;
@@ -286,16 +280,12 @@ export class TaxPage implements OnInit, OnDestroy {
     const overviewRows = this.taxOverviewRows().filter((row) => {
       return this.selectedAccountId() === 'all' || row.accountId === this.selectedAccountId();
     });
-    const filteredTaxEvents =
-      this.selectedAccountId() === 'all'
-        ? this.taxEvents()
-        : this.taxEvents().filter((taxEvent) => taxEvent.accountId === this.selectedAccountId());
-    const totalVap = calculateTotalVap(filteredTaxEvents);
-    const totalVapAfterTeilfreistellung = calculateTotalVapAfterTeilfreistellung(filteredTaxEvents);
-    const totalPaidVap = calculatePaidVap({
-      taxProfile,
-      taxableVap: totalVapAfterTeilfreistellung
-    });
+    const totalVap = overviewRows.reduce((sum, row) => sum + row.totalVap, 0);
+    const totalVapAfterTeilfreistellung = overviewRows.reduce(
+      (sum, row) => sum + row.totalVapAfterTeilfreistellung,
+      0
+    );
+    const totalTaxableVap = totalVapAfterTeilfreistellung;
     const portfolioValue = this.holdings().reduce((sum, holding) => {
       return sum + holding.valueInBaseCurrency;
     }, 0);
@@ -343,11 +333,7 @@ export class TaxPage implements OnInit, OnDestroy {
     return {
       potentialTaxes,
       taxForSelling,
-      totalTaxImpact: calculateTotalTaxImpact({
-        taxForSelling,
-        usedVapForSelling: usedVapForSelling
-      }),
-      totalPaidVap,
+      totalTaxableVap,
       usedPaidVapForSelling,
       usedVapForSelling,
       totalVap,
@@ -379,8 +365,7 @@ export class TaxPage implements OnInit, OnDestroy {
         realizedPercentage: 0,
         symbol: activity.symbol,
         taxForSelling: 0,
-        totalPaidVap: 0,
-        totalTaxImpact: 0,
+        totalTaxableVap: 0,
         usedPaidVapForSelling: 0,
         totalVap: 0,
         totalVapAfterTeilfreistellung: 0,
@@ -400,20 +385,22 @@ export class TaxPage implements OnInit, OnDestroy {
               quantity: activity.quantity,
               symbolId: activity.symbol.trim().toUpperCase(),
               taxEvents,
-              taxYear: activityTaxYear
-            })
-          : 0;
+          taxYear: activityTaxYear,
+          acquisitionDate: activity.date
+        })
+      : 0;
       const activityVapAfterTeilfreistellung =
         type === 'BUY'
-          ? calculateVapForBuyLot({
-              accountId: activity.accountId,
-              quantity: activity.quantity,
-              symbolId: activity.symbol.trim().toUpperCase(),
-              taxEvents,
-              taxYear: activityTaxYear,
-              useAfterTeilfreistellung: true
-            })
-          : 0;
+      ? calculateVapForBuyLot({
+          accountId: activity.accountId,
+          quantity: activity.quantity,
+          symbolId: activity.symbol.trim().toUpperCase(),
+          taxEvents,
+          taxYear: activityTaxYear,
+          acquisitionDate: activity.date,
+          useAfterTeilfreistellung: true
+        })
+      : 0;
       const currentMarketPrice = this.holdings().find((holding) => {
         return holding.symbol.trim().toUpperCase() === activity.symbol.trim().toUpperCase();
       })?.marketPrice ?? activity.unitPrice;
@@ -451,10 +438,7 @@ export class TaxPage implements OnInit, OnDestroy {
         sellDetails: [],
         soldQuantity: type === 'SELL' ? activity.quantity : 0,
         symbol: activity.symbol,
-        totalPaidVap: calculatePaidVap({
-          taxProfile,
-          taxableVap: activityVapAfterTeilfreistellung
-        }),
+        totalTaxableVap: activityVapAfterTeilfreistellung,
         totalVap: activityVap,
         totalVapAfterTeilfreistellung: activityVapAfterTeilfreistellung,
         totalValue,
@@ -473,8 +457,37 @@ export class TaxPage implements OnInit, OnDestroy {
       const taxEvents = this.taxEvents().filter((taxEvent) => {
         return taxEvent.accountId === row.accountId && taxEvent.symbolId === row.symbol.trim().toUpperCase();
       });
-      let remainingAvailableVapForSymbol = calculateTotalVap(taxEvents);
-      let remainingAvailablePaidVapForSymbol = calculateTotalVapAfterTeilfreistellung(taxEvents);
+      let remainingAvailableVapForSymbol = [...row.activities]
+        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
+        .reduce((sum, activity) => {
+          return (
+            sum +
+            calculateVapForBuyLot({
+              accountId: row.accountId,
+              quantity: activity.quantity,
+              symbolId: row.symbol.trim().toUpperCase(),
+              taxEvents,
+              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
+              acquisitionDate: activity.date
+            })
+          );
+        }, 0);
+      let remainingAvailablePaidVapForSymbol = [...row.activities]
+        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
+        .reduce((sum, activity) => {
+          return (
+            sum +
+            calculateVapForBuyLot({
+              accountId: row.accountId,
+              quantity: activity.quantity,
+              symbolId: row.symbol.trim().toUpperCase(),
+              taxEvents,
+              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
+              acquisitionDate: activity.date,
+              useAfterTeilfreistellung: true
+            })
+          );
+        }, 0);
       const fifoLots: Array<{ activity: TaxActivityRow; quantity: number }> = [];
 
       for (const activity of [...row.activities].sort((left, right) => {
@@ -512,7 +525,8 @@ export class TaxPage implements OnInit, OnDestroy {
             taxEvents: this.taxEvents().filter((taxEvent) => {
               return taxEvent.accountId === activity.accountId && taxEvent.symbolId === activity.symbol.trim().toUpperCase();
             }),
-            taxYear: lotYear
+            taxYear: lotYear,
+            acquisitionDate: firstLot.activity.date
           });
           const usedVapForSelling = Math.min(demandVapForSelling, remainingAvailableVapForSymbol);
           remainingAvailableVapForSymbol = Math.max(remainingAvailableVapForSymbol - usedVapForSelling, 0);
@@ -524,16 +538,14 @@ export class TaxPage implements OnInit, OnDestroy {
               return taxEvent.accountId === activity.accountId && taxEvent.symbolId === activity.symbol.trim().toUpperCase();
             }),
             taxYear: lotYear,
+            acquisitionDate: firstLot.activity.date,
             useAfterTeilfreistellung: true
           });
           const effectivePaidVapForSelling = Math.min(
             demandPaidVapForSelling,
             remainingAvailablePaidVapForSymbol
           );
-          const usedPaidVapForSelling = calculatePaidVap({
-            taxProfile,
-            taxableVap: effectivePaidVapForSelling
-          });
+          const usedPaidVapForSelling = effectivePaidVapForSelling;
           remainingAvailablePaidVapForSymbol = Math.max(
             remainingAvailablePaidVapForSymbol - effectivePaidVapForSelling,
             0
@@ -553,10 +565,6 @@ export class TaxPage implements OnInit, OnDestroy {
             realizedPercentage,
             soldQuantity: matchedQuantity,
             taxForSelling,
-            totalTaxImpact: calculateTotalTaxImpact({
-              taxForSelling,
-              usedVapForSelling
-            }),
             totalValue: sellProceeds,
             unitPrice: activity.unitPrice,
             usedPaidVapForSelling,
@@ -628,12 +636,38 @@ export class TaxPage implements OnInit, OnDestroy {
       const fallbackPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
       const currentPositionValue = holding?.valueInBaseCurrency ?? openQuantity * fallbackPricePerUnit;
       const positionPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
-      const totalVap = calculateTotalVap(taxEvents);
-      const totalVapAfterTeilfreistellung = calculateTotalVapAfterTeilfreistellung(taxEvents);
-      const totalPaidVap = calculatePaidVap({
-        taxProfile,
-        taxableVap: totalVapAfterTeilfreistellung
-      });
+      const totalVap = [...row.activities]
+        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
+        .reduce((sum, activity) => {
+          return (
+            sum +
+            calculateVapForBuyLot({
+              accountId: row.accountId,
+              quantity: activity.quantity,
+              symbolId: row.symbol.trim().toUpperCase(),
+              taxEvents,
+              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
+              acquisitionDate: activity.date
+            })
+          );
+        }, 0);
+      const totalVapAfterTeilfreistellung = [...row.activities]
+        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
+        .reduce((sum, activity) => {
+          return (
+            sum +
+            calculateVapForBuyLot({
+              accountId: row.accountId,
+              quantity: activity.quantity,
+              symbolId: row.symbol.trim().toUpperCase(),
+              taxEvents,
+              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
+              acquisitionDate: activity.date,
+              useAfterTeilfreistellung: true
+            })
+          );
+        }, 0);
+      const totalTaxableVap = totalVapAfterTeilfreistellung;
       const potentialTaxes = calculatePotentialTax({
         acquisitionCost: entryPriceAmount,
         currentValue: currentPositionValue,
@@ -670,15 +704,6 @@ export class TaxPage implements OnInit, OnDestroy {
           }, 0)
         );
       }, 0);
-      const totalTaxImpact = row.activities.reduce((sum, activity) => {
-        return (
-          sum +
-          activity.sellDetails.reduce((activitySum, sellDetail) => {
-            return activitySum + sellDetail.totalTaxImpact;
-          }, 0)
-        );
-      }, 0);
-
       const gainAmount = currentPositionValue - entryPriceAmount;
       const gainPercentage = entryPriceAmount > 0 ? (gainAmount / entryPriceAmount) * 100 : 0;
       const realizedAmount = row.activities.reduce((sum, activity) => {
@@ -702,8 +727,7 @@ export class TaxPage implements OnInit, OnDestroy {
       row.potentialTaxes = potentialTaxes;
       row.potentialTaxesWithoutVap = potentialTaxesWithoutVap;
       row.taxForSelling = taxForSelling;
-      row.totalPaidVap = totalPaidVap;
-      row.totalTaxImpact = totalTaxImpact;
+      row.totalTaxableVap = totalTaxableVap;
       row.usedPaidVapForSelling = usedPaidVapForSelling;
       row.totalVap = totalVap;
       row.totalVapAfterTeilfreistellung = totalVapAfterTeilfreistellung;
@@ -727,7 +751,8 @@ export class TaxPage implements OnInit, OnDestroy {
           quantity: remainingBuyQuantity,
           symbolId: row.symbol.trim().toUpperCase(),
           taxEvents: taxEvents,
-          taxYear: activityTaxYear
+          taxYear: activityTaxYear,
+          acquisitionDate: activityRow.date
         });
         const remainingActivityVapAfterTeilfreistellung = calculateVapForBuyLot({
           accountId: activityRow.accountId,
@@ -735,15 +760,13 @@ export class TaxPage implements OnInit, OnDestroy {
           symbolId: row.symbol.trim().toUpperCase(),
           taxEvents: taxEvents,
           taxYear: activityTaxYear,
+          acquisitionDate: activityRow.date,
           useAfterTeilfreistellung: true
         });
 
         activityRow.gainAmount = buyGainAmount;
         activityRow.gainPercentage = buyGainPercentage;
-        activityRow.totalPaidVap = calculatePaidVap({
-          taxProfile,
-          taxableVap: remainingActivityVapAfterTeilfreistellung
-        });
+        activityRow.totalTaxableVap = remainingActivityVapAfterTeilfreistellung;
         activityRow.totalVap = remainingActivityVap;
         activityRow.totalVapAfterTeilfreistellung = remainingActivityVapAfterTeilfreistellung;
         activityRow.potentialTaxes =

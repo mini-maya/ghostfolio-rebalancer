@@ -3,10 +3,8 @@ import {
   calculatePaidVap,
   calculatePotentialTax,
   calculateTaxForSale,
-  calculateTotalTaxImpact,
   calculateTotalVap,
   calculateTotalVapAfterTeilfreistellung,
-  calculateUsedVap,
   calculateVapForBuyLot,
   DEFAULT_TAX_PROFILE
 } from './tax-calculator';
@@ -66,6 +64,60 @@ describe('tax calculator', () => {
       })
     ).toBe(481.38);
     expect(calculatePaidVap({ taxableVap: 481.38 })).toBe(126.96);
+  });
+
+  it('applies the partial exemption to the gross VAP before calculating the tax', () => {
+    expect(
+      calculatePaidVap({
+        grossVap: 100,
+        taxProfile: {
+          ...DEFAULT_TAX_PROFILE,
+          partialExemptionRate: 0.3
+        }
+      })
+    ).toBe(18.46);
+  });
+
+  it('reduces VAP for purchases made after the start of the year according to the acquisition month', () => {
+    const taxEvents: TaxEvent[] = [
+      makeTaxEvent({
+        accountId: 'acc-1',
+        quantity: 100,
+        symbolId: 'VWCE',
+        taxYear: 2025,
+        vorabpauschalePerShare: 2.38260776,
+        vorabpauschalePerShareAfterTeilfreistellung: 1.66782543
+      })
+    ];
+
+    const weightedVap = [
+      { quantity: 7.57002, acquisitionDate: '2025-07-15' },
+      { quantity: 7.53239, acquisitionDate: '2025-07-23' },
+      { quantity: 2.8582, acquisitionDate: '2025-08-01' },
+      { quantity: 2.24349, acquisitionDate: '2025-08-15' },
+      { quantity: 2.20006, acquisitionDate: '2025-09-01' },
+      { quantity: 3.75397, acquisitionDate: '2025-09-15' },
+      { quantity: 2.11, acquisitionDate: '2025-10-01' },
+      { quantity: 3.81625, acquisitionDate: '2025-10-15' },
+      { quantity: 2.08507, acquisitionDate: '2025-11-01' },
+      { quantity: 3.61161, acquisitionDate: '2025-11-15' },
+      { quantity: 2.06725, acquisitionDate: '2025-12-01' },
+      { quantity: 5.83495, acquisitionDate: '2025-12-15' }
+    ].reduce((sum, lot) => {
+      return (
+        sum +
+        calculateVapForBuyLot({
+          accountId: 'acc-1',
+          quantity: lot.quantity,
+          symbolId: 'VWCE',
+          taxEvents,
+          taxYear: 2025,
+          acquisitionDate: lot.acquisitionDate
+        })
+      );
+    }, 0);
+
+    expect(weightedVap).toBe(35.15);
   });
 
   it('adds all relevant VAP years for a buy lot instead of consuming only the first one', () => {
@@ -134,116 +186,6 @@ describe('tax calculator', () => {
     ).toBe(923.13);
   });
 
-  it('calculates used VAP for a sale from the relevant FIFO tax history without double counting', () => {
-    const taxEvents: TaxEvent[] = [
-      makeTaxEvent({
-        accountId: 'acc-1',
-        quantity: 100,
-        symbolId: 'VWCE',
-        taxYear: 2024,
-        vorabpauschalePerShare: 2,
-        vorabpauschalePerShareAfterTeilfreistellung: 1.4
-      }),
-      makeTaxEvent({
-        accountId: 'acc-1',
-        quantity: 100,
-        symbolId: 'VWCE',
-        taxYear: 2025,
-        vorabpauschalePerShare: 3,
-        vorabpauschalePerShareAfterTeilfreistellung: 2.1
-      })
-    ];
-
-    expect(
-      calculateUsedVap({
-        accountId: 'acc-1',
-        soldQuantity: 120,
-        symbolId: 'VWCE',
-        taxEvents
-      })
-    ).toBe(260);
-
-    expect(
-      calculateUsedVap({
-        accountId: 'acc-1',
-        soldQuantity: 50,
-        symbolId: 'VWCE',
-        taxEvents
-      })
-    ).toBe(100);
-  });
-
-  it('uses VAP from the same year or a later year for a matching buy lot, but not from an earlier year', () => {
-    const taxEvents: TaxEvent[] = [
-      makeTaxEvent({
-        accountId: 'acc-1',
-        quantity: 100,
-        symbolId: 'VWCE',
-        taxYear: 2025,
-        vorabpauschalePerShare: 3,
-        vorabpauschalePerShareAfterTeilfreistellung: 2.1
-      }),
-      makeTaxEvent({
-        accountId: 'acc-1',
-        quantity: 100,
-        symbolId: 'VWCE',
-        taxYear: 2026,
-        vorabpauschalePerShare: 4,
-        vorabpauschalePerShareAfterTeilfreistellung: 2.8
-      })
-    ];
-
-    expect(
-      calculateUsedVap({
-        accountId: 'acc-1',
-        soldQuantity: 60,
-        symbolId: 'VWCE',
-        taxEvents,
-        taxYear: 2024
-      })
-    ).toBe(180);
-
-    expect(
-      calculateUsedVap({
-        accountId: 'acc-1',
-        soldQuantity: 60,
-        symbolId: 'VWCE',
-        taxEvents,
-        taxYear: 2026
-      })
-    ).toBe(240);
-  });
-
-  it('caps used VAP at the total available VAP pool for the symbol', () => {
-    const taxEvents: TaxEvent[] = [
-      makeTaxEvent({
-        accountId: 'acc-1',
-        quantity: 100,
-        symbolId: 'VWCE',
-        taxYear: 2024,
-        vorabpauschalePerShare: 1,
-        vorabpauschalePerShareAfterTeilfreistellung: 0.7
-      }),
-      makeTaxEvent({
-        accountId: 'acc-1',
-        quantity: 100,
-        symbolId: 'VWCE',
-        taxYear: 2025,
-        vorabpauschalePerShare: 2,
-        vorabpauschalePerShareAfterTeilfreistellung: 1.4
-      })
-    ];
-
-    expect(
-      calculateUsedVap({
-        accountId: 'acc-1',
-        soldQuantity: 600,
-        symbolId: 'VWCE',
-        taxEvents
-      })
-    ).toBe(300);
-  });
-
   it('calculates tax for selling using the full VAP reduction and the tax profile afterwards', () => {
     const taxForSelling = calculateTaxForSale({
       acquisitionCost: 10000,
@@ -256,15 +198,6 @@ describe('tax calculator', () => {
     });
 
     expect(taxForSelling).toBe(880.66);
-  });
-
-  it('calculates total tax impact as used VAP plus tax for selling', () => {
-    expect(
-      calculateTotalTaxImpact({
-        taxForSelling: 406.18,
-        usedVapForSelling: 300
-      })
-    ).toBe(706.18);
   });
 
   it('separates values by account and symbol', () => {
@@ -298,13 +231,5 @@ describe('tax calculator', () => {
     expect(calculateTotalVap(taxEvents, { accountId: 'acc-1', symbolId: 'VWCE' })).toBe(100);
     expect(calculateTotalVap(taxEvents, { accountId: 'acc-2', symbolId: 'VWCE' })).toBe(160);
     expect(calculateTotalVap(taxEvents, { accountId: 'acc-1', symbolId: 'IUSN' })).toBe(20);
-    expect(
-      calculateUsedVap({
-        accountId: 'acc-1',
-        soldQuantity: 20,
-        symbolId: 'VWCE',
-        taxEvents
-      })
-    ).toBe(40);
   });
 });

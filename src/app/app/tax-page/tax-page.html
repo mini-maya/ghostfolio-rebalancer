@@ -200,8 +200,8 @@
           <div class="metrics-header-cell numeric">Gain <br />%</div>
           <div class="metrics-header-cell numeric">Realized <br />%</div>
           <div class="metrics-header-cell numeric">Open tax <br /> Sold tax</div>
-          <div class="metrics-header-cell numeric">Total VAP <br /> Total paid VAP</div>
-          <div class="metrics-header-cell numeric">Used VAP <br /> Used paid VAP</div>
+          <div class="metrics-header-cell numeric">Total VAP <br /> Total taxable VAP</div>
+          <div class="metrics-header-cell numeric">Used VAP <br /> Used taxable VAP</div>
         </div>
 
         @for (row of taxOverviewRows(); track row.symbol) {
@@ -290,7 +290,7 @@
                 <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
                 {{ currencySymbol() }}<br />
                 <span class="table-inline-highlight">
-                  {{ row.totalPaidVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ row.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                   {{ currencySymbol() }}
                 </span>
               </span>
@@ -318,7 +318,7 @@
                     <th class="numeric">Unit price</th>
                     <th class="numeric">Total value</th>
                     <th class="numeric">Gain %</th>
-                    <th class="numeric">VAP <br />paid VAP</th>
+                    <th class="numeric">VAP <br />taxable VAP</th>
                     <th class="numeric">Open tax</th>
                   </tr>
                 </thead>
@@ -385,7 +385,7 @@
                           <span class="table-primary-value">{{ activity.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
                           {{ currencySymbol() }}<br />
                           <span class="table-inline-highlight">
-                            {{ activity.totalPaidVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                            {{ activity.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                             {{ currencySymbol() }}
                           </span>
                         } @else {
@@ -416,7 +416,7 @@
                                 <th class="numeric">Total value</th>
                                 <th class="numeric">Realized</th>
                                 <th class="numeric">Sold tax</th>
-                                <th class="numeric">Used VAP <br /> Used paid VAP</th>
+                                <th class="numeric">Used VAP <br /> Used taxable VAP</th>
                               </tr>
                             </thead>
                             <tbody>
