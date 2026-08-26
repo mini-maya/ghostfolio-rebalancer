@@ -186,7 +186,7 @@ export function calculateVapForQuantity({
     remainingQuantity -= allocatedQuantity;
   }
 
-  return roundMoney(Math.min(vap, Number.MAX_SAFE_INTEGER));
+  return Math.min(vap, Number.MAX_SAFE_INTEGER);
 }
 
 export function calculateVapForBuyLot({
@@ -232,7 +232,7 @@ export function calculateVapForBuyLot({
     );
   }, 0);
 
-  return roundMoney(weightedQuantity * totalPerShareVap);
+  return weightedQuantity * totalPerShareVap;
 }
 
 export function calculateTaxForSale({

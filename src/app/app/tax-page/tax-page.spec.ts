@@ -345,15 +345,15 @@ describe('TaxPage', () => {
     const summary = component.taxSummary();
     const overviewRows = component.taxOverviewRows();
     const expectedUsedVap = overviewRows.reduce((sum: number, row: any) => sum + row.usedVapForSelling, 0);
-    const expectedUsedPaidVap = overviewRows.reduce(
-      (sum: number, row: any) => sum + row.usedPaidVapForSelling,
+    const expectedUsedTaxableVap = overviewRows.reduce(
+      (sum: number, row: any) => sum + row.usedTaxableVapForSelling,
       0
     );
 
     expect(summary.usedVapForSelling).toBe(expectedUsedVap);
-    expect(summary.usedPaidVapForSelling).toBe(expectedUsedPaidVap);
+    expect(summary.usedTaxableVapForSelling).toBe(expectedUsedTaxableVap);
     expect(summary.usedVapForSelling).toBeGreaterThan(0);
-    expect(summary.usedPaidVapForSelling).toBeGreaterThan(0);
+    expect(summary.usedTaxableVapForSelling).toBeGreaterThan(0);
   });
 
   it('updates and deletes tax events', async () => {

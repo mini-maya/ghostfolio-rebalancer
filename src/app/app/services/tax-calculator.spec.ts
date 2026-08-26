@@ -117,7 +117,7 @@ describe('tax calculator', () => {
       );
     }, 0);
 
-    expect(weightedVap).toBe(35.15);
+    expect(weightedVap).toBeCloseTo(35.14611312562653, 12);
   });
 
   it('adds all relevant VAP years for a buy lot instead of consuming only the first one', () => {

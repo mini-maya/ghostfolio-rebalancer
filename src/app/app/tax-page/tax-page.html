@@ -301,7 +301,7 @@
                   {{ currencySymbol() }}
                 </span><br />
                 <span class="table-inline-highlight">
-                  {{ row.usedPaidVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ row.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                   {{ currencySymbol() }}
                 </span>
               </span>
@@ -459,7 +459,7 @@
                                       {{ sell.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
                                     </span><br />
                                     <span class="table-inline-highlight">
-                                      {{ sell.usedPaidVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                      {{ sell.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
                                     </span>
                                   </td>
                                 </tr>

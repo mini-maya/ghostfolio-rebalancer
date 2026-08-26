@@ -45,7 +45,7 @@ interface TaxSellDetailRow {
   taxForSelling: number;
   totalValue: number;
   unitPrice: number;
-  usedPaidVapForSelling: number;
+  usedTaxableVapForSelling: number;
   usedVapForSelling: number;
 }
 
@@ -89,7 +89,7 @@ interface TaxOverviewRow {
   symbol: string;
   taxForSelling: number;
   totalTaxableVap: number;
-  usedPaidVapForSelling: number;
+  usedTaxableVapForSelling: number;
   totalVap: number;
   totalVapAfterTeilfreistellung: number;
   usedVapForSelling: number;
@@ -322,7 +322,7 @@ export class TaxPage implements OnInit, OnDestroy {
       return sum;
     }, 0);
     const usedVapForSelling = overviewRows.reduce((sum, row) => sum + row.usedVapForSelling, 0);
-    const usedPaidVapForSelling = overviewRows.reduce((sum, row) => sum + row.usedPaidVapForSelling, 0);
+    const usedTaxableVapForSelling = overviewRows.reduce((sum, row) => sum + row.usedTaxableVapForSelling, 0);
     const taxForSelling = calculateTaxForSale({
       acquisitionCost: portfolioCostBasis,
       saleProceeds: realizedSaleProceeds,
@@ -334,7 +334,7 @@ export class TaxPage implements OnInit, OnDestroy {
       potentialTaxes,
       taxForSelling,
       totalTaxableVap,
-      usedPaidVapForSelling,
+      usedTaxableVapForSelling,
       usedVapForSelling,
       totalVap,
       totalVapAfterTeilfreistellung
@@ -366,7 +366,7 @@ export class TaxPage implements OnInit, OnDestroy {
         symbol: activity.symbol,
         taxForSelling: 0,
         totalTaxableVap: 0,
-        usedPaidVapForSelling: 0,
+        usedTaxableVapForSelling: 0,
         totalVap: 0,
         totalVapAfterTeilfreistellung: 0,
         usedVapForSelling: 0
@@ -472,7 +472,7 @@ export class TaxPage implements OnInit, OnDestroy {
             })
           );
         }, 0);
-      let remainingAvailablePaidVapForSymbol = [...row.activities]
+      let remainingAvailableTaxableVapForSymbol = [...row.activities]
         .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
         .reduce((sum, activity) => {
           return (
@@ -530,7 +530,7 @@ export class TaxPage implements OnInit, OnDestroy {
           });
           const usedVapForSelling = Math.min(demandVapForSelling, remainingAvailableVapForSymbol);
           remainingAvailableVapForSymbol = Math.max(remainingAvailableVapForSymbol - usedVapForSelling, 0);
-          const demandPaidVapForSelling = calculateVapForBuyLot({
+          const demandTaxableVapForSelling = calculateVapForBuyLot({
             accountId: activity.accountId,
             quantity: matchedQuantity,
             symbolId: activity.symbol.trim().toUpperCase(),
@@ -541,13 +541,13 @@ export class TaxPage implements OnInit, OnDestroy {
             acquisitionDate: firstLot.activity.date,
             useAfterTeilfreistellung: true
           });
-          const effectivePaidVapForSelling = Math.min(
-            demandPaidVapForSelling,
-            remainingAvailablePaidVapForSymbol
+          const effectiveTaxableVapForSelling = Math.min(
+            demandTaxableVapForSelling,
+            remainingAvailableTaxableVapForSymbol
           );
-          const usedPaidVapForSelling = effectivePaidVapForSelling;
-          remainingAvailablePaidVapForSymbol = Math.max(
-            remainingAvailablePaidVapForSymbol - effectivePaidVapForSelling,
+          const usedTaxableVapForSelling = effectiveTaxableVapForSelling;
+          remainingAvailableTaxableVapForSymbol = Math.max(
+            remainingAvailableTaxableVapForSymbol - effectiveTaxableVapForSelling,
             0
           );
           const taxForSelling = calculateTaxForSale({
@@ -567,7 +567,7 @@ export class TaxPage implements OnInit, OnDestroy {
             taxForSelling,
             totalValue: sellProceeds,
             unitPrice: activity.unitPrice,
-            usedPaidVapForSelling,
+            usedTaxableVapForSelling,
             usedVapForSelling
           });
           firstLot.quantity -= matchedQuantity;
@@ -688,11 +688,11 @@ export class TaxPage implements OnInit, OnDestroy {
           }, 0)
         );
       }, 0);
-      const usedPaidVapForSelling = row.activities.reduce((sum, activity) => {
+      const usedTaxableVapForSelling = row.activities.reduce((sum, activity) => {
         return (
           sum +
           activity.sellDetails.reduce((activitySum, sellDetail) => {
-            return activitySum + sellDetail.usedPaidVapForSelling;
+            return activitySum + sellDetail.usedTaxableVapForSelling;
           }, 0)
         );
       }, 0);
@@ -728,7 +728,7 @@ export class TaxPage implements OnInit, OnDestroy {
       row.potentialTaxesWithoutVap = potentialTaxesWithoutVap;
       row.taxForSelling = taxForSelling;
       row.totalTaxableVap = totalTaxableVap;
-      row.usedPaidVapForSelling = usedPaidVapForSelling;
+      row.usedTaxableVapForSelling = usedTaxableVapForSelling;
       row.totalVap = totalVap;
       row.totalVapAfterTeilfreistellung = totalVapAfterTeilfreistellung;
       row.usedVapForSelling = usedVapForSelling;
