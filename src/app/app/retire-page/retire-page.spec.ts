@@ -84,6 +84,51 @@ describe('RetirePage', () => {
     expect(component.projectionYears()).toBe(40);
   });
 
+  it('projects holdings up to the first withdrawal when withdrawals have not started yet', () => {
+    authServiceMock.allocationsText = () => 'AAA,50|BBB,50';
+    runtimeConfigServiceMock.config.set({
+      allocationsText: 'AAA,50|BBB,50',
+      developerMode: true
+    });
+
+    const fixture = TestBed.createComponent(RetirePage);
+    const component = fixture.componentInstance as any;
+
+    component.updateCurrentDate({
+      target: { value: '2027-04-15' }
+    } as unknown as Event);
+    component.holdings.set([
+      {
+        allocationInPercentage: 50,
+        currency: 'EUR',
+        marketPrice: 100,
+        name: 'ETF A',
+        quantity: 10,
+        symbol: 'AAA',
+        valueInBaseCurrency: 1000
+      },
+      {
+        allocationInPercentage: 50,
+        currency: 'EUR',
+        marketPrice: 50,
+        name: 'ETF B',
+        quantity: 10,
+        symbol: 'BBB',
+        valueInBaseCurrency: 500
+      }
+    ]);
+    component.withdrawalStarted.set(false);
+    component.withdrawalStartMonth.set('2027-06');
+    component.monthlySavingsRate.set(200);
+    component.accumulationAnnualReturnPercentage.set(12);
+    fixture.detectChanges();
+
+    expect(component.projectedHoldingsForNextWithdrawal().reduce((sum: number, holding: any) => {
+      return sum + holding.valueInBaseCurrency;
+    }, 0)).toBeGreaterThan(1500);
+    expect(component.nextWithdrawalSellPlan().portfolioTotal).toBeGreaterThan(1500);
+  });
+
   it('sets the withdrawal start month to the current month when withdrawals start immediately', () => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;

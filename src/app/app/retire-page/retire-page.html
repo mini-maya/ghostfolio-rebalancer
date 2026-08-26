@@ -237,10 +237,18 @@
     <div class="section-header section-header-stack">
       <div>
         <h2>Next withdrawal by symbol</h2>
-        <p>
-          The first projected withdrawal is distributed across symbols using your rebalancing
-          target allocations, prioritizing overweight positions.
-        </p>
+        @if (!withdrawalStarted()) {
+          <p>
+            The first projected withdrawal is distributed across symbols based on the projected
+            portfolio position at withdrawal start, using your rebalancing target allocations and
+            prioritizing overweight positions.
+          </p>
+        } @else {
+          <p>
+            The first projected withdrawal is distributed across symbols using your rebalancing
+            target allocations, prioritizing overweight positions.
+          </p>
+        }
       </div>
     </div>
 

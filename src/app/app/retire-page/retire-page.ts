@@ -13,6 +13,7 @@ import {
   normalizeRetireConfig,
   type RetireConfig
 } from '../services/retire-config';
+import type { Holding } from '../services/ghostfolio-api';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
 import {
   calculateRetirementProjection,
@@ -214,10 +215,23 @@ export class RetirePage implements OnInit {
     return currentWithdrawalPoint ? format(new Date(currentWithdrawalPoint.date), 'MMMM yyyy') : 'n/a';
   });
   protected readonly nextWithdrawalLabel = this.currentWithdrawalLabel;
+  protected readonly projectedHoldingsForNextWithdrawal = computed(() => {
+    if (this.withdrawalStarted()) {
+      return this.holdings();
+    }
+
+    return projectHoldingsUntilWithdrawalStart({
+      accumulationAnnualReturnPercentage: this.accumulationAnnualReturnPercentage(),
+      accumulationMonths: this.accumulationMonths(),
+      allocations: this.allocationState().items,
+      holdings: this.holdings(),
+      monthlySavingsRate: this.monthlySavingsRate()
+    });
+  });
   protected readonly nextWithdrawalSellPlan = computed(() => {
     return calculateNextWithdrawalSellPlan({
       allocations: this.allocationState().items,
-      holdings: this.holdings(),
+      holdings: this.projectedHoldingsForNextWithdrawal(),
       withdrawalAmount: this.currentWithdrawalAmount()
     });
   });
@@ -473,6 +487,58 @@ export class RetirePage implements OnInit {
   }
 }
 
+function projectHoldingsUntilWithdrawalStart({
+  accumulationAnnualReturnPercentage,
+  accumulationMonths,
+  allocations,
+  holdings,
+  monthlySavingsRate
+}: {
+  accumulationAnnualReturnPercentage: number;
+  accumulationMonths: number;
+  allocations: { percentage: number; symbol: string }[];
+  holdings: Holding[];
+  monthlySavingsRate: number;
+}): Holding[] {
+  if (accumulationMonths <= 0 || !holdings.length) {
+    return holdings.map((holding) => ({ ...holding }));
+  }
+
+  const projectedHoldings: Holding[] = holdings.map((holding) => ({ ...holding }));
+  const targetAllocationBySymbol = new Map(
+    allocations.map(({ percentage, symbol }) => [symbol, percentage] as const)
+  );
+  const monthlyReturnRate =
+    Math.pow(1 + Math.max(accumulationAnnualReturnPercentage, 0) / 100, 1 / 12) - 1;
+
+  for (let monthIndex = 0; monthIndex < accumulationMonths; monthIndex += 1) {
+    const targetWeightTotal = allocations.reduce((sum, { percentage }) => sum + percentage, 0);
+
+    for (const holding of projectedHoldings) {
+      const currentPrice = Math.max(holding.marketPrice, 0);
+      const growthFactor = 1 + monthlyReturnRate;
+      const currentTargetWeight =
+        targetAllocationBySymbol.get(holding.symbol) ??
+        (targetWeightTotal > 0
+          ? (holding.valueInBaseCurrency / Math.max(holdings.reduce((sum, row) => sum + row.valueInBaseCurrency, 0), 1)) *
+            targetWeightTotal
+          : 0);
+      const monthlyContribution =
+        Math.max(monthlySavingsRate, 0) * (Math.max(currentTargetWeight, 0) / 100);
+
+      holding.marketPrice = roundToTwo(currentPrice * growthFactor);
+
+      if (holding.marketPrice > 0 && monthlyContribution > 0) {
+        holding.quantity = roundToSix(holding.quantity + monthlyContribution / holding.marketPrice);
+      }
+
+      holding.valueInBaseCurrency = roundToTwo(holding.quantity * holding.marketPrice);
+    }
+  }
+
+  return projectedHoldings;
+}
+
 function readChartColorScheme(document: Document): ColorScheme {
   return document.documentElement.dataset["theme"] === 'dark' ? 'DARK' : 'LIGHT';
 }
@@ -499,4 +565,8 @@ function clampNonNegativeNumber(value: number): number {
 
 function roundToTwo(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function roundToSix(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
 }
