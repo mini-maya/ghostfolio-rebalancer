@@ -5,15 +5,21 @@ import { Component, OnDestroy, OnInit, computed, effect, inject, signal } from '
 import { AuthService } from '../auth/auth.service';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
+import { FifoOverviewTable } from '../../shared/fifo-overview-table/fifo-overview-table';
 import {
   calculatePotentialTax,
   calculateTaxForSale,
   calculateTotalVap,
   calculateTotalVapAfterTeilfreistellung,
-  calculateVapForBuyLot,
   DEFAULT_TAX_PROFILE,
+  resolveTaxProfile,
   type TaxProfile
 } from '../services/tax-calculator';
+import {
+  calculateTaxOverview,
+  type TaxActivityRow,
+  type TaxOverviewRow
+} from '../services/tax-engine';
 import {
   TaxEventsService,
   type TaxEvent
@@ -36,70 +42,11 @@ interface TaxEventYearGroup {
   taxYear: number;
 }
 
-interface TaxSellDetailRow {
-  date: Date | null;
-  realizedAmount: number;
-  realizedCostBasis: number;
-  realizedPercentage: number;
-  soldQuantity: number;
-  taxForSelling: number;
-  totalValue: number;
-  unitPrice: number;
-  usedTaxableVapForSelling: number;
-  usedVapForSelling: number;
-}
-
-interface TaxActivityRow {
-  accountId: string;
-  date: Date | null;
-  fee: number;
-  gainAmount: number | null;
-  gainPercentage: number | null;
-  potentialTaxes: number;
-  potentialTaxesWithoutVap: number;
-  quantity: number;
-  sellDetails: TaxSellDetailRow[];
-  soldQuantity: number | null;
-  symbol: string;
-  totalTaxableVap: number;
-  totalVap: number;
-  totalVapAfterTeilfreistellung: number;
-  totalValue: number;
-  type: string;
-  unitPrice: number;
-}
-
-interface TaxOverviewRow {
-  accountId: string;
-  accountName: string;
-  activities: TaxActivityRow[];
-  currency: string;
-  entryPriceAmount: number;
-  entryPricePerUnit: number;
-  gainAmount: number;
-  gainPercentage: number;
-  name: string;
-  positionPriceAmount: number;
-  positionPricePerUnit: number;
-  positionQuantity: number;
-  potentialTaxes: number;
-  potentialTaxesWithoutVap: number;
-  realizedAmount: number;
-  realizedPercentage: number;
-  symbol: string;
-  taxForSelling: number;
-  totalTaxableVap: number;
-  usedTaxableVapForSelling: number;
-  totalVap: number;
-  totalVapAfterTeilfreistellung: number;
-  usedVapForSelling: number;
-}
-
 type DialogMode = 'create' | 'edit';
 
 @Component({
   selector: 'app-tax-page',
-  imports: [CommonModule, LocaleNumberPipe],
+  imports: [CommonModule, LocaleNumberPipe, FifoOverviewTable],
   templateUrl: './tax-page.html',
   styleUrl: './tax-page.scss'
 })
@@ -120,7 +67,6 @@ export class TaxPage implements OnInit, OnDestroy {
   protected readonly selectedAccountId = signal('all');
   protected readonly isDialogOpen = signal(false);
   protected readonly dialogMode = signal<DialogMode>('create');
-  private readonly expandedEntrySet = signal(new Set<TaxActivityRow>());
   protected readonly dialogTaxEventId = signal('');
   protected readonly dialogAccountId = signal('');
   protected readonly dialogSymbolId = signal('');
@@ -201,10 +147,7 @@ export class TaxPage implements OnInit, OnDestroy {
       return;
     }
 
-    this.taxProfile.set({
-      ...DEFAULT_TAX_PROFILE,
-      ...savedTaxProfile
-    });
+    this.taxProfile.set(resolveTaxProfile(savedTaxProfile));
   });
   protected readonly taxEventRows = computed<TaxEventRow[]>(() => {
     const accountLabels = this.accountLabelById();
@@ -341,455 +284,12 @@ export class TaxPage implements OnInit, OnDestroy {
     };
   });
   protected readonly taxOverviewRows = computed<TaxOverviewRow[]>(() => {
-    const rows = new Map<string, TaxOverviewRow>();
-
-    for (const activity of this.activities()) {
-      const symbolKey = `${activity.accountId}:${activity.symbol.trim().toUpperCase()}`;
-      const taxProfile = this.taxProfile();
-      const existing = rows.get(symbolKey) ?? {
-        accountId: activity.accountId,
-        accountName: activity.accountName,
-        activities: [],
-        currency: activity.currency || 'EUR',
-        entryPriceAmount: 0,
-        entryPricePerUnit: 0,
-        gainAmount: 0,
-        gainPercentage: 0,
-        name: activity.name || activity.symbol,
-        positionPriceAmount: 0,
-        positionPricePerUnit: 0,
-        positionQuantity: 0,
-        potentialTaxes: 0,
-        potentialTaxesWithoutVap: 0,
-        realizedAmount: 0,
-        realizedPercentage: 0,
-        symbol: activity.symbol,
-        taxForSelling: 0,
-        totalTaxableVap: 0,
-        usedTaxableVapForSelling: 0,
-        totalVap: 0,
-        totalVapAfterTeilfreistellung: 0,
-        usedVapForSelling: 0
-      };
-
-      const type = activity.type.trim().toUpperCase();
-      const totalValue = activity.quantity * activity.unitPrice;
-      const taxEvents = this.taxEvents().filter((taxEvent) => {
-        return taxEvent.accountId === activity.accountId && taxEvent.symbolId === activity.symbol.trim().toUpperCase();
-      });
-      const activityTaxYear = activity.date ? new Date(activity.date).getFullYear() : undefined;
-      const activityVap =
-        type === 'BUY'
-          ? calculateVapForBuyLot({
-              accountId: activity.accountId,
-              quantity: activity.quantity,
-              symbolId: activity.symbol.trim().toUpperCase(),
-              taxEvents,
-          taxYear: activityTaxYear,
-          acquisitionDate: activity.date
-        })
-      : 0;
-      const activityVapAfterTeilfreistellung =
-        type === 'BUY'
-      ? calculateVapForBuyLot({
-          accountId: activity.accountId,
-          quantity: activity.quantity,
-          symbolId: activity.symbol.trim().toUpperCase(),
-          taxEvents,
-          taxYear: activityTaxYear,
-          acquisitionDate: activity.date,
-          useAfterTeilfreistellung: true
-        })
-      : 0;
-      const currentMarketPrice = this.holdings().find((holding) => {
-        return holding.symbol.trim().toUpperCase() === activity.symbol.trim().toUpperCase();
-      })?.marketPrice ?? activity.unitPrice;
-      const remainingQuantity = type === 'BUY' ? activity.quantity : 0;
-      const currentMarketValueForActivity = remainingQuantity * currentMarketPrice;
-      const acquisitionCostForActivity = type === 'BUY' ? Math.max(totalValue, 0) : 0;
-      const potentialTaxes =
-        type === 'BUY'
-          ? calculatePotentialTax({
-              acquisitionCost: acquisitionCostForActivity,
-              currentValue: Math.max(currentMarketValueForActivity, 0),
-              taxProfile,
-              usedVap: activityVap
-            })
-          : 0;
-      const potentialTaxesWithoutVap =
-        type === 'BUY'
-          ? calculatePotentialTax({
-              acquisitionCost: acquisitionCostForActivity,
-              currentValue: Math.max(currentMarketValueForActivity, 0),
-              taxProfile,
-              usedVap: 0
-            })
-          : 0;
-
-      existing.activities.push({
-        accountId: activity.accountId,
-        date: activity.date,
-        fee: activity.fee,
-        gainAmount: null,
-        gainPercentage: null,
-        potentialTaxes,
-        potentialTaxesWithoutVap,
-        quantity: activity.quantity,
-        sellDetails: [],
-        soldQuantity: type === 'SELL' ? activity.quantity : 0,
-        symbol: activity.symbol,
-        totalTaxableVap: activityVapAfterTeilfreistellung,
-        totalVap: activityVap,
-        totalVapAfterTeilfreistellung: activityVapAfterTeilfreistellung,
-        totalValue,
-        type,
-        unitPrice: activity.unitPrice
-      });
-
-      if (activity.type.trim().toUpperCase() === 'BUY') {
-        existing.entryPriceAmount += activity.quantity * activity.unitPrice + activity.fee;
-      }
-
-      rows.set(symbolKey, existing);
-    }
-
-    for (const row of rows.values()) {
-      const taxEvents = this.taxEvents().filter((taxEvent) => {
-        return taxEvent.accountId === row.accountId && taxEvent.symbolId === row.symbol.trim().toUpperCase();
-      });
-      let remainingAvailableVapForSymbol = [...row.activities]
-        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
-        .reduce((sum, activity) => {
-          return (
-            sum +
-            calculateVapForBuyLot({
-              accountId: row.accountId,
-              quantity: activity.quantity,
-              symbolId: row.symbol.trim().toUpperCase(),
-              taxEvents,
-              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
-              acquisitionDate: activity.date
-            })
-          );
-        }, 0);
-      let remainingAvailableTaxableVapForSymbol = [...row.activities]
-        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
-        .reduce((sum, activity) => {
-          return (
-            sum +
-            calculateVapForBuyLot({
-              accountId: row.accountId,
-              quantity: activity.quantity,
-              symbolId: row.symbol.trim().toUpperCase(),
-              taxEvents,
-              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
-              acquisitionDate: activity.date,
-              useAfterTeilfreistellung: true
-            })
-          );
-        }, 0);
-      const fifoLots: Array<{ activity: TaxActivityRow; quantity: number }> = [];
-
-      for (const activity of [...row.activities].sort((left, right) => {
-        const leftTimestamp = left.date ? getActivityTimestamp(left.date) : 0;
-        const rightTimestamp = right.date ? getActivityTimestamp(right.date) : 0;
-
-        return leftTimestamp - rightTimestamp;
-      })) {
-        const type = activity.type.trim().toUpperCase();
-
-        if (type === 'BUY') {
-          fifoLots.push({ activity, quantity: activity.quantity });
-          continue;
-        }
-
-        if (type !== 'SELL') {
-          continue;
-        }
-
-        let remainingQuantity = activity.quantity;
-
-        while (remainingQuantity > 0 && fifoLots.length > 0) {
-          const firstLot = fifoLots[0];
-          const matchedQuantity = Math.min(firstLot.quantity, remainingQuantity);
-          const buyCostBasis = matchedQuantity * firstLot.activity.unitPrice + firstLot.activity.fee;
-          const sellProceeds = matchedQuantity * activity.unitPrice - activity.fee;
-          const realizedAmount = sellProceeds - buyCostBasis;
-          const realizedPercentage = buyCostBasis > 0 ? (realizedAmount / buyCostBasis) * 100 : 0;
-          const lotYear = firstLot.activity.date ? new Date(firstLot.activity.date).getFullYear() : undefined;
-          const taxProfile = this.taxProfile();
-          const demandVapForSelling = calculateVapForBuyLot({
-            accountId: activity.accountId,
-            quantity: matchedQuantity,
-            symbolId: activity.symbol.trim().toUpperCase(),
-            taxEvents: this.taxEvents().filter((taxEvent) => {
-              return taxEvent.accountId === activity.accountId && taxEvent.symbolId === activity.symbol.trim().toUpperCase();
-            }),
-            taxYear: lotYear,
-            acquisitionDate: firstLot.activity.date
-          });
-          const usedVapForSelling = Math.min(demandVapForSelling, remainingAvailableVapForSymbol);
-          remainingAvailableVapForSymbol = Math.max(remainingAvailableVapForSymbol - usedVapForSelling, 0);
-          const demandTaxableVapForSelling = calculateVapForBuyLot({
-            accountId: activity.accountId,
-            quantity: matchedQuantity,
-            symbolId: activity.symbol.trim().toUpperCase(),
-            taxEvents: this.taxEvents().filter((taxEvent) => {
-              return taxEvent.accountId === activity.accountId && taxEvent.symbolId === activity.symbol.trim().toUpperCase();
-            }),
-            taxYear: lotYear,
-            acquisitionDate: firstLot.activity.date,
-            useAfterTeilfreistellung: true
-          });
-          const effectiveTaxableVapForSelling = Math.min(
-            demandTaxableVapForSelling,
-            remainingAvailableTaxableVapForSymbol
-          );
-          const usedTaxableVapForSelling = effectiveTaxableVapForSelling;
-          remainingAvailableTaxableVapForSymbol = Math.max(
-            remainingAvailableTaxableVapForSymbol - effectiveTaxableVapForSelling,
-            0
-          );
-          const taxForSelling = calculateTaxForSale({
-            acquisitionCost: buyCostBasis,
-            saleProceeds: sellProceeds,
-            taxProfile,
-            usedVap: usedVapForSelling
-          });
-
-          firstLot.activity.soldQuantity = (firstLot.activity.soldQuantity ?? 0) + matchedQuantity;
-          firstLot.activity.sellDetails.push({
-            date: activity.date,
-            realizedAmount,
-            realizedCostBasis: buyCostBasis,
-            realizedPercentage,
-            soldQuantity: matchedQuantity,
-            taxForSelling,
-            totalValue: sellProceeds,
-            unitPrice: activity.unitPrice,
-            usedTaxableVapForSelling,
-            usedVapForSelling
-          });
-          firstLot.quantity -= matchedQuantity;
-          remainingQuantity -= matchedQuantity;
-
-          if (firstLot.quantity <= 0) {
-            fifoLots.shift();
-          }
-        }
-      }
-
-      for (const activity of row.activities) {
-        if (activity.type.trim().toUpperCase() === 'BUY' && activity.soldQuantity === 0) {
-          activity.soldQuantity = 0;
-        }
-      }
-    }
-
-    return [...rows.values()].map((row) => {
-      const taxProfile = this.taxProfile();
-      const holding = this.holdings().find((holding) => {
-        return holding.symbol.trim().toUpperCase() === row.symbol.trim().toUpperCase();
-      });
-      const taxEvents = this.taxEvents().filter((taxEvent) => {
-        return taxEvent.accountId === row.accountId && taxEvent.symbolId === row.symbol.trim().toUpperCase();
-      });
-      const fifoLots: Array<{ quantity: number; unitCost: number }> = [];
-      for (const activity of [...row.activities].sort((left, right) => {
-        const leftTimestamp = left.date ? getActivityTimestamp(left.date) : 0;
-        const rightTimestamp = right.date ? getActivityTimestamp(right.date) : 0;
-
-        return leftTimestamp - rightTimestamp;
-      })) {
-        const type = activity.type.trim().toUpperCase();
-
-        if (type === 'BUY') {
-          const totalCost = activity.quantity * activity.unitPrice + activity.fee;
-          fifoLots.push({
-            quantity: activity.quantity,
-            unitCost: activity.quantity > 0 ? totalCost / activity.quantity : 0
-          });
-          continue;
-        }
-
-        if (type !== 'SELL') {
-          continue;
-        }
-
-        let remainingToMatch = activity.quantity;
-
-        while (remainingToMatch > 0 && fifoLots.length > 0) {
-          const firstLot = fifoLots[0];
-          const matchedQuantity = Math.min(firstLot.quantity, remainingToMatch);
-          firstLot.quantity -= matchedQuantity;
-          remainingToMatch -= matchedQuantity;
-
-          if (firstLot.quantity <= 0) {
-            fifoLots.shift();
-          }
-        }
-      }
-
-      const openQuantity = fifoLots.reduce((sum, lot) => sum + lot.quantity, 0);
-      const entryPriceAmount = fifoLots.reduce((sum, lot) => sum + lot.quantity * lot.unitCost, 0);
-      const entryPricePerUnit = openQuantity > 0 ? entryPriceAmount / openQuantity : 0;
-      const fallbackPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
-      const currentPositionValue = holding?.valueInBaseCurrency ?? openQuantity * fallbackPricePerUnit;
-      const positionPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
-      const totalVap = [...row.activities]
-        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
-        .reduce((sum, activity) => {
-          return (
-            sum +
-            calculateVapForBuyLot({
-              accountId: row.accountId,
-              quantity: activity.quantity,
-              symbolId: row.symbol.trim().toUpperCase(),
-              taxEvents,
-              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
-              acquisitionDate: activity.date
-            })
-          );
-        }, 0);
-      const totalVapAfterTeilfreistellung = [...row.activities]
-        .filter((activity) => activity.type.trim().toUpperCase() === 'BUY')
-        .reduce((sum, activity) => {
-          return (
-            sum +
-            calculateVapForBuyLot({
-              accountId: row.accountId,
-              quantity: activity.quantity,
-              symbolId: row.symbol.trim().toUpperCase(),
-              taxEvents,
-              taxYear: activity.date ? new Date(activity.date).getFullYear() : undefined,
-              acquisitionDate: activity.date,
-              useAfterTeilfreistellung: true
-            })
-          );
-        }, 0);
-      const totalTaxableVap = totalVapAfterTeilfreistellung;
-      const potentialTaxes = calculatePotentialTax({
-        acquisitionCost: entryPriceAmount,
-        currentValue: currentPositionValue,
-        taxProfile,
-        usedVap: totalVap
-      });
-      const potentialTaxesWithoutVap = calculatePotentialTax({
-        acquisitionCost: entryPriceAmount,
-        currentValue: currentPositionValue,
-        taxProfile,
-        usedVap: 0
-      });
-      const usedVapForSelling = row.activities.reduce((sum, activity) => {
-        return (
-          sum +
-          activity.sellDetails.reduce((activitySum, sellDetail) => {
-            return activitySum + sellDetail.usedVapForSelling;
-          }, 0)
-        );
-      }, 0);
-      const usedTaxableVapForSelling = row.activities.reduce((sum, activity) => {
-        return (
-          sum +
-          activity.sellDetails.reduce((activitySum, sellDetail) => {
-            return activitySum + sellDetail.usedTaxableVapForSelling;
-          }, 0)
-        );
-      }, 0);
-      const taxForSelling = row.activities.reduce((sum, activity) => {
-        return (
-          sum +
-          activity.sellDetails.reduce((activitySum, sellDetail) => {
-            return activitySum + sellDetail.taxForSelling;
-          }, 0)
-        );
-      }, 0);
-      const gainAmount = currentPositionValue - entryPriceAmount;
-      const gainPercentage = entryPriceAmount > 0 ? (gainAmount / entryPriceAmount) * 100 : 0;
-      const realizedAmount = row.activities.reduce((sum, activity) => {
-        return sum + activity.sellDetails.reduce((activitySum, sellDetail) => activitySum + sellDetail.realizedAmount, 0);
-      }, 0);
-      const realizedCostBasis = row.activities.reduce((sum, activity) => {
-        return sum + activity.sellDetails.reduce((activitySum, sellDetail) => activitySum + sellDetail.realizedCostBasis, 0);
-      }, 0);
-      const realizedPercentage = realizedCostBasis > 0 ? (realizedAmount / realizedCostBasis) * 100 : 0;
-
-      row.currency = row.currency || 'EUR';
-      row.entryPriceAmount = entryPriceAmount;
-      row.entryPricePerUnit = entryPricePerUnit;
-      row.positionQuantity = openQuantity;
-      row.positionPricePerUnit = positionPricePerUnit;
-      row.positionPriceAmount = currentPositionValue;
-      row.gainAmount = gainAmount;
-      row.gainPercentage = gainPercentage;
-      row.realizedAmount = realizedAmount;
-      row.realizedPercentage = realizedPercentage;
-      row.potentialTaxes = potentialTaxes;
-      row.potentialTaxesWithoutVap = potentialTaxesWithoutVap;
-      row.taxForSelling = taxForSelling;
-      row.totalTaxableVap = totalTaxableVap;
-      row.usedTaxableVapForSelling = usedTaxableVapForSelling;
-      row.totalVap = totalVap;
-      row.totalVapAfterTeilfreistellung = totalVapAfterTeilfreistellung;
-      row.usedVapForSelling = usedVapForSelling;
-
-      for (const activityRow of row.activities) {
-        if (activityRow.type !== 'BUY') {
-          continue;
-        }
-
-        const baseCost = activityRow.quantity * activityRow.unitPrice + activityRow.fee;
-        const remainingBuyQuantity = Math.max(activityRow.quantity - (activityRow.soldQuantity ?? 0), 0);
-        const remainingCostBasis =
-          activityRow.quantity > 0 ? (remainingBuyQuantity / activityRow.quantity) * baseCost : 0;
-        const currentValueForRow = remainingBuyQuantity * row.positionPricePerUnit;
-        const buyGainAmount = remainingCostBasis > 0 ? currentValueForRow - remainingCostBasis : 0;
-        const buyGainPercentage = remainingCostBasis > 0 ? (buyGainAmount / remainingCostBasis) * 100 : 0;
-        const activityTaxYear = activityRow.date ? new Date(activityRow.date).getFullYear() : undefined;
-        const remainingActivityVap = calculateVapForBuyLot({
-          accountId: activityRow.accountId,
-          quantity: remainingBuyQuantity,
-          symbolId: row.symbol.trim().toUpperCase(),
-          taxEvents: taxEvents,
-          taxYear: activityTaxYear,
-          acquisitionDate: activityRow.date
-        });
-        const remainingActivityVapAfterTeilfreistellung = calculateVapForBuyLot({
-          accountId: activityRow.accountId,
-          quantity: remainingBuyQuantity,
-          symbolId: row.symbol.trim().toUpperCase(),
-          taxEvents: taxEvents,
-          taxYear: activityTaxYear,
-          acquisitionDate: activityRow.date,
-          useAfterTeilfreistellung: true
-        });
-
-        activityRow.gainAmount = buyGainAmount;
-        activityRow.gainPercentage = buyGainPercentage;
-        activityRow.totalTaxableVap = remainingActivityVapAfterTeilfreistellung;
-        activityRow.totalVap = remainingActivityVap;
-        activityRow.totalVapAfterTeilfreistellung = remainingActivityVapAfterTeilfreistellung;
-        activityRow.potentialTaxes =
-          remainingBuyQuantity > 0
-            ? calculatePotentialTax({
-                acquisitionCost: remainingCostBasis,
-                currentValue: currentValueForRow,
-                taxProfile,
-                usedVap: remainingActivityVap
-              })
-            : 0;
-        activityRow.potentialTaxesWithoutVap =
-          remainingBuyQuantity > 0
-            ? calculatePotentialTax({
-                acquisitionCost: remainingCostBasis,
-                currentValue: currentValueForRow,
-                taxProfile,
-                usedVap: 0
-              })
-            : 0;
-      }
-
-      return row;
+    return calculateTaxOverview({
+      activities: this.activities(),
+      holdings: this.holdings(),
+      taxEvents: this.taxEvents(),
+      taxProfile: this.taxProfile(),
+      asOfDate: new Date()
     });
   });
   protected readonly taxYearOptions = computed(() => {
@@ -809,24 +309,6 @@ export class TaxPage implements OnInit, OnDestroy {
 
     return this.accountLabelById().get(this.selectedAccountId()) || this.selectedAccountId();
   });
-
-  protected toggleEntry(entry: TaxActivityRow): void {
-    this.expandedEntrySet.update((set) => {
-      const next = new Set(set);
-
-      if (next.has(entry)) {
-        next.delete(entry);
-      } else {
-        next.add(entry);
-      }
-
-      return next;
-    });
-  }
-
-  protected isEntryExpanded(entry: TaxActivityRow): boolean {
-    return this.expandedEntrySet().has(entry);
-  }
 
   public ngOnInit(): void {
     void this.loadTaxEvents();
@@ -1120,10 +602,6 @@ export class TaxPage implements OnInit, OnDestroy {
     return '€';
   }
 
-  protected abs(value: number | null): number {
-    return Math.abs(value ?? 0);
-  }
-
   protected formatYearOption(year: number): string {
     return String(year);
   }
@@ -1219,10 +697,6 @@ function sortLabelOptions(labelMap: Map<string, string>): LabelOption[] {
         sensitivity: 'base'
       });
     });
-}
-
-function getActivityTimestamp(date: Date | null): number {
-  return date ? new Date(date).getTime() : 0;
 }
 
 function getCurrentYear(): number {

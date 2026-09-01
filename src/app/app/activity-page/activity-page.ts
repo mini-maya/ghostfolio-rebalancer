@@ -435,6 +435,13 @@ interface FifoLot {
   unitCost: number;
 }
 
+// Tolerance for floating-point residuals left over when summed sell quantities
+// should exactly match a lot's bought quantity (e.g. 17.4405 + 31 + 7.17225 !==
+// exactly 55.61275 in IEEE 754 arithmetic). Without this, a near-zero leftover
+// quantity stays "open" with a near-zero cost basis, producing absurd gain
+// percentages (e.g. 1925%) while the gain amount itself rounds to 0,00 €.
+const QUANTITY_EPSILON = 1e-6;
+
 function calculateActivitySymbolMetrics({
   activities,
   holding,
@@ -487,7 +494,7 @@ function calculateActivitySymbolMetrics({
     let matchedQuantity = 0;
     let matchedCostBasis = 0;
 
-    while (remainingToMatch > 0 && lots.length > 0) {
+    while (remainingToMatch > QUANTITY_EPSILON && lots.length > 0) {
       const firstLot = lots[0];
       const matchedFromLot = Math.min(firstLot.quantity, remainingToMatch);
       const feePerUnit = activity.fee / quantity;
@@ -518,7 +525,7 @@ function calculateActivitySymbolMetrics({
       firstLot.quantity -= matchedFromLot;
       remainingToMatch -= matchedFromLot;
 
-      if (firstLot.quantity <= 0) {
+      if (firstLot.quantity <= QUANTITY_EPSILON) {
         lots.shift();
       }
     }

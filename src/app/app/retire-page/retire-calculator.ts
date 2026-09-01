@@ -1,17 +1,38 @@
-import { addMonths, addYears, format } from 'date-fns';
+import { addMonths, addYears, endOfMonth, format } from 'date-fns';
+
+import type { AllocationItem } from '../services/allocations';
+import type { Activity, Holding } from '../services/ghostfolio-api';
+import type { TaxProfile } from '../services/tax-calculator';
+import type { TaxEvent } from '../services/tax-events';
+import { calculateTaxOverview } from '../services/tax-engine';
+import {
+  addContributionToLots,
+  applyLotGrowth,
+  calculateFutureFifoWithdrawalPlan,
+  createFutureLotsFromCapital,
+  portfolioValueFromLots,
+  sellLotsForAmount,
+  solveWithdrawalAmountForLots
+} from './future-fifo-projection';
+import { buildRetireTaxOverviewInput } from './retire-tax-simulation';
 
 export type WithdrawalFrequency = 'monthly' | 'yearly';
 
 export interface RetirementProjectionInput {
+  activities?: Activity[];
   accumulationAnnualReturnPercentage: number;
   accumulationMonthlyContribution: number;
   accumulationMonths: number;
   annualInflationPercentage: number;
   capitalAtWithdrawalStart?: number;
   capitalPreservationPercentage: number;
+  holdings?: Holding[];
+  allocations?: AllocationItem[];
   frequency: WithdrawalFrequency;
   projectionYears: number;
   startingCapital: number;
+  taxEvents?: TaxEvent[];
+  taxProfile?: TaxProfile;
   withdrawalAnnualReturnPercentage: number;
 }
 
@@ -20,8 +41,11 @@ export interface RetirementProjectionPoint {
   date: string;
   endingBalance: number;
   growth: number;
+  gain: number;
+  netWithdrawal: number;
   phase: 'accumulation' | 'withdrawal';
   periodIndex: number;
+  tax: number;
   withdrawal: number;
 }
 
@@ -30,6 +54,9 @@ export interface RetirementProjectionResult {
   endingCapital: number;
   firstWithdrawal: number;
   lastWithdrawal: number;
+  openTaxAtWithdrawalStart: number;
+  projectedVapTotal: number;
+  taxableVapTotal: number;
   points: RetirementProjectionPoint[];
   targetCapital: number;
   totalGrowth: number;
@@ -58,15 +85,19 @@ export function calculateRetirementProjection(
   const accumulationPeriodicReturnRate = Math.pow(1 + accumulationAnnualReturnRate, 1 / 12) - 1;
   const periodicReturnRate = Math.pow(1 + withdrawalAnnualReturnRate, 1 / periodsPerYear) - 1;
   const points: RetirementProjectionPoint[] = [];
-  let capital = startingCapital;
+  let lots = createFutureLotsFromCapital(startingCapital);
+  let currentPrice = startingCapital > 0 ? startingCapital : 1;
 
   for (let periodIndex = 0; periodIndex < accumulationMonths; periodIndex += 1) {
-    const growth = roundToTwo(capital * accumulationPeriodicReturnRate);
-    const contribution = roundToTwo(accumulationMonthlyContribution);
-    const endingBalance = roundToTwo(capital + growth + contribution);
+    const startingValue = portfolioValueFromLots(lots, currentPrice);
+    currentPrice = applyLotGrowth(currentPrice, accumulationPeriodicReturnRate);
+    const grownValue = portfolioValueFromLots(lots, currentPrice);
+    const growth = roundToTwo(grownValue - startingValue);
+    lots = addContributionToLots(lots, accumulationMonthlyContribution, currentPrice);
+    const endingBalance = roundToTwo(portfolioValueFromLots(lots, currentPrice));
 
     points.push({
-      contribution,
+      contribution: roundToTwo(accumulationMonthlyContribution),
       date: formatProjectionDate({
         frequency: 'monthly',
         periodIndex,
@@ -74,29 +105,33 @@ export function calculateRetirementProjection(
       }),
       endingBalance,
       growth,
+      gain: 0,
+      netWithdrawal: 0,
       phase: 'accumulation',
       periodIndex,
+      tax: 0,
       withdrawal: 0
     });
-
-    capital = endingBalance;
   }
 
   const capitalAtWithdrawalStart = roundToTwo(
-    Math.max(input.capitalAtWithdrawalStart ?? capital, 0)
+    Math.max(input.capitalAtWithdrawalStart ?? portfolioValueFromLots(lots, currentPrice), 0)
   );
   const targetCapital = roundToTwo(capitalAtWithdrawalStart * capitalPreservationRatio);
   const withdrawalStartDate = addMonths(startDate, accumulationMonths);
   const withdrawalPoints: RetirementProjectionPoint[] = [];
+  let capital = portfolioValueFromLots(lots, currentPrice);
 
   for (let periodIndex = 0; periodIndex < totalPeriods; periodIndex += 1) {
     const remainingPeriods = totalPeriods - periodIndex;
     const withdrawal = roundToTwo(
       Math.max(
-        solveWithdrawalAmount({
+        solveWithdrawalAmountForLots({
           annualInflationRate,
-          capital,
           currentPeriodIndex: periodIndex,
+          currentPrice,
+          currentWithdrawal: capital,
+          initialLots: lots,
           periodicReturnRate,
           periodsPerYear,
           remainingPeriods,
@@ -105,8 +140,13 @@ export function calculateRetirementProjection(
         0
       )
     );
-    const growth = roundToTwo(capital * periodicReturnRate);
-    const endingBalance = roundToTwo(Math.max(capital + growth - withdrawal, 0));
+    const preGrowthValue = portfolioValueFromLots(lots, currentPrice);
+    currentPrice = applyLotGrowth(currentPrice, periodicReturnRate);
+    const postGrowthValue = portfolioValueFromLots(lots, currentPrice);
+    const growth = roundToTwo(postGrowthValue - preGrowthValue);
+    const saleResult = sellLotsForAmount(lots, withdrawal, currentPrice);
+    lots = saleResult.lots;
+    const endingBalance = roundToTwo(portfolioValueFromLots(lots, currentPrice));
 
     const point: RetirementProjectionPoint = {
       contribution: 0,
@@ -117,69 +157,153 @@ export function calculateRetirementProjection(
       }),
       endingBalance,
       growth,
+      gain: 0,
+      netWithdrawal: 0,
       phase: 'withdrawal',
       periodIndex,
+      tax: 0,
       withdrawal
     };
 
     points.push(point);
     withdrawalPoints.push(point);
-
     capital = endingBalance;
   }
+
+  const withdrawalEstimates =
+    input.allocations?.length &&
+    input.activities?.length &&
+    input.holdings?.length &&
+    input.taxProfile
+      ? calculateFutureFifoWithdrawalPlan({
+          accumulationAnnualReturnPercentage: input.accumulationAnnualReturnPercentage,
+          accumulationMonths,
+          activities: input.activities,
+          allocations: input.allocations,
+          capitalPreservationTarget: targetCapital,
+          currentDate: startDate,
+          holdings: input.holdings,
+          monthlySavingsRate: accumulationMonthlyContribution,
+          taxEvents: input.taxEvents,
+          taxProfile: input.taxProfile,
+          withdrawalAnnualReturnPercentage: input.withdrawalAnnualReturnPercentage,
+          withdrawalPoints: withdrawalPoints.map((point) => ({
+            date: new Date(point.date),
+            periodIndex: point.periodIndex,
+            withdrawal: point.withdrawal
+          })),
+          withdrawalStartDate
+        })
+      : new Map<number, { gain: number; netWithdrawal: number; tax: number; withdrawal: number }>();
+
+  for (const point of withdrawalPoints) {
+    const estimate = withdrawalEstimates.get(point.periodIndex);
+
+    if (!estimate) {
+      continue;
+    }
+
+    point.gain = estimate.gain;
+    point.netWithdrawal = estimate.netWithdrawal;
+    point.tax = estimate.tax;
+  }
+
+  const taxSummary =
+    input.capitalAtWithdrawalStart === undefined &&
+    input.allocations?.length &&
+    input.activities?.length &&
+    input.holdings?.length &&
+    input.taxProfile
+      ? calculateProjectedTaxSummary({
+          accumulationAnnualReturnPercentage: input.accumulationAnnualReturnPercentage,
+          activities: input.activities,
+          allocations: input.allocations,
+          asOfDate: endOfMonth(withdrawalStartDate),
+          currentDate: startDate,
+          holdings: input.holdings,
+          monthlySavingsRate: accumulationMonthlyContribution,
+          taxEvents: input.taxEvents ?? [],
+          taxProfile: input.taxProfile,
+          withdrawalAnnualReturnPercentage: input.withdrawalAnnualReturnPercentage,
+          withdrawalStartDate
+        })
+      : {
+          openTaxAtWithdrawalStart: 0,
+          projectedVapTotal: 0,
+          taxableVapTotal: 0
+        };
 
   return {
     capitalAtWithdrawalStart,
     endingCapital: withdrawalPoints.at(-1)?.endingBalance ?? capitalAtWithdrawalStart,
     firstWithdrawal: withdrawalPoints[0]?.withdrawal ?? 0,
     lastWithdrawal: withdrawalPoints.at(-1)?.withdrawal ?? 0,
+    openTaxAtWithdrawalStart: taxSummary.openTaxAtWithdrawalStart,
     points,
+    projectedVapTotal: taxSummary.projectedVapTotal,
     targetCapital,
+    taxableVapTotal: taxSummary.taxableVapTotal,
     totalGrowth: roundToTwo(points.reduce((sum, point) => sum + point.growth, 0)),
     totalWithdrawals: roundToTwo(points.reduce((sum, point) => sum + point.withdrawal, 0))
   };
 }
 
-function solveWithdrawalAmount({
-  annualInflationRate,
-  capital,
-  currentPeriodIndex,
-  periodicReturnRate,
-  periodsPerYear,
-  remainingPeriods,
-  targetCapital
+function calculateProjectedTaxSummary({
+  accumulationAnnualReturnPercentage,
+  activities,
+  allocations,
+  asOfDate,
+  currentDate,
+  holdings,
+  monthlySavingsRate,
+  taxEvents,
+  taxProfile,
+  withdrawalAnnualReturnPercentage,
+  withdrawalStartDate
 }: {
-  annualInflationRate: number;
-  capital: number;
-  currentPeriodIndex: number;
-  periodicReturnRate: number;
-  periodsPerYear: number;
-  remainingPeriods: number;
-  targetCapital: number;
-}): number {
-  if (capital <= targetCapital) {
-    return 0;
-  }
+  accumulationAnnualReturnPercentage: number;
+  activities: Activity[];
+  allocations: AllocationItem[];
+  asOfDate: Date;
+  currentDate: Date;
+  holdings: Holding[];
+  monthlySavingsRate: number;
+  taxEvents: TaxEvent[];
+  taxProfile: TaxProfile;
+  withdrawalAnnualReturnPercentage: number;
+  withdrawalStartDate: Date;
+}): {
+  openTaxAtWithdrawalStart: number;
+  projectedVapTotal: number;
+  taxableVapTotal: number;
+} {
+  const overviewInput = buildRetireTaxOverviewInput({
+    accumulationAnnualReturnPercentage,
+    activities,
+    allocations,
+    asOfDate,
+    currentDate,
+    holdings,
+    monthlySavingsRate,
+    taxEvents,
+    taxProfile,
+    withdrawalAnnualReturnPercentage,
+    withdrawalPoints: [],
+    withdrawalStartDate
+  });
+  const rows = calculateTaxOverview({
+    activities: overviewInput.combinedActivities,
+    asOfDate,
+    holdings: overviewInput.holdings,
+    taxEvents: overviewInput.combinedTaxEvents,
+    taxProfile
+  });
 
-  const grossFutureCapital = capital * Math.pow(1 + periodicReturnRate, remainingPeriods);
-  const weightedWithdrawalFactor = Array.from({ length: remainingPeriods }, (_, offset) => {
-    const inflationSteps =
-      Math.floor((currentPeriodIndex + offset) / periodsPerYear) -
-      Math.floor(currentPeriodIndex / periodsPerYear);
-
-    return (
-      Math.pow(1 + annualInflationRate, inflationSteps) *
-      Math.pow(1 + periodicReturnRate, remainingPeriods - 1 - offset)
-    );
-  }).reduce((sum, value) => sum + value, 0);
-
-  if (weightedWithdrawalFactor <= 0) {
-    return 0;
-  }
-
-  const candidateWithdrawal = (grossFutureCapital - targetCapital) / weightedWithdrawalFactor;
-
-  return Math.max(candidateWithdrawal, 0);
+  return {
+    openTaxAtWithdrawalStart: roundToTwo(rows.reduce((sum, row) => sum + row.potentialTaxes, 0)),
+    projectedVapTotal: roundToTwo(rows.reduce((sum, row) => sum + row.totalVap, 0)),
+    taxableVapTotal: roundToTwo(rows.reduce((sum, row) => sum + row.totalTaxableVap, 0))
+  };
 }
 
 function formatProjectionDate({

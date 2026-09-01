@@ -14,6 +14,18 @@ export const DEFAULT_TAX_PROFILE: TaxProfile = {
   solidaritySurchargeRate: 0.055
 };
 
+// Tolerance for floating-point residuals when a running "remaining quantity"
+// total is depleted across multiple tax events (mirrors the QUANTITY_EPSILON
+// convention used for FIFO lot matching in tax-engine.ts/activity-page.ts).
+const EPSILON = 1e-6;
+
+export function resolveTaxProfile(taxProfile: Partial<TaxProfile> | undefined): TaxProfile {
+  return {
+    ...DEFAULT_TAX_PROFILE,
+    ...taxProfile
+  };
+}
+
 export interface TaxEventFilter {
   accountId?: string;
   symbolId?: string;
@@ -173,7 +185,7 @@ export function calculateVapForQuantity({
       );
     })
     .sort((left, right) => left.taxYear - right.taxYear)) {
-    if (remainingQuantity <= 0) {
+    if (remainingQuantity <= EPSILON) {
       break;
     }
 
@@ -233,6 +245,46 @@ export function calculateVapForBuyLot({
   }, 0);
 
   return weightedQuantity * totalPerShareVap;
+}
+
+// Fallback base interest rate (Basiszins) used to internally estimate a Vorabpauschale (VAP)
+// for years without an explicit tax-page entry, following the same formula the Finanzamt uses:
+// Basisertrag = Kurswert Jahresanfang * Basiszins * 0.7, capped at the year's actual price gain.
+export const ASSUMED_BASISZINS_PERCENTAGE = 2.5;
+
+/**
+ * Estimates a Vorabpauschale (VAP) for a BUY lot whose acquisition year has no explicit
+ * tax-page entry, using the statutory formula: Basisertrag = start-of-year price * Basiszins
+ * * 0.7, capped at the year's actual price gain (0 if the price fell), prorated by the month
+ * the lot was acquired in. Callers are responsible for deriving startOfYearPrice/endOfYearPrice
+ * from their own price-projection model.
+ */
+export function estimateVapForLotWithoutTaxEvent({
+  acquisitionDate,
+  endOfYearPrice,
+  quantity,
+  startOfYearPrice,
+  taxProfile
+}: {
+  acquisitionDate?: Date | string | null;
+  endOfYearPrice: number;
+  quantity: number;
+  startOfYearPrice: number;
+  taxProfile: TaxProfile;
+}): { grossVap: number; taxableVap: number } {
+  if (quantity <= 0) {
+    return { grossVap: 0, taxableVap: 0 };
+  }
+
+  const basisertragPerShare = startOfYearPrice * (ASSUMED_BASISZINS_PERCENTAGE / 100) * 0.7;
+  const priceGainPerShare = Math.max(endOfYearPrice - startOfYearPrice, 0);
+  const vapPerShare = Math.min(basisertragPerShare, priceGainPerShare);
+  const monthFactor = calculateVapMonthFactor({ acquisitionDate });
+
+  const grossVap = roundMoney(quantity * monthFactor * vapPerShare);
+  const taxableVap = roundMoney(grossVap * (1 - taxProfile.partialExemptionRate));
+
+  return { grossVap, taxableVap };
 }
 
 export function calculateTaxForSale({

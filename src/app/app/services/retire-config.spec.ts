@@ -15,6 +15,7 @@ describe('normalizeRetireConfig', () => {
       frequency: 'monthly',
       monthlySavingsRate: 2500,
       projectionYears: 25,
+      sellWholeSharesOnly: false,
       withdrawalAnnualReturnPercentage: 6,
       withdrawalStarted: false,
       withdrawalStartMonth: '2035-07'

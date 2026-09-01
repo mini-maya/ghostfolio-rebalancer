@@ -631,6 +631,7 @@ function readRetireConfig(value) {
     frequency: value.frequency === 'yearly' ? 'yearly' : 'monthly',
     monthlySavingsRate: readNonNegativeNumber(value.monthlySavingsRate, 1750),
     projectionYears: readPositiveIntegerFallback(value.projectionYears, 25),
+    sellWholeSharesOnly: value.sellWholeSharesOnly === true,
     withdrawalAnnualReturnPercentage: readNonNegativeNumber(
       value.withdrawalAnnualReturnPercentage,
       6

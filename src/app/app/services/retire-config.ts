@@ -8,6 +8,7 @@ export interface RetireConfig {
   frequency: WithdrawalFrequency;
   monthlySavingsRate: number;
   projectionYears: number;
+  sellWholeSharesOnly: boolean;
   withdrawalAnnualReturnPercentage: number;
   withdrawalStarted: boolean;
   withdrawalStartMonth: string;
@@ -21,6 +22,7 @@ export const DEFAULT_RETIRE_CONFIG: RetireConfig = {
   frequency: 'monthly',
   monthlySavingsRate: 1750,
   projectionYears: 25,
+  sellWholeSharesOnly: false,
   withdrawalAnnualReturnPercentage: 6,
   withdrawalStarted: false,
   withdrawalStartMonth: ''

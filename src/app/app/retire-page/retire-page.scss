@@ -156,18 +156,6 @@ h2 {
   border-color: var(--app-error-text);
 }
 
-.withdrawal-schedule-table tr.is-completed {
-  color: var(--app-muted-text);
-}
-
-.withdrawal-schedule-table tr.is-year-summary {
-  font-weight: 600;
-}
-
-.row-status {
-  margin-right: 0.4rem;
-}
-
 .field span,
 .stat span {
   color: var(--app-muted-text);
@@ -240,17 +228,22 @@ select {
   overflow-x: auto;
 }
 
+.projection-table-scroll {
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.withdrawal-schedule-table thead th {
+  background: var(--app-surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .sell-plan-table {
   border-collapse: collapse;
   margin-top: 1rem;
   min-width: 760px;
-  width: 100%;
-}
-
-.withdrawal-schedule-table {
-  border-collapse: collapse;
-  margin-top: 1rem;
-  min-width: 560px;
   width: 100%;
 }
 
@@ -262,19 +255,7 @@ select {
   vertical-align: top;
 }
 
-.withdrawal-schedule-table th,
-.withdrawal-schedule-table td {
-  border-bottom: 1px solid var(--app-border);
-  padding: 0.75rem;
-  text-align: left;
-  vertical-align: top;
-}
-
 .sell-plan-table .numeric {
-  text-align: right;
-}
-
-.withdrawal-schedule-table .numeric {
   text-align: right;
 }
 
@@ -289,6 +270,127 @@ select {
 .sell-plan-unit-price {
   color: var(--app-text);
   margin-left: 0.45rem;
+}
+
+.projection-fifo-header {
+  margin-top: 1rem;
+}
+
+.fifo-month-controls {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.fifo-month-field {
+  flex: 0 1 260px;
+}
+
+.fifo-month-navigation,
+.fifo-month-shortcuts {
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0;
+}
+
+.fifo-month-shortcuts {
+  flex-basis: 100%;
+}
+
+.fifo-nav-button {
+  align-items: center;
+  background: var(--app-primary);
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  color: var(--app-surface);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.8rem;
+}
+
+.fifo-nav-button:hover {
+  opacity: 0.92;
+}
+
+.fifo-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.retire-calculate-row {
+  display: flex;
+  margin-top: 1rem;
+}
+
+.retire-calculate-button {
+  align-items: center;
+  background: var(--app-primary);
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  color: var(--app-surface);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.45rem 1.2rem;
+  width: 100%;
+}
+
+.retire-calculate-button:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.retire-calculate-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.retire-calculate-button .spinner {
+  animation: retire-spinner-spin 0.7s linear infinite;
+  border: 0.15rem solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  border-top-color: var(--app-surface);
+  display: inline-block;
+  height: 1rem;
+  width: 1rem;
+  will-change: transform;
+}
+
+@keyframes retire-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fifo-month-navigation-legend {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.fifo-month-caption {
+  color: var(--app-muted-text);
+  margin: 0 0 1rem;
 }
 
 .name-secondary {
@@ -365,5 +467,19 @@ select {
   .retire-form-grid,
   .stats {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fifo-month-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fifo-month-field {
+    flex: 1 1 auto;
+  }
+
+  .fifo-month-navigation,
+  .fifo-month-shortcuts {
+    justify-content: flex-start;
   }
 }

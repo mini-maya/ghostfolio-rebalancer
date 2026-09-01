@@ -153,8 +153,38 @@
               Expected end: {{ withdrawalEndLabel() }}
             </span>
           </div>
+
+          <label
+            class="switch-field"
+            title="When enabled, only whole numbers of shares are sold during withdrawals. The actual sell amount may fall slightly short of the requested withdrawal, since fractional shares cannot be sold."
+          >
+            <input
+              class="switch-control"
+              type="checkbox"
+              [checked]="sellWholeSharesOnly()"
+              (change)="updateSellWholeSharesOnly($event)"
+              aria-label="Sell whole shares only"
+            />
+            <span>Sell whole shares only</span>
+          </label>
         </div>
       </section>
+    </div>
+
+    <div class="retire-calculate-row">
+      <button
+        class="retire-calculate-button"
+        type="button"
+        [disabled]="isCalculating() || isCalculateDisabled()"
+        (click)="calculate()"
+      >
+        @if (isCalculating()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Calculating…
+        } @else {
+          Calculate
+        }
+      </button>
     </div>
 
     @if (errorMessage()) {
@@ -166,6 +196,7 @@
     }
   </section>
 
+  @if (hasCalculated() && !isCalculating()) {
   <section class="stats">
     <article class="card stat">
       <span>Portfolio value</span>
@@ -182,7 +213,7 @@
         {{ projection().capitalAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>Starts in {{ withdrawalStartLabel() }}</small>
+      <small>Starts in {{ frozenWithdrawalStartLabel() }}</small>
     </article>
 
     <article class="card stat">
@@ -202,7 +233,7 @@
         {{ projection().firstWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>Starts in {{ withdrawalStartLabel() }}</small>
+      <small>Starts in {{ frozenWithdrawalStartLabel() }}</small>
     </article>
 
     <article class="card stat">
@@ -231,6 +262,28 @@
       </strong>
       <small>Expected cumulative returns</small>
     </article>
+
+    <article class="card stat">
+      <span>Open tax</span>
+      <strong>
+        {{ projection().openTaxAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>At withdrawal start, considering VAP</small>
+    </article>
+
+    <article class="card stat">
+      <span>Total VAP</span>
+      <strong>
+        {{ projection().projectedVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        Total taxable VAP:
+        {{ projection().taxableVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
+    </article>
   </section>
 
   <section class="card">
@@ -252,16 +305,16 @@
       </div>
     </div>
 
-    @if (allocationState().errors.length) {
+    @if (frozenAllocationState().errors.length) {
       <div class="message message-error">
-        @for (error of allocationState().errors; track error) {
+        @for (error of frozenAllocationState().errors; track error) {
           <p>{{ error }}</p>
         }
       </div>
     } @else if (!hasValidAllocationTarget()) {
       <p class="message message-info">
         Retire needs valid target allocations with a total of 100%. Current total:
-        {{ allocationState().total | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%.
+        {{ frozenAllocationState().total | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%.
       </p>
     } @else {
       <section class="stats stats-sell-plan">
@@ -289,15 +342,60 @@
         <table class="sell-plan-table">
           <thead>
             <tr>
-              <th>Symbol</th>
-              <th class="numeric">Current</th>
-              <th class="numeric">Target %</th>
-              <th class="numeric">Sell quantity</th>
-              <th class="numeric">Remaining</th>
+              <th>
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isWithdrawalSortColumn('symbol')"
+                  (click)="sortWithdrawalBy('symbol')"
+                >
+                  Symbol <span>{{ withdrawalSortIndicator('symbol') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isWithdrawalSortColumn('currentValue')"
+                  (click)="sortWithdrawalBy('currentValue')"
+                >
+                  Current <span>{{ withdrawalSortIndicator('currentValue') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isWithdrawalSortColumn('targetAllocationPercentage')"
+                  (click)="sortWithdrawalBy('targetAllocationPercentage')"
+                >
+                  Target % <span>{{ withdrawalSortIndicator('targetAllocationPercentage') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isWithdrawalSortColumn('sellAmount')"
+                  (click)="sortWithdrawalBy('sellAmount')"
+                >
+                  Sell quantity <span>{{ withdrawalSortIndicator('sellAmount') }}</span>
+                </button>
+              </th>
+              <th class="numeric">
+                <button
+                  class="sort-button"
+                  type="button"
+                  [class.sort-button-active]="isWithdrawalSortColumn('remainingAllocationPercentage')"
+                  (click)="sortWithdrawalBy('remainingAllocationPercentage')"
+                >
+                  Remaining <span>{{ withdrawalSortIndicator('remainingAllocationPercentage') }}</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            @for (row of nextWithdrawalSellPlan().rows; track row.symbol) {
+            @for (row of sortedNextWithdrawalSellPlanRows(); track row.symbol) {
               <tr>
                 <td>
                   <strong>{{ row.symbol }}</strong><br />
@@ -311,15 +409,15 @@
                   {{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                 </td>
                 <td class="numeric">
+                  <span class="sell-plan-primary">
+                    {{ row.sellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                    {{ currencySymbol(row.currency) }}
+                  </span><br />
                   <span class="table-inline-highlight">
                     {{ row.sharesToSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x
                   </span>
                   <span class="sell-plan-unit-price">
                     {{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
-                    {{ currencySymbol(row.currency) }}
-                  </span><br />
-                  <span class="sell-plan-secondary">
-                    {{ row.sellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                     {{ currencySymbol(row.currency) }}
                   </span>
                 </td>
@@ -346,10 +444,9 @@
       <div>
         <h2>Projection</h2>
         <p>
-          Savings are compounded monthly until {{ withdrawalStartLabel() }}. From then on,
-          withdrawals are recalculated every {{ frequency() === 'monthly' ? 'month' : 'year' }}
-          using the remaining capital, remaining duration, withdrawal-phase return and
-          the selected end-capital target.
+          Savings are compounded monthly until {{ frozenWithdrawalStartLabel() }}. From then on,
+          the withdrawal plan follows the selected payout period while the underlying
+          simulation stays monthly.
         </p>
       </div>
     </div>
@@ -375,13 +472,16 @@
         />
       </div>
 
-      <div class="table-wrapper">
+      <div class="table-wrapper projection-table-scroll">
         <table class="withdrawal-schedule-table">
           <thead>
           <tr>
             <th>Period</th>
             <th>Withdrawal date</th>
             <th class="numeric">Withdrawal</th>
+            <th class="numeric">Gain</th>
+            <th class="numeric">Tax</th>
+            <th class="numeric">Net withdrawal</th>
             <th class="numeric">Ending balance</th>
           </tr>
           </thead>
@@ -402,6 +502,18 @@
                   {{ currencySymbol(currency()) }}
                 </td>
                 <td class="numeric">
+                  {{ row.gain | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol(currency()) }}
+                </td>
+                <td class="numeric">
+                  {{ row.tax | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol(currency()) }}
+                </td>
+                <td class="numeric">
+                  {{ row.netWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol(currency()) }}
+                </td>
+                <td class="numeric">
                   {{ row.endingBalance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                   {{ currencySymbol(currency()) }}
                 </td>
@@ -410,6 +522,118 @@
           </tbody>
         </table>
       </div>
+
+      <div class="section-header section-header-stack projection-fifo-header">
+        <div>
+          <h3>Simulated FIFO overview</h3>
+          <p>
+            The overview projects your holdings to {{ selectedFifoMonthLabel() }} and applies the
+            last due planned withdrawal up to that month against the simulated FIFO lots.
+          </p>
+        </div>
+      </div>
+
+      @if (frozenAllocationState().errors.length) {
+        <div class="message message-error">
+          @for (error of frozenAllocationState().errors; track error) {
+            <p>{{ error }}</p>
+          }
+        </div>
+      } @else if (!hasValidAllocationTarget()) {
+        <p class="message message-info">
+          Retire needs valid target allocations with a total of 100%. Current total:
+          {{ frozenAllocationState().total | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%.
+        </p>
+      } @else {
+        <div class="fifo-month-controls">
+          <label class="field fifo-month-field">
+            <span>Simulation month</span>
+            <input
+              type="month"
+              [value]="selectedFifoMonthValue()"
+              [min]="selectedFifoMonthMinimum()"
+              [max]="selectedFifoMonthMaximum()"
+              (input)="updateSelectedFifoMonth($event)"
+            />
+          </label>
+          <fieldset class="fifo-month-navigation">
+            <legend class="fifo-month-navigation-legend">Simulation month navigation</legend>
+            <button
+              class="fifo-nav-button"
+              type="button"
+              [disabled]="isSelectedFifoMonthAtMinimum()"
+              (click)="shiftSelectedFifoYear(-1)"
+            >
+              Year -
+            </button>
+            <button
+              class="fifo-nav-button"
+              type="button"
+              [disabled]="isSelectedFifoMonthAtMinimum()"
+              (click)="shiftSelectedFifoMonth(-1)"
+            >
+              Month -
+            </button>
+            <button
+              class="fifo-nav-button"
+              type="button"
+              [disabled]="isSelectedFifoMonthAtMaximum()"
+              (click)="shiftSelectedFifoMonth(1)"
+            >
+              Month +
+            </button>
+            <button
+              class="fifo-nav-button"
+              type="button"
+              [disabled]="isSelectedFifoMonthAtMaximum()"
+              (click)="shiftSelectedFifoYear(1)"
+            >
+              Year +
+            </button>
+          </fieldset>
+          <fieldset class="fifo-month-shortcuts">
+            <legend class="fifo-month-navigation-legend">Simulation month shortcuts</legend>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToToday()">
+              Today
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(1)">
+              +1M
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(3)">
+              +3M
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(6)">
+              +6M
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(12)">
+              +1J
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(36)">
+              +3J
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(60)">
+              +5J
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToYtd()">
+              YTD
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToEndOfWithdrawal()">
+              End
+            </button>
+          </fieldset>
+        </div>
+        <p class="fifo-month-caption">
+          Last due withdrawal used: {{ selectedFifoDuePointLabel() }}
+        </p>
+
+        <app-fifo-overview-table
+          [rows]="simulatedFifoOverviewRows()"
+          [currencySymbol]="currencySymbol(currency())"
+          emptyStateMessage="No simulated FIFO overview available."
+          [maxHeight]="'60rem'"
+        />
+      }
     }
   </section>
+  }
 </main>

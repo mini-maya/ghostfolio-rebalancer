@@ -2,6 +2,7 @@ import {
   calculateRetirementProjection,
   type RetirementProjectionInput
 } from './retire-calculator';
+import { DEFAULT_TAX_PROFILE, calculateTaxForSale } from '../services/tax-calculator';
 
 describe('calculateRetirementProjection', () => {
   const baseInput: RetirementProjectionInput = {
@@ -21,8 +22,10 @@ describe('calculateRetirementProjection', () => {
 
     expect(result.points).toHaveSize(5);
     expect(result.capitalAtWithdrawalStart).toBe(1000);
-    expect(result.firstWithdrawal).toBe(200);
-    expect(result.lastWithdrawal).toBe(200);
+    expect(result.points[0].date).toBe('2026-01-01');
+    expect(result.points.at(-1)?.date).toBe('2030-01-01');
+    expect(result.firstWithdrawal).toBeCloseTo(200, 2);
+    expect(result.lastWithdrawal).toBeCloseTo(200, 2);
     expect(result.totalWithdrawals).toBe(1000);
     expect(result.endingCapital).toBe(0);
   });
@@ -143,5 +146,130 @@ describe('calculateRetirementProjection', () => {
     );
 
     expect(higherReturnResult.firstWithdrawal).toBeGreaterThan(lowerReturnResult.firstWithdrawal);
+  });
+
+  it('attaches FIFO gain, tax and net withdrawal values to withdrawal points when lot data is available', () => {
+    const result = calculateRetirementProjection(
+      {
+        ...baseInput,
+        activities: [
+          {
+            accountId: 'acc-1',
+            accountName: 'Main',
+            assetClass: 'ETF',
+            assetSubClass: 'WORLD',
+            currency: 'EUR',
+            date: new Date('2024-01-01T00:00:00.000Z'),
+            fee: 0,
+            name: 'ETF A',
+            quantity: 1,
+            symbol: 'AAA',
+            type: 'BUY',
+            unitPrice: 10,
+            unitPriceInAssetProfileCurrency: 10,
+            valueInBaseCurrency: 10
+          },
+          {
+            accountId: 'acc-1',
+            accountName: 'Main',
+            assetClass: 'ETF',
+            assetSubClass: 'WORLD',
+            currency: 'EUR',
+            date: new Date('2024-02-01T00:00:00.000Z'),
+            fee: 0,
+            name: 'ETF A',
+            quantity: 1,
+            symbol: 'AAA',
+            type: 'BUY',
+            unitPrice: 100,
+            unitPriceInAssetProfileCurrency: 100,
+            valueInBaseCurrency: 100
+          }
+        ],
+        allocations: [{ percentage: 100, symbol: 'AAA' }],
+        holdings: [
+          {
+            allocationInPercentage: 100,
+            currency: 'EUR',
+            marketPrice: 100,
+            name: 'ETF A',
+            quantity: 2,
+            symbol: 'AAA',
+            valueInBaseCurrency: 200
+          }
+        ],
+        taxProfile: DEFAULT_TAX_PROFILE
+      },
+      new Date('2026-01-01T00:00:00.000Z')
+    );
+
+    const firstWithdrawalPoint = result.points.find((point) => point.phase === 'withdrawal');
+
+    expect(firstWithdrawalPoint?.gain).toBe(90);
+    // Both lots were acquired in 2024, already a fully completed past year by the 2026 sale
+    // date. Even without a real TaxEvent, the shared engine now fills in a synthetic
+    // Vorabpauschale for 2024 (based on the real 2024 -> 2026 price development), which
+    // correctly reduces the taxable gain instead of silently ignoring prior-year VAP.
+    expect(firstWithdrawalPoint?.tax).toBeCloseTo(
+      calculateTaxForSale({
+        acquisitionCost: 110,
+        saleProceeds: 200,
+        taxProfile: DEFAULT_TAX_PROFILE,
+        usedVap: 0.175
+      }),
+      2
+    );
+    expect(firstWithdrawalPoint?.netWithdrawal).toBeCloseTo(
+      200 - (firstWithdrawalPoint?.tax ?? 0),
+      2
+    );
+  });
+
+  it('exposes projection summary values for the retire stats cards', () => {
+    const result = calculateRetirementProjection(
+      {
+        ...baseInput,
+        activities: [
+          {
+            accountId: 'acc-1',
+            accountName: 'Main',
+            assetClass: 'ETF',
+            assetSubClass: 'WORLD',
+            currency: 'EUR',
+            date: new Date('2024-01-01T00:00:00.000Z'),
+            fee: 0,
+            name: 'ETF A',
+            quantity: 10,
+            symbol: 'AAA',
+            type: 'BUY',
+            unitPrice: 100,
+            unitPriceInAssetProfileCurrency: 100,
+            valueInBaseCurrency: 1000
+          }
+        ],
+        allocations: [{ percentage: 100, symbol: 'AAA' }],
+        accumulationAnnualReturnPercentage: 6,
+        accumulationMonthlyContribution: 100,
+        accumulationMonths: 13,
+        holdings: [
+          {
+            allocationInPercentage: 100,
+            currency: 'EUR',
+            marketPrice: 120,
+            name: 'ETF A',
+            quantity: 10,
+            symbol: 'AAA',
+            valueInBaseCurrency: 1200
+          }
+        ],
+        projectionYears: 1,
+        taxProfile: DEFAULT_TAX_PROFILE
+      },
+      new Date('2026-01-01T00:00:00.000Z')
+    );
+
+    expect(result.projectedVapTotal).toBeGreaterThan(0);
+    expect(result.taxableVapTotal).toBeGreaterThan(0);
+    expect(result.openTaxAtWithdrawalStart).toBeGreaterThanOrEqual(0);
   });
 });

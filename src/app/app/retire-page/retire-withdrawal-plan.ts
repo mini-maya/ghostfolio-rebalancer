@@ -1,37 +1,59 @@
 import type { AllocationItem } from '../services/allocations';
 import type { Holding } from '../services/ghostfolio-api';
+import {
+  calculateTaxForSale,
+  DEFAULT_TAX_PROFILE,
+  type TaxProfile
+} from '../services/tax-calculator';
 
 export interface NextWithdrawalSellRow {
   currency: string;
   currentAllocationPercentage: number;
   currentValue: number;
+  estimatedTax: number;
+  grossSellAmount: number;
   marketPrice: number;
   name: string;
+  netSellAmount: number;
+  projectedVap: number;
   remainingAllocationPercentage: number;
   remainingValue: number;
   sellAmount: number;
   sharesToSell: number;
   symbol: string;
+  taxableVap: number;
   targetAllocationPercentage: number;
   targetPostWithdrawalValue: number;
 }
 
 export interface NextWithdrawalSellPlan {
+  estimatedTaxTotal: number;
+  netSellTotal: number;
   portfolioAfterSell: number;
   portfolioTotal: number;
+  projectedVapTotal: number;
   requestedSellAmount: number;
   rows: NextWithdrawalSellRow[];
+  taxableVapTotal: number;
   totalPlannedSell: number;
 }
 
 export function calculateNextWithdrawalSellPlan({
   allocations,
   holdings,
-  withdrawalAmount
+  symbolTaxDataBySymbol,
+  taxProfile = DEFAULT_TAX_PROFILE,
+  withdrawalAmount,
+  minimumRemainingValueBySymbol,
+  sellWholeSharesOnly = false
 }: {
   allocations: AllocationItem[];
   holdings: Holding[];
+  symbolTaxDataBySymbol?: Map<string, { grossVap: number; taxableVap: number }>;
+  taxProfile?: TaxProfile;
   withdrawalAmount: number;
+  minimumRemainingValueBySymbol?: Map<string, number>;
+  sellWholeSharesOnly?: boolean;
 }): NextWithdrawalSellPlan {
   const portfolioTotal = holdings.reduce((sum, holding) => {
     return sum + Math.max(holding.valueInBaseCurrency, 0);
@@ -41,22 +63,29 @@ export function calculateNextWithdrawalSellPlan({
 
   if (allocations.length === 0) {
     return {
+      estimatedTaxTotal: 0,
+      netSellTotal: 0,
       portfolioAfterSell: roundToTwo(portfolioAfterSell),
       portfolioTotal: roundToTwo(portfolioTotal),
+      projectedVapTotal: 0,
       requestedSellAmount: roundToTwo(requestedSellAmount),
       rows: [],
+      taxableVapTotal: 0,
       totalPlannedSell: 0
     };
   }
 
+  const minimumRemainingValues = minimumRemainingValueBySymbol ?? new Map<string, number>();
   const holdingsBySymbol = new Map(holdings.map((holding) => [holding.symbol, holding] as const));
   const rows = allocations.map(({ percentage, symbol }) => {
     const holding = holdingsBySymbol.get(symbol);
     const currentValue = Math.max(holding?.valueInBaseCurrency ?? 0, 0);
+    const minimumRemainingValue = Math.max(minimumRemainingValues.get(symbol) ?? 0, 0);
+    const availableCapacity = Math.max(currentValue - minimumRemainingValue, 0);
     const targetPostWithdrawalValue = (percentage / 100) * portfolioAfterSell;
 
     return {
-      availableCapacity: currentValue,
+      availableCapacity,
       currentValue,
       currency: holding?.currency ?? '???',
       marketPrice: Math.max(holding?.marketPrice ?? 0, 0),
@@ -70,7 +99,7 @@ export function calculateNextWithdrawalSellPlan({
   });
 
   const overweightCapacities = rows.map((row) => {
-    return Math.max(row.currentValue - row.targetPostWithdrawalValue, 0);
+    return Math.max(Math.min(row.currentValue - row.targetPostWithdrawalValue, row.availableCapacity), 0);
   });
   const overweightCapacityTotal = overweightCapacities.reduce((sum, value) => sum + value, 0);
 
@@ -108,37 +137,68 @@ export function calculateNextWithdrawalSellPlan({
     });
   }
 
+  if (sellWholeSharesOnly) {
+    applyWholeShareConstraint(rows, requestedSellAmount);
+  }
+
   const resultRows = rows.map((row) => {
     const sellAmount = clampToRange(row.sellAmount, 0, row.currentValue);
     const remainingValue = Math.max(row.currentValue - sellAmount, 0);
     const rawSharesToSell = row.marketPrice > 0 ? sellAmount / row.marketPrice : 0;
     const sharesToSell =
       row.quantity > 0 ? clampToRange(rawSharesToSell, 0, row.quantity) : Math.max(rawSharesToSell, 0);
+    const projectedTaxData = symbolTaxDataBySymbol?.get(row.symbol) ?? {
+      grossVap: 0,
+      taxableVap: 0
+    };
+    const projectedVap = roundToTwo(projectedTaxData.grossVap);
+    const taxableVap = roundToTwo(projectedTaxData.taxableVap);
+    const acquisitionCost = Math.max(row.currentValue - projectedVap, 0);
+    const estimatedTax = calculateTaxForSale({
+      acquisitionCost,
+      saleProceeds: sellAmount,
+      taxProfile,
+      usedVap: projectedVap
+    });
+    const netSellAmount = Math.max(sellAmount - estimatedTax, 0);
 
     return {
       currency: row.currency,
       currentAllocationPercentage:
         portfolioTotal > 0 ? roundToTwo((row.currentValue / portfolioTotal) * 100) : 0,
       currentValue: roundToTwo(row.currentValue),
+      estimatedTax: roundToTwo(estimatedTax),
+      grossSellAmount: roundToTwo(sellAmount),
       marketPrice: roundToTwo(row.marketPrice),
       name: row.name,
+      netSellAmount: roundToTwo(netSellAmount),
+      projectedVap,
       remainingAllocationPercentage:
         portfolioAfterSell > 0 ? roundToTwo((remainingValue / portfolioAfterSell) * 100) : 0,
       remainingValue: roundToTwo(remainingValue),
       sellAmount: roundToTwo(sellAmount),
       sharesToSell: roundToSix(sharesToSell),
       symbol: row.symbol,
+      taxableVap,
       targetAllocationPercentage: roundToTwo(row.targetAllocationPercentage),
       targetPostWithdrawalValue: roundToTwo(row.targetPostWithdrawalValue)
     };
   });
   const totalPlannedSell = resultRows.reduce((sum, row) => sum + row.sellAmount, 0);
+  const estimatedTaxTotal = resultRows.reduce((sum, row) => sum + row.estimatedTax, 0);
+  const projectedVapTotal = resultRows.reduce((sum, row) => sum + row.projectedVap, 0);
+  const taxableVapTotal = resultRows.reduce((sum, row) => sum + row.taxableVap, 0);
+  const netSellTotal = resultRows.reduce((sum, row) => sum + row.netSellAmount, 0);
 
   return {
+    estimatedTaxTotal: roundToTwo(estimatedTaxTotal),
+    netSellTotal: roundToTwo(netSellTotal),
     portfolioAfterSell: roundToTwo(portfolioAfterSell),
     portfolioTotal: roundToTwo(portfolioTotal),
+    projectedVapTotal: roundToTwo(projectedVapTotal),
     requestedSellAmount: roundToTwo(requestedSellAmount),
     rows: resultRows,
+    taxableVapTotal: roundToTwo(taxableVapTotal),
     totalPlannedSell: roundToTwo(totalPlannedSell)
   };
 }
@@ -206,6 +266,75 @@ function allocateByWeightsWithCaps({
 
 function clampToRange(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+const WHOLE_SHARE_EPSILON = 0.000001;
+
+/**
+ * Adjusts each row's `sellAmount` (mutating it in place) so that it corresponds to a
+ * whole number of shares. Rows are first floored to whole shares based on their
+ * continuously-allocated `sellAmount`, then any resulting shortfall against
+ * `requestedSellAmount` is greedily filled by adding one whole share at a time —
+ * always preferring the highest-priced eligible share — to get as close as possible to
+ * the requested amount without exceeding it.
+ */
+function applyWholeShareConstraint(
+  rows: Array<{ availableCapacity: number; marketPrice: number; quantity: number; sellAmount: number }>,
+  requestedSellAmount: number
+): void {
+  const maxShares = rows.map((row) => {
+    if (row.marketPrice <= 0) {
+      return 0;
+    }
+
+    const byQuantity = Math.floor(row.quantity + WHOLE_SHARE_EPSILON);
+    const byCapacity = Math.floor(row.availableCapacity / row.marketPrice + WHOLE_SHARE_EPSILON);
+
+    return Math.max(Math.min(byQuantity, byCapacity), 0);
+  });
+
+  const shares = rows.map((row, index) => {
+    if (row.marketPrice <= 0) {
+      return 0;
+    }
+
+    const rawShares = Math.floor(row.sellAmount / row.marketPrice + WHOLE_SHARE_EPSILON);
+
+    return clampToRange(rawShares, 0, maxShares[index]);
+  });
+
+  const soldSoFar = () => {
+    return rows.reduce((sum, row, index) => sum + shares[index] * row.marketPrice, 0);
+  };
+
+  let remainingShortfall = Math.max(requestedSellAmount - soldSoFar(), 0);
+
+  while (remainingShortfall > WHOLE_SHARE_EPSILON) {
+    let bestIndex = -1;
+    let bestPrice = -Infinity;
+
+    rows.forEach((row, index) => {
+      if (shares[index] >= maxShares[index] || row.marketPrice <= 0) {
+        return;
+      }
+
+      if (row.marketPrice <= remainingShortfall + WHOLE_SHARE_EPSILON && row.marketPrice > bestPrice) {
+        bestPrice = row.marketPrice;
+        bestIndex = index;
+      }
+    });
+
+    if (bestIndex === -1) {
+      break;
+    }
+
+    shares[bestIndex] += 1;
+    remainingShortfall -= bestPrice;
+  }
+
+  rows.forEach((row, index) => {
+    row.sellAmount = shares[index] * row.marketPrice;
+  });
 }
 
 function roundToTwo(value: number): number {

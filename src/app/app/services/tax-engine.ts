@@ -1,0 +1,573 @@
+import type {
+  FifoOverviewActivityRow,
+  FifoOverviewRow,
+  FifoOverviewSellDetailRow
+} from '../../shared/fifo-overview-table/fifo-overview-table.models';
+import type { Activity, Holding } from './ghostfolio-api';
+import {
+  calculatePotentialTax,
+  calculateTaxForSale,
+  calculateVapMonthFactor,
+  DEFAULT_TAX_PROFILE,
+  type TaxProfile
+} from './tax-calculator';
+import type { TaxEvent } from './tax-events';
+
+/**
+ * Single, shared FIFO + Vorabpauschale (VAP) + tax calculation engine.
+ *
+ * This is the ONE place where FIFO lot matching, VAP attribution and potential/realized
+ * capital-gains-tax figures are calculated. It is used by both the Tax-Page (asOfDate =
+ * "now", live Ghostfolio holdings) and the Retire-Page (asOfDate = end of the selected
+ * month, real and/or simulated activities). There must never be a second, independent
+ * implementation of this logic.
+ *
+ * VAP handling: this engine only ever consumes plain `TaxEvent[]` records (account/symbol/
+ * taxYear/per-share amounts). It has no built-in "estimate a missing VAP" fallback - callers
+ * that need an estimate for years/symbols without a real tax-page entry (e.g. the retire
+ * simulation for future years) are responsible for generating a synthetic `TaxEvent` and
+ * merging it into the `taxEvents` array before calling this engine, so that real and
+ * synthetic VAP data flow through the exact same attribution code path.
+ *
+ * German Vorabpauschale rule implemented here: the VAP declared for tax year Y only becomes
+ * tax-relevant on 01.01 of year Y+1, and it only applies to the quantity of a BUY lot that is
+ * still held (not yet sold) at the end of year Y. A lot that was completely sold before the
+ * end of year Y receives no VAP for year Y (or any later year). A lot bought during year Y
+ * only receives a pro-rated (by acquisition month) share of year Y's VAP.
+ */
+
+export interface TaxSellDetailRow extends FifoOverviewSellDetailRow {
+  date: Date | null;
+  realizedAmount: number;
+  realizedCostBasis: number;
+  realizedPercentage: number;
+  soldQuantity: number;
+  taxForSelling: number;
+  totalValue: number;
+  unitPrice: number;
+  usedTaxableVapForSelling: number;
+  usedVapForSelling: number;
+}
+
+export interface TaxActivityRow extends FifoOverviewActivityRow {
+  accountId: string;
+  date: Date | null;
+  fee: number;
+  gainAmount: number | null;
+  gainPercentage: number | null;
+  potentialTaxes: number;
+  potentialTaxesWithoutVap: number;
+  quantity: number;
+  sellDetails: TaxSellDetailRow[];
+  soldQuantity: number | null;
+  symbol: string;
+  totalTaxableVap: number;
+  totalVap: number;
+  totalVapAfterTeilfreistellung: number;
+  totalValue: number;
+  type: string;
+  unitPrice: number;
+}
+
+export interface TaxOverviewRow extends FifoOverviewRow {
+  accountId: string;
+  accountName: string;
+  activities: TaxActivityRow[];
+  currency: string;
+  entryPriceAmount: number;
+  entryPricePerUnit: number;
+  gainAmount: number;
+  gainPercentage: number;
+  name: string;
+  positionPriceAmount: number;
+  positionPricePerUnit: number;
+  positionQuantity: number;
+  potentialTaxes: number;
+  potentialTaxesWithoutVap: number;
+  realizedAmount: number;
+  realizedPercentage: number;
+  symbol: string;
+  taxForSelling: number;
+  totalTaxableVap: number;
+  usedTaxableVapForSelling: number;
+  totalVap: number;
+  totalVapAfterTeilfreistellung: number;
+  usedVapForSelling: number;
+}
+
+export interface CalculateTaxOverviewInput {
+  /** All known activities. Activities dated after asOfDate are ignored. */
+  activities: Activity[];
+  /** Holdings/market prices, representing the position as of asOfDate. */
+  holdings: Holding[];
+  /** Real and/or synthetic Vorabpauschale records. */
+  taxEvents: TaxEvent[];
+  taxProfile?: TaxProfile;
+  /** The Stichtag (cut-off date) for the whole calculation. Defaults to "now". */
+  asOfDate?: Date;
+}
+
+interface FifoLot {
+  activity: TaxActivityRow;
+  originalQuantity: number;
+  remainingQuantity: number;
+}
+
+// Tolerance for floating-point residuals left over when summed sell quantities
+// should exactly match a lot's bought quantity (e.g. 17.4405 + 31 + 7.17225 !==
+// exactly 55.61275 in IEEE 754 arithmetic). Without this, a near-zero leftover
+// quantity stays "open" with a near-zero cost basis, producing absurd gain
+// percentages (e.g. 1925%) while the gain amount itself rounds to 0,00 €.
+const QUANTITY_EPSILON = 1e-6;
+
+/**
+ * Returns the quantity of a BUY activity that is still open (not yet sold),
+ * clamping floating-point residuals below QUANTITY_EPSILON to exactly 0.
+ */
+function remainingLotQuantity(quantity: number, soldQuantity: number | null | undefined): number {
+  const remaining = quantity - (soldQuantity ?? 0);
+
+  return remaining > QUANTITY_EPSILON ? remaining : 0;
+}
+
+export function calculateTaxOverview({
+  activities,
+  holdings,
+  taxEvents,
+  taxProfile = DEFAULT_TAX_PROFILE,
+  asOfDate = new Date()
+}: CalculateTaxOverviewInput): TaxOverviewRow[] {
+  const cutoffTimestamp = endOfDayTimestamp(asOfDate);
+  const asOfYear = asOfDate.getFullYear();
+  const relevantActivities = activities.filter((activity) => {
+    return activity.date !== null && new Date(activity.date).getTime() <= cutoffTimestamp;
+  });
+
+  const rows = new Map<string, TaxOverviewRow>();
+
+  for (const activity of relevantActivities) {
+    const symbolKey = `${activity.accountId}:${normalizeSymbol(activity.symbol)}`;
+    const existing = rows.get(symbolKey) ?? createEmptyRow(activity, symbolKey);
+    const type = normalizeType(activity.type);
+    const totalValue = activity.quantity * activity.unitPrice;
+
+    existing.activities.push({
+      accountId: activity.accountId,
+      date: activity.date,
+      fee: activity.fee,
+      gainAmount: null,
+      gainPercentage: null,
+      potentialTaxes: 0,
+      potentialTaxesWithoutVap: 0,
+      quantity: activity.quantity,
+      sellDetails: [],
+      soldQuantity: type === 'SELL' ? activity.quantity : 0,
+      symbol: activity.symbol,
+      totalTaxableVap: 0,
+      totalVap: 0,
+      totalVapAfterTeilfreistellung: 0,
+      totalValue,
+      type,
+      unitPrice: activity.unitPrice
+    });
+
+    if (type === 'BUY') {
+      existing.entryPriceAmount += activity.quantity * activity.unitPrice + activity.fee;
+    }
+
+    rows.set(symbolKey, existing);
+  }
+
+  for (const row of rows.values()) {
+    const rowTaxEvents = taxEvents.filter((taxEvent) => {
+      return taxEvent.accountId === row.accountId && taxEvent.symbolId === normalizeSymbol(row.symbol);
+    });
+
+    // Build FIFO lots in chronological order and match SELL activities against them,
+    // recording, for every BUY lot, the exact date+quantity of every partial/complete sale.
+    // This per-lot sell timeline is what allows VAP to be attributed correctly: a lot's
+    // remaining quantity at the end of any given year can be reconstructed from it.
+    const fifoLots: FifoLot[] = [];
+
+    for (const activity of [...row.activities].sort(byActivityDate)) {
+      if (activity.type === 'BUY') {
+        fifoLots.push({
+          activity,
+          originalQuantity: activity.quantity,
+          remainingQuantity: activity.quantity
+        });
+        continue;
+      }
+
+      if (activity.type !== 'SELL') {
+        continue;
+      }
+
+      let remainingToMatch = activity.quantity;
+
+      while (remainingToMatch > QUANTITY_EPSILON && fifoLots.length > 0) {
+        const lot = fifoLots[0];
+        const matchedQuantity = Math.min(lot.remainingQuantity, remainingToMatch);
+        const buyCostBasis = matchedQuantity * lot.activity.unitPrice + lot.activity.fee;
+        const sellProceeds = matchedQuantity * activity.unitPrice - activity.fee;
+        const realizedAmount = sellProceeds - buyCostBasis;
+        const realizedPercentage = buyCostBasis > 0 ? (realizedAmount / buyCostBasis) * 100 : 0;
+        const saleYear = activity.date ? new Date(activity.date).getFullYear() : asOfYear;
+        const accruedPerShareBeforeSale = calculateLotVapPerShare({
+          acquisitionDate: lot.activity.date,
+          throughYear: saleYear - 1,
+          taxEvents: rowTaxEvents
+        });
+        const usedVapForSelling = roundMoney(
+          matchedQuantity * accruedPerShareBeforeSale.grossPerShare
+        );
+        const usedTaxableVapForSelling = roundMoney(
+          matchedQuantity * accruedPerShareBeforeSale.taxablePerShare
+        );
+        const taxForSelling = calculateTaxForSale({
+          acquisitionCost: buyCostBasis,
+          saleProceeds: sellProceeds,
+          taxProfile,
+          usedVap: usedVapForSelling
+        });
+
+        lot.activity.soldQuantity = (lot.activity.soldQuantity ?? 0) + matchedQuantity;
+        lot.activity.sellDetails.push({
+          date: activity.date,
+          realizedAmount,
+          realizedCostBasis: buyCostBasis,
+          realizedPercentage,
+          soldQuantity: matchedQuantity,
+          taxForSelling,
+          totalValue: sellProceeds,
+          unitPrice: activity.unitPrice,
+          usedTaxableVapForSelling,
+          usedVapForSelling
+        });
+
+        lot.remainingQuantity -= matchedQuantity;
+        remainingToMatch -= matchedQuantity;
+
+        if (lot.remainingQuantity <= QUANTITY_EPSILON) {
+          fifoLots.shift();
+        }
+      }
+    }
+  }
+
+  return [...rows.values()].map((row) => {
+    const holding = holdings.find((candidate) => {
+      return normalizeSymbol(candidate.symbol) === normalizeSymbol(row.symbol);
+    });
+    const rowTaxEvents = taxEvents.filter((taxEvent) => {
+      return taxEvent.accountId === row.accountId && taxEvent.symbolId === normalizeSymbol(row.symbol);
+    });
+    const buyLots = row.activities.filter((activity) => activity.type === 'BUY');
+
+    const openQuantity = buyLots.reduce((sum, activity) => {
+      return sum + remainingLotQuantity(activity.quantity, activity.soldQuantity);
+    }, 0);
+    const entryPriceAmount = buyLots.reduce((sum, activity) => {
+      const remaining = remainingLotQuantity(activity.quantity, activity.soldQuantity);
+      const totalCost = activity.quantity * activity.unitPrice + activity.fee;
+      const unitCost = activity.quantity > 0 ? totalCost / activity.quantity : 0;
+
+      return sum + remaining * unitCost;
+    }, 0);
+    const entryPricePerUnit = openQuantity > 0 ? entryPriceAmount / openQuantity : 0;
+    const fallbackPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
+    const currentPositionValue = holding?.valueInBaseCurrency ?? openQuantity * fallbackPricePerUnit;
+    const positionPricePerUnit = holding?.marketPrice ?? entryPricePerUnit;
+
+    let totalVap = 0;
+    let totalVapAfterTeilfreistellung = 0;
+
+    for (const activity of buyLots) {
+      const lotLifetimeVap = calculateLotLifetimeVap({
+        acquisitionDate: activity.date,
+        asOfYear,
+        originalQuantity: activity.quantity,
+        sellDetails: activity.sellDetails,
+        taxEvents: rowTaxEvents
+      });
+
+      totalVap += lotLifetimeVap.grossVap;
+      totalVapAfterTeilfreistellung += lotLifetimeVap.taxableVap;
+
+      const remainingBuyQuantity = remainingLotQuantity(activity.quantity, activity.soldQuantity);
+      const baseCost = activity.quantity * activity.unitPrice + activity.fee;
+      const remainingCostBasis =
+        activity.quantity > 0 ? (remainingBuyQuantity / activity.quantity) * baseCost : 0;
+      const currentValueForRow = remainingBuyQuantity * positionPricePerUnit;
+      const buyGainAmount = remainingCostBasis > 0 ? currentValueForRow - remainingCostBasis : 0;
+      const buyGainPercentage = remainingCostBasis > 0 ? (buyGainAmount / remainingCostBasis) * 100 : 0;
+      const remainingAccruedPerShare = calculateLotVapPerShare({
+        acquisitionDate: activity.date,
+        throughYear: asOfYear - 1,
+        taxEvents: rowTaxEvents
+      });
+      const remainingActivityVap = roundMoney(
+        remainingBuyQuantity * remainingAccruedPerShare.grossPerShare
+      );
+      const remainingActivityVapAfterTeilfreistellung = roundMoney(
+        remainingBuyQuantity * remainingAccruedPerShare.taxablePerShare
+      );
+
+      activity.gainAmount = buyGainAmount;
+      activity.gainPercentage = buyGainPercentage;
+      activity.totalTaxableVap = remainingActivityVapAfterTeilfreistellung;
+      activity.totalVap = remainingActivityVap;
+      activity.totalVapAfterTeilfreistellung = remainingActivityVapAfterTeilfreistellung;
+      activity.potentialTaxes =
+        remainingBuyQuantity > 0
+          ? calculatePotentialTax({
+              acquisitionCost: remainingCostBasis,
+              currentValue: currentValueForRow,
+              taxProfile,
+              usedVap: remainingActivityVap
+            })
+          : 0;
+      activity.potentialTaxesWithoutVap =
+        remainingBuyQuantity > 0
+          ? calculatePotentialTax({
+              acquisitionCost: remainingCostBasis,
+              currentValue: currentValueForRow,
+              taxProfile,
+              usedVap: 0
+            })
+          : 0;
+    }
+
+    totalVap = roundMoney(totalVap);
+    totalVapAfterTeilfreistellung = roundMoney(totalVapAfterTeilfreistellung);
+
+    const potentialTaxes = calculatePotentialTax({
+      acquisitionCost: entryPriceAmount,
+      currentValue: currentPositionValue,
+      taxProfile,
+      usedVap: buyLots.reduce((sum, activity) => sum + activity.totalVap, 0)
+    });
+    const potentialTaxesWithoutVap = calculatePotentialTax({
+      acquisitionCost: entryPriceAmount,
+      currentValue: currentPositionValue,
+      taxProfile,
+      usedVap: 0
+    });
+    const usedVapForSelling = roundMoney(sumSellDetails(row.activities, 'usedVapForSelling'));
+    const usedTaxableVapForSelling = roundMoney(
+      sumSellDetails(row.activities, 'usedTaxableVapForSelling')
+    );
+    const taxForSelling = roundMoney(sumSellDetails(row.activities, 'taxForSelling'));
+    const gainAmount = currentPositionValue - entryPriceAmount;
+    const gainPercentage = entryPriceAmount > 0 ? (gainAmount / entryPriceAmount) * 100 : 0;
+    const realizedAmount = roundMoney(sumSellDetails(row.activities, 'realizedAmount'));
+    const realizedCostBasis = roundMoney(sumSellDetails(row.activities, 'realizedCostBasis'));
+    const realizedPercentage = realizedCostBasis > 0 ? (realizedAmount / realizedCostBasis) * 100 : 0;
+
+    row.currency = row.currency || 'EUR';
+    row.entryPriceAmount = entryPriceAmount;
+    row.entryPricePerUnit = entryPricePerUnit;
+    row.positionQuantity = openQuantity;
+    row.positionPricePerUnit = positionPricePerUnit;
+    row.positionPriceAmount = currentPositionValue;
+    row.gainAmount = gainAmount;
+    row.gainPercentage = gainPercentage;
+    row.realizedAmount = realizedAmount;
+    row.realizedPercentage = realizedPercentage;
+    row.potentialTaxes = potentialTaxes;
+    row.potentialTaxesWithoutVap = potentialTaxesWithoutVap;
+    row.taxForSelling = taxForSelling;
+    row.totalTaxableVap = totalVapAfterTeilfreistellung;
+    row.usedTaxableVapForSelling = usedTaxableVapForSelling;
+    row.totalVap = totalVap;
+    row.totalVapAfterTeilfreistellung = totalVapAfterTeilfreistellung;
+    row.usedVapForSelling = usedVapForSelling;
+
+    return row;
+  });
+}
+
+/**
+ * Per-share VAP accrued by a lot for every full tax year it was held, up to and including
+ * `throughYear`. Only the acquisition year is prorated by acquisition month; every later year
+ * counts fully. Callers multiply this by whatever quantity of the lot is relevant (the
+ * quantity still held at the point in time being evaluated).
+ */
+function calculateLotVapPerShare({
+  acquisitionDate,
+  taxEvents,
+  throughYear
+}: {
+  acquisitionDate: Date | string | null;
+  taxEvents: TaxEvent[];
+  throughYear: number;
+}): { grossPerShare: number; taxablePerShare: number } {
+  if (!acquisitionDate) {
+    return { grossPerShare: 0, taxablePerShare: 0 };
+  }
+
+  const lotYear = new Date(acquisitionDate).getFullYear();
+
+  if (Number.isNaN(lotYear)) {
+    return { grossPerShare: 0, taxablePerShare: 0 };
+  }
+
+  let grossPerShare = 0;
+  let taxablePerShare = 0;
+
+  for (let year = lotYear; year <= throughYear; year += 1) {
+    const monthFactor = year === lotYear ? calculateVapMonthFactor({ acquisitionDate }) : 1;
+    const yearEvents = taxEvents.filter((taxEvent) => taxEvent.taxYear === year);
+
+    for (const taxEvent of yearEvents) {
+      grossPerShare += monthFactor * taxEvent.vorabpauschalePerShare;
+      taxablePerShare += monthFactor * taxEvent.vorabpauschalePerShareAfterTeilfreistellung;
+    }
+  }
+
+  return { grossPerShare, taxablePerShare };
+}
+
+/**
+ * Total VAP a BUY lot has ever accrued up to `asOfYear`, correctly excluding any year in which
+ * the lot (or the relevant portion of it) had already been fully sold before that year's end.
+ */
+function calculateLotLifetimeVap({
+  acquisitionDate,
+  asOfYear,
+  originalQuantity,
+  sellDetails,
+  taxEvents
+}: {
+  acquisitionDate: Date | string | null;
+  asOfYear: number;
+  originalQuantity: number;
+  sellDetails: TaxSellDetailRow[];
+  taxEvents: TaxEvent[];
+}): { grossVap: number; taxableVap: number } {
+  if (!acquisitionDate) {
+    return { grossVap: 0, taxableVap: 0 };
+  }
+
+  const lotYear = new Date(acquisitionDate).getFullYear();
+
+  if (Number.isNaN(lotYear)) {
+    return { grossVap: 0, taxableVap: 0 };
+  }
+
+  let grossVap = 0;
+  let taxableVap = 0;
+
+  for (let year = lotYear; year < asOfYear; year += 1) {
+    const remainingQuantity = remainingQuantityAtEndOfYear({
+      originalQuantity,
+      sellDetails,
+      year
+    });
+
+    if (remainingQuantity <= 0) {
+      continue;
+    }
+
+    const monthFactor = year === lotYear ? calculateVapMonthFactor({ acquisitionDate }) : 1;
+    const yearEvents = taxEvents.filter((taxEvent) => taxEvent.taxYear === year);
+
+    for (const taxEvent of yearEvents) {
+      grossVap += remainingQuantity * monthFactor * taxEvent.vorabpauschalePerShare;
+      taxableVap +=
+        remainingQuantity * monthFactor * taxEvent.vorabpauschalePerShareAfterTeilfreistellung;
+    }
+  }
+
+  return { grossVap: roundMoney(grossVap), taxableVap: roundMoney(taxableVap) };
+}
+
+function remainingQuantityAtEndOfYear({
+  originalQuantity,
+  sellDetails,
+  year
+}: {
+  originalQuantity: number;
+  sellDetails: TaxSellDetailRow[];
+  year: number;
+}): number {
+  const endOfYearTimestamp = new Date(year, 11, 31, 23, 59, 59, 999).getTime();
+  const soldByEndOfYear = sellDetails.reduce((sum, sellDetail) => {
+    if (!sellDetail.date || sellDetail.date.getTime() > endOfYearTimestamp) {
+      return sum;
+    }
+
+    return sum + sellDetail.soldQuantity;
+  }, 0);
+
+  return Math.max(originalQuantity - soldByEndOfYear, 0);
+}
+
+function sumSellDetails(
+  activities: TaxActivityRow[],
+  field: 'realizedAmount' | 'realizedCostBasis' | 'taxForSelling' | 'usedTaxableVapForSelling' | 'usedVapForSelling'
+): number {
+  return activities.reduce((sum, activity) => {
+    return sum + activity.sellDetails.reduce((activitySum, sellDetail) => activitySum + sellDetail[field], 0);
+  }, 0);
+}
+
+function createEmptyRow(activity: Activity, symbolKey: string): TaxOverviewRow {
+  return {
+    accountId: activity.accountId,
+    accountName: activity.accountName,
+    activities: [],
+    currency: activity.currency || 'EUR',
+    entryPriceAmount: 0,
+    entryPricePerUnit: 0,
+    gainAmount: 0,
+    gainPercentage: 0,
+    name: activity.name || activity.symbol,
+    positionPriceAmount: 0,
+    positionPricePerUnit: 0,
+    positionQuantity: 0,
+    potentialTaxes: 0,
+    potentialTaxesWithoutVap: 0,
+    realizedAmount: 0,
+    realizedPercentage: 0,
+    symbol: activity.symbol,
+    taxForSelling: 0,
+    trackKey: symbolKey,
+    totalTaxableVap: 0,
+    usedTaxableVapForSelling: 0,
+    totalVap: 0,
+    totalVapAfterTeilfreistellung: 0,
+    usedVapForSelling: 0
+  };
+}
+
+function normalizeSymbol(symbol: string): string {
+  return symbol.trim().toUpperCase();
+}
+
+function normalizeType(type: string): string {
+  return type.trim().toUpperCase();
+}
+
+function byActivityDate(left: TaxActivityRow, right: TaxActivityRow): number {
+  const leftTimestamp = left.date ? new Date(left.date).getTime() : 0;
+  const rightTimestamp = right.date ? new Date(right.date).getTime() : 0;
+
+  return leftTimestamp - rightTimestamp;
+}
+
+function endOfDayTimestamp(date: Date): number {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).getTime();
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}

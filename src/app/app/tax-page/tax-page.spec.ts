@@ -233,6 +233,9 @@ describe('TaxPage', () => {
     const fixture = TestBed.createComponent(TaxPage);
     const component = fixture.componentInstance as any;
 
+    // BUY dates and tax-year are chosen so the Vorabpauschale has already rolled over
+    // (VAP for tax year Y only becomes tax-relevant on 01.01 of year Y+1) by the time the
+    // SELL happens, so a non-zero "used VAP" is actually expected here.
     component.activities.set([
       {
         accountId: 'acc-1',
@@ -240,7 +243,7 @@ describe('TaxPage', () => {
         assetClass: 'ETF',
         assetSubClass: 'World',
         currency: 'EUR',
-        date: new Date('2026-01-01'),
+        date: new Date('2024-01-01'),
         fee: 0,
         name: 'Vanguard FTSE All-World',
         quantity: 10,
@@ -272,7 +275,7 @@ describe('TaxPage', () => {
         assetClass: 'ETF',
         assetSubClass: 'World',
         currency: 'EUR',
-        date: new Date('2026-01-01'),
+        date: new Date('2024-01-01'),
         fee: 0,
         name: 'iShares MSCI World',
         quantity: 8,
@@ -325,7 +328,7 @@ describe('TaxPage', () => {
         id: 'tax-1',
         quantity: 10,
         symbolId: 'VWCE',
-        taxYear: 2026,
+        taxYear: 2024,
         vorabpauschalePerShare: 1,
         vorabpauschalePerShareAfterTeilfreistellung: 0.7
       },
@@ -334,7 +337,7 @@ describe('TaxPage', () => {
         id: 'tax-2',
         quantity: 8,
         symbolId: 'IUSN',
-        taxYear: 2026,
+        taxYear: 2024,
         vorabpauschalePerShare: 2,
         vorabpauschalePerShareAfterTeilfreistellung: 1.4
       }
@@ -354,6 +357,80 @@ describe('TaxPage', () => {
     expect(summary.usedTaxableVapForSelling).toBe(expectedUsedTaxableVap);
     expect(summary.usedVapForSelling).toBeGreaterThan(0);
     expect(summary.usedTaxableVapForSelling).toBeGreaterThan(0);
+  });
+
+  it('expands BUY rows in the tax overview when sell details exist', () => {
+    const fixture = TestBed.createComponent(TaxPage);
+    const component = fixture.componentInstance as any;
+
+    component.activities.set([
+      {
+        accountId: 'acc-1',
+        accountName: 'Depot A',
+        assetClass: 'ETF',
+        assetSubClass: 'World',
+        currency: 'EUR',
+        date: new Date('2026-01-01'),
+        fee: 0,
+        name: 'Vanguard FTSE All-World',
+        quantity: 10,
+        symbol: 'VWCE',
+        type: 'BUY',
+        unitPrice: 100,
+        unitPriceInAssetProfileCurrency: 100,
+        valueInBaseCurrency: 1000
+      },
+      {
+        accountId: 'acc-1',
+        accountName: 'Depot A',
+        assetClass: 'ETF',
+        assetSubClass: 'World',
+        currency: 'EUR',
+        date: new Date('2026-02-01'),
+        fee: 0,
+        name: 'Vanguard FTSE All-World',
+        quantity: 4,
+        symbol: 'VWCE',
+        type: 'SELL',
+        unitPrice: 120,
+        unitPriceInAssetProfileCurrency: 120,
+        valueInBaseCurrency: 480
+      }
+    ]);
+    component.holdings.set([
+      {
+        allocationInPercentage: 100,
+        currency: 'EUR',
+        marketPrice: 110,
+        name: 'Vanguard FTSE All-World',
+        quantity: 6,
+        symbol: 'VWCE',
+        valueInBaseCurrency: 660
+      }
+    ]);
+    component.taxEvents.set([
+      {
+        accountId: 'acc-1',
+        id: 'tax-1',
+        quantity: 10,
+        symbolId: 'VWCE',
+        taxYear: 2026,
+        vorabpauschalePerShare: 1,
+        vorabpauschalePerShareAfterTeilfreistellung: 0.7
+      }
+    ]);
+    fixture.detectChanges();
+
+    const details = fixture.nativeElement.querySelector('.activity-details') as HTMLDetailsElement;
+    details.open = true;
+    details.dispatchEvent(new Event('toggle'));
+    fixture.detectChanges();
+
+    const buyRow = fixture.nativeElement.querySelector('tbody tr.buy-row-expandable') as HTMLTableRowElement;
+    buyRow.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.sell-details-row')).not.toBeNull();
   });
 
   it('updates and deletes tax events', async () => {
