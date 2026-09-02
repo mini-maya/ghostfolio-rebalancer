@@ -78,10 +78,6 @@
       <span class="table-inline-highlight">
         {{ row.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol() }}
-      </span><br />
-      <span class="table-inline-highlight table-allowance-highlight">
-        used Sparer-Pauschbetrag: {{ row.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
       </span>
     </span>
 
@@ -268,7 +264,7 @@
                               <th class="numeric">Unit price</th>
                               <th class="numeric">Total value</th>
                               <th class="numeric">Realized</th>
-                              <th class="numeric">Sold tax</th>
+                              <th class="numeric">Sold tax <br /> Used Sparer-Pauschbetrag</th>
                               <th class="numeric">Used VAP <br /> Used taxable VAP</th>
                             </tr>
                           </thead>
@@ -307,9 +303,11 @@
                                   }
                                 </td>
                                 <td class="numeric">
-                                  {{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}<br />
-                                  <span class="table-inline-highlight table-allowance-highlight">
-                                    used Sparer-Pauschbetrag: {{ sell.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                  <span class="table-primary-value">
+                                    {{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                  </span><br />
+                                  <span class="table-inline-highlight">
+                                    {{ sell.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
                                   </span>
                                 </td>
                                 <td class="numeric">
