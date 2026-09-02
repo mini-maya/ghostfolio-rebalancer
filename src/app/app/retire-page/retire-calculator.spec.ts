@@ -352,8 +352,12 @@ describe('calculateRetirementProjection', () => {
       .reduce((sum, point) => sum + point.tax, 0);
     expect(result.soldTaxTotal).toBe(withdrawalPointTaxSum);
     expect(result.soldTaxTotal).toBeGreaterThan(0);
-    // soldTaxTotalBeforeAllowance ignores the Sparer-Pauschbetrag entirely, so it must be
-    // strictly greater than the allowance-aware soldTaxTotal once the allowance is exceeded.
-    expect(result.soldTaxTotalBeforeAllowance).toBeGreaterThan(result.soldTaxTotal);
+    // soldTaxTotalBeforeAllowance can never be lower than the allowance-aware soldTaxTotal. In
+    // this fixture the annual VAP alone (on a 300k+ position) already exceeds the 1.000 EUR
+    // annual allowance, so by the time the withdrawal's own sale gain is considered, that year's
+    // allowance is already fully consumed - the sale itself receives no further reduction, so
+    // before/after can legitimately be equal here (not a bug - see the dedicated allowance-sharing
+    // test in future-fifo-projection.spec.ts for a case where the sale itself is still reduced).
+    expect(result.soldTaxTotalBeforeAllowance).toBeGreaterThanOrEqual(result.soldTaxTotal);
   });
 });

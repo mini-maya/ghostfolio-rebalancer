@@ -1,4 +1,4 @@
-import { addMonths, differenceInCalendarMonths, endOfMonth, startOfMonth } from 'date-fns';
+import { addMonths, differenceInCalendarMonths, endOfMonth, startOfMonth, subMonths } from 'date-fns';
 
 import type { AllocationItem } from '../services/allocations';
 import type { Activity, Holding } from '../services/ghostfolio-api';
@@ -248,13 +248,68 @@ export function calculateFutureWithdrawalTaxEstimates({
   const cumulativeSyntheticActivities: Activity[] = [];
   const sortedSyntheticActivities = [...scenario.syntheticActivities].sort(byActivityDate);
   let syntheticIndex = 0;
-  let previousRealizedAmount = 0;
-  let previousCumulativeTax = 0;
-  let previousCumulativeTaxBeforeAllowance = 0;
   const estimates = new Map<
     number,
     { gain: number; netWithdrawal: number; tax: number; taxBeforeAllowance: number; withdrawal: number }
   >();
+
+  // The Vorabpauschale accrues annually on the *entire* held position, not just on sold shares,
+  // so cumulative tax up to any cutoff date already includes every accumulation-phase year's VAP.
+  // Without a baseline, the very first withdrawal period's diff (cumulative - 0) would absorb the
+  // *entire* multi-year/decade accumulation-phase VAP backlog in one lump sum instead of just that
+  // period's own incremental tax. To avoid this, establish the baseline as of the day before the
+  // first withdrawal point (i.e. before any withdrawal-phase activity), using only real activities
+  // and the accumulation-phase synthetic contribution activities that occurred by then.
+  const firstPoint = sortedPoints[0];
+  const baselineCutoffDate = endOfMonth(subMonths(startOfMonth(firstPoint.date), 1));
+
+  while (
+    syntheticIndex < sortedSyntheticActivities.length &&
+    activityTimestamp(sortedSyntheticActivities[syntheticIndex]) <= baselineCutoffDate.getTime()
+  ) {
+    cumulativeSyntheticActivities.push(sortedSyntheticActivities[syntheticIndex]);
+    syntheticIndex += 1;
+  }
+
+  const baselineScenario = buildRetireTaxOverviewInput({
+    accumulationAnnualReturnPercentage,
+    activities,
+    allocations,
+    asOfDate: baselineCutoffDate,
+    capitalPreservationTarget,
+    currentDate,
+    holdings,
+    includeCurrentMonthWithdrawals: true,
+    monthlySavingsRate,
+    taxEvents,
+    taxProfile,
+    withdrawalAnnualReturnPercentage,
+    withdrawalPoints: [],
+    withdrawalStartDate
+  });
+  const baselineRows = calculateTaxOverview({
+    activities: [...realActivities, ...cumulativeSyntheticActivities],
+    asOfDate: baselineCutoffDate,
+    holdings: baselineScenario.holdings,
+    taxEvents: scenario.combinedTaxEvents,
+    taxProfile
+  });
+  const baselineAnnualSummaries = calculateAnnualTaxSummaries({
+    activities: [...realActivities, ...cumulativeSyntheticActivities],
+    asOfDate: baselineCutoffDate,
+    holdings: baselineScenario.holdings,
+    taxEvents: scenario.combinedTaxEvents,
+    taxProfile
+  });
+  let previousRealizedAmount = baselineRows.reduce((sum, row) => sum + row.realizedAmount, 0);
+  let previousCumulativeTax = baselineAnnualSummaries.reduce(
+    (sum, summary) => sum + summary.totalTax,
+    0
+  );
+  let previousCumulativeTaxBeforeAllowance = calculateTaxOnTaxableAmount(
+    baselineAnnualSummaries.reduce((sum, summary) => sum + summary.totalTaxableCapitalIncome, 0),
+    taxProfile
+  );
 
   for (const point of sortedPoints) {
     const pointCutoffDate = endOfMonth(point.date);

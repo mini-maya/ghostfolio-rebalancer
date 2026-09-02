@@ -252,5 +252,11 @@ describe('calculateFutureFifoWithdrawalPlan', () => {
     // effective 26,375 % rate (25 % KapSt + 5,5 % Soli) = 105,50 EUR - not 0, as it would be if
     // the allowance were (incorrectly) granted anew for each withdrawal.
     expect(secondWithdrawal?.tax).toBeCloseTo(105.5, 2);
+    // taxBeforeAllowance ignores the Sparer-Pauschbetrag entirely, so each withdrawal's own 700
+    // EUR taxable gain is taxed in full (700 * 26,375 % = 184,63 EUR) - clearly demonstrating that
+    // the allowance is what makes the first withdrawal tax free, not the underlying tax math.
+    expect(firstWithdrawal?.taxBeforeAllowance).toBeCloseTo(184.625, 1);
+    expect(secondWithdrawal?.taxBeforeAllowance).toBeCloseTo(184.625, 1);
+    expect(firstWithdrawal?.taxBeforeAllowance ?? 0).toBeGreaterThan(firstWithdrawal?.tax ?? 0);
   });
 });
