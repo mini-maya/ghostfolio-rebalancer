@@ -10,6 +10,8 @@ export interface FutureWithdrawalPeriodEstimate {
   gain: number;
   netWithdrawal: number;
   tax: number;
+  /** Same period tax, ignoring the annual Sparer-Pauschbetrag entirely. Always >= tax. */
+  taxBeforeAllowance: number;
   withdrawal: number;
 }
 

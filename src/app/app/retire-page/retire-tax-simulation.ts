@@ -3,6 +3,7 @@ import { addMonths, differenceInCalendarMonths, endOfMonth, startOfMonth } from 
 import type { AllocationItem } from '../services/allocations';
 import type { Activity, Holding } from '../services/ghostfolio-api';
 import {
+  calculateTaxOnTaxableAmount,
   estimateVapForLotWithoutTaxEvent,
   type TaxProfile
 } from '../services/tax-calculator';
@@ -196,7 +197,18 @@ export function calculateFutureWithdrawalTaxEstimates({
   withdrawalStartDate
 }: Omit<RetireTaxOverviewInput, 'asOfDate'>): Map<
   number,
-  { gain: number; netWithdrawal: number; tax: number; withdrawal: number }
+  {
+    gain: number;
+    netWithdrawal: number;
+    tax: number;
+    /**
+     * Same period tax, but as if no Sparer-Pauschbetrag existed at all (i.e. the combined
+     * taxable VAP + taxable realized sale gains taxed directly, ignoring the annual allowance).
+     * Always >= tax, since the allowance can only reduce (never increase) the taxable amount.
+     */
+    taxBeforeAllowance: number;
+    withdrawal: number;
+  }
 > {
   if (!withdrawalPoints.length) {
     return new Map();
@@ -238,7 +250,11 @@ export function calculateFutureWithdrawalTaxEstimates({
   let syntheticIndex = 0;
   let previousRealizedAmount = 0;
   let previousCumulativeTax = 0;
-  const estimates = new Map<number, { gain: number; netWithdrawal: number; tax: number; withdrawal: number }>();
+  let previousCumulativeTaxBeforeAllowance = 0;
+  const estimates = new Map<
+    number,
+    { gain: number; netWithdrawal: number; tax: number; taxBeforeAllowance: number; withdrawal: number }
+  >();
 
   for (const point of sortedPoints) {
     const pointCutoffDate = endOfMonth(point.date);
@@ -287,18 +303,34 @@ export function calculateFutureWithdrawalTaxEstimates({
       taxProfile
     });
     const cumulativeTax = annualSummaries.reduce((sum, summary) => sum + summary.totalTax, 0);
+    const cumulativeTaxableIncome = annualSummaries.reduce(
+      (sum, summary) => sum + summary.totalTaxableCapitalIncome,
+      0
+    );
+    // calculateTaxOnTaxableAmount is linear in the taxable amount (no allowance breakpoint), so
+    // diffing the cumulative gross tax across periods still yields the correct period tax, even
+    // when a period spans multiple calendar years.
+    const cumulativeTaxBeforeAllowance = calculateTaxOnTaxableAmount(
+      cumulativeTaxableIncome,
+      taxProfile
+    );
     const periodGain = roundToTwo(realizedAmount - previousRealizedAmount);
     const periodTax = roundToTwo(cumulativeTax - previousCumulativeTax);
+    const periodTaxBeforeAllowance = roundToTwo(
+      cumulativeTaxBeforeAllowance - previousCumulativeTaxBeforeAllowance
+    );
 
     estimates.set(point.periodIndex, {
       gain: periodGain,
       netWithdrawal: roundToTwo(Math.max(point.withdrawal - periodTax, 0)),
       tax: periodTax,
+      taxBeforeAllowance: periodTaxBeforeAllowance,
       withdrawal: roundToTwo(point.withdrawal)
     });
 
     previousRealizedAmount = realizedAmount;
     previousCumulativeTax = cumulativeTax;
+    previousCumulativeTaxBeforeAllowance = cumulativeTaxBeforeAllowance;
   }
 
   return estimates;

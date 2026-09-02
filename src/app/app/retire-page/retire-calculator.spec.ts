@@ -282,6 +282,11 @@ describe('calculateRetirementProjection', () => {
     expect(result.sparerPauschbetragUsedTotal).toBeGreaterThan(0);
     expect(result.sparerPauschbetragUsedTotal).toBeLessThanOrEqual(DEFAULT_TAX_PROFILE.sparerPauschbetrag);
     expect(result.sparerPauschbetragUnusedTotal).toBeGreaterThan(0);
+    // The realized sale gain is fully sheltered by the allowance, so no sale tax is actually
+    // paid during the withdrawal phase.
+    expect(result.soldTaxTotal).toBe(0);
+    // soldTaxTotalBeforeAllowance can never be lower than the allowance-aware soldTaxTotal.
+    expect(result.soldTaxTotalBeforeAllowance).toBeGreaterThanOrEqual(result.soldTaxTotal);
   });
 
   it('reduces the allowance-aware open tax estimate once the annual Sparer-Pauschbetrag is exceeded', () => {
@@ -339,5 +344,16 @@ describe('calculateRetirementProjection', () => {
     // so nothing remains unused.
     expect(result.sparerPauschbetragUsedTotal).toBeGreaterThan(0);
     expect(result.sparerPauschbetragUnusedTotal).toBe(0);
+    // soldTaxTotal aggregates the already allowance-aware per-period tax across the whole
+    // withdrawal phase (here just a single withdrawal), so it must match that period's tax and
+    // be strictly greater than zero once the allowance is exceeded.
+    const withdrawalPointTaxSum = result.points
+      .filter((point) => point.phase === 'withdrawal')
+      .reduce((sum, point) => sum + point.tax, 0);
+    expect(result.soldTaxTotal).toBe(withdrawalPointTaxSum);
+    expect(result.soldTaxTotal).toBeGreaterThan(0);
+    // soldTaxTotalBeforeAllowance ignores the Sparer-Pauschbetrag entirely, so it must be
+    // strictly greater than the allowance-aware soldTaxTotal once the allowance is exceeded.
+    expect(result.soldTaxTotalBeforeAllowance).toBeGreaterThan(result.soldTaxTotal);
   });
 });

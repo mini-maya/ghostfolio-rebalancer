@@ -301,6 +301,19 @@
         {{ currencySymbol(currency()) }}
       </small>
     </article>
+
+    <article class="card stat">
+      <span>Sold tax</span>
+      <strong>
+        {{ projection().soldTaxTotalBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        After Sparer-Pauschbetrag:
+        {{ projection().soldTaxTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
+    </article>
   </section>
 
   <section class="card">

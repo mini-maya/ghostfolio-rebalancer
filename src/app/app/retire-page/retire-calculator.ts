@@ -68,6 +68,15 @@ export interface RetirementProjectionResult {
   sparerPauschbetragUsedTotal: number;
   /** Sum of the annual Sparer-Pauschbetrag that expired unused (never carried over) across all years up to withdrawalStartDate. */
   sparerPauschbetragUnusedTotal: number;
+  /**
+   * Sum of the tax actually incurred on sales across all withdrawal periods, already net of the
+   * annual Sparer-Pauschbetrag (each period's tax comes from
+   * calculateFutureWithdrawalTaxEstimates, which applies the allowance chronologically per
+   * calendar year - see retire-tax-simulation.ts).
+   */
+  soldTaxTotal: number;
+  /** Same as soldTaxTotal, but ignoring the Sparer-Pauschbetrag entirely. Always >= soldTaxTotal. */
+  soldTaxTotalBeforeAllowance: number;
   points: RetirementProjectionPoint[];
   targetCapital: number;
   totalGrowth: number;
@@ -205,7 +214,12 @@ export function calculateRetirementProjection(
           })),
           withdrawalStartDate
         })
-      : new Map<number, { gain: number; netWithdrawal: number; tax: number; withdrawal: number }>();
+      : new Map<
+          number,
+          { gain: number; netWithdrawal: number; tax: number; taxBeforeAllowance: number; withdrawal: number }
+        >();
+
+  let soldTaxTotalBeforeAllowance = 0;
 
   for (const point of withdrawalPoints) {
     const estimate = withdrawalEstimates.get(point.periodIndex);
@@ -217,7 +231,13 @@ export function calculateRetirementProjection(
     point.gain = estimate.gain;
     point.netWithdrawal = estimate.netWithdrawal;
     point.tax = estimate.tax;
+    soldTaxTotalBeforeAllowance += estimate.taxBeforeAllowance;
   }
+
+  const soldTaxTotal = roundToTwo(
+    withdrawalPoints.reduce((sum, point) => sum + point.tax, 0)
+  );
+  const soldTaxTotalBeforeAllowanceRounded = roundToTwo(soldTaxTotalBeforeAllowance);
 
   const taxSummary =
     input.capitalAtWithdrawalStart === undefined &&
@@ -256,6 +276,8 @@ export function calculateRetirementProjection(
     openTaxAtWithdrawalStartAfterAllowance: taxSummary.openTaxAtWithdrawalStartAfterAllowance,
     points,
     projectedVapTotal: taxSummary.projectedVapTotal,
+    soldTaxTotal,
+    soldTaxTotalBeforeAllowance: soldTaxTotalBeforeAllowanceRounded,
     sparerPauschbetragUnusedTotal: taxSummary.sparerPauschbetragUnusedTotal,
     sparerPauschbetragUsedTotal: taxSummary.sparerPauschbetragUsedTotal,
     targetCapital,

@@ -145,9 +145,14 @@ describe('RetirePage', () => {
     expect(statsText).toContain('After Sparer-Pauschbetrag');
     expect(statsText).toContain('Sparer-Pauschbetrag used');
     expect(statsText).toContain('Unused (expired)');
+    expect(statsText).toContain('Sold tax');
     expect(component.projection().openTaxAtWithdrawalStartAfterAllowance).toBeGreaterThanOrEqual(0);
     expect(component.projection().sparerPauschbetragUsedTotal).toBeGreaterThanOrEqual(0);
     expect(component.projection().sparerPauschbetragUnusedTotal).toBeGreaterThanOrEqual(0);
+    expect(component.projection().soldTaxTotal).toBeGreaterThanOrEqual(0);
+    expect(component.projection().soldTaxTotalBeforeAllowance).toBeGreaterThanOrEqual(
+      component.projection().soldTaxTotal
+    );
     // The allowance-aware open tax estimate never exceeds the pre-allowance estimate, since the
     // Sparer-Pauschbetrag can only reduce (never increase) the taxable amount.
     expect(component.projection().openTaxAtWithdrawalStartAfterAllowance).toBeLessThanOrEqual(
