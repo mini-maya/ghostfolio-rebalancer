@@ -96,6 +96,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
   @Input() savingsRate = 0;
   @Input() timeRangeMode: 'leading' | 'trailing' = 'trailing';
   @Input() timeRange: TimeRange = 'MAX';
+  @Input() tooltipFooterFormatter?: (date: Date) => string;
 
   @Output() timeRangeChange = new EventEmitter<TimeRange>();
 
@@ -413,6 +414,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
     return getTimeSeriesTooltipOptions<'bar' | 'line'>({
       colorScheme: this.colorScheme,
       currency: this.isInPercentage ? undefined : this.currency,
+      footerFormatter: this.tooltipFooterFormatter,
       groupBy: this.groupBy,
       locale: this.isInPercentage ? undefined : this.locale,
       unit: this.isInPercentage ? '%' : undefined

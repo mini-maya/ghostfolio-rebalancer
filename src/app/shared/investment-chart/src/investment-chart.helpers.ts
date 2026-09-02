@@ -233,12 +233,14 @@ export function getTimeAxisOptions({
 export function getTooltipOptions<T extends ChartType>({
   colorScheme,
   currency = '',
+  footerFormatter,
   groupBy,
   locale = getLocale(),
   unit = ''
 }: {
   colorScheme: ColorScheme;
   currency?: string;
+  footerFormatter?: (date: Date) => string;
   groupBy?: GroupBy;
   locale?: string;
   unit?: string;
@@ -282,7 +284,16 @@ export function getTooltipOptions<T extends ChartType>({
         }
 
         return contexts[0].label;
-      }
+      },
+      ...(footerFormatter
+        ? {
+            footer: (contexts: TooltipItem<T>[]) => {
+              const xPoint = (contexts[0].parsed as Point).x;
+
+              return xPoint !== null ? footerFormatter(new Date(xPoint)) : '';
+            }
+          }
+        : {})
     } as any,
     caretSize: 0,
     cornerRadius: 2,
@@ -405,18 +416,20 @@ export function transformTickToAbbreviation(value: number) {
 export function getTimeSeriesTooltipOptions<T extends 'bar' | 'line'>({
   colorScheme,
   currency,
+  footerFormatter,
   groupBy,
   locale,
   unit
 }: {
   colorScheme: ColorScheme;
   currency?: string;
+  footerFormatter?: (date: Date) => string;
   groupBy?: GroupBy;
   locale?: string;
   unit?: string;
 }): any {
   return {
-    ...getTooltipOptions<T>({ colorScheme, currency, groupBy, locale, unit }),
+    ...getTooltipOptions<T>({ colorScheme, currency, footerFormatter, groupBy, locale, unit }),
     mode: 'index',
     position: 'top' as unknown as TooltipOptions<T>['position'],
     xAlign: 'center',

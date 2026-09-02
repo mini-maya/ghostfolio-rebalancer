@@ -321,11 +321,12 @@
       <div>
         <h2>External VAP cash need by year</h2>
         <p>
-          Vorabpauschale tax is always paid from external funds, not from the depot. This table
-          shows, per calendar year, how much VAP tax remains due after that year's
-          Sparer-Pauschbetrag has been applied - i.e. the cash you need to bring in from outside
-          the depot once the allowance for that year is exhausted, so you can prepare for future
-          payments.
+          Vorabpauschale tax is always paid from external funds, not from the depot. This chart
+          shows, per calendar year, the full taxable VAP (bar) against the annual
+          Sparer-Pauschbetrag (line) - once the bar exceeds the line, that difference is the cash
+          you need to bring in from outside the depot. Note: the year shown is when the tax
+          becomes <strong>due</strong> (01.01 of the following year), not the accrual tax year
+          used on the VAP entries page - the tooltip footer shows the matching accrual tax year.
         </p>
       </div>
     </div>
@@ -346,6 +347,7 @@
           [isLoading]="isLoading()"
           [timeRangeMode]="'leading'"
           [timeRange]="'MAX'"
+          [tooltipFooterFormatter]="vapChartTooltipFooterFormatter"
         />
       </div>
     } @else {

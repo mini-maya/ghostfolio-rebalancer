@@ -554,6 +554,15 @@ export class RetirePage implements OnInit {
       value: sparerPauschbetragAvailable
     }));
   });
+  /**
+   * The chart groups by the calendar year the VAP tax becomes *due* (01.01 of the following
+   * year), consistent with the rest of the tax figures in this app. Since the VAP entries page
+   * groups by the underlying *accrual* tax year instead, this adds that accrual year to the
+   * tooltip footer to avoid confusion when comparing the two views.
+   */
+  protected readonly vapChartTooltipFooterFormatter = (date: Date): string => {
+    return `Steuerjahr: ${date.getFullYear() - 1}`;
+  };
   protected readonly withdrawalScheduleRows = computed(() => {
     const snapshot = this.currentCalculationSnapshot();
     const currentMonth = startOfMonth(snapshot.currentDate);
