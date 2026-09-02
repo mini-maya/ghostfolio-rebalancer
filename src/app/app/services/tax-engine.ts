@@ -5,6 +5,7 @@ import type {
 } from '../../shared/fifo-overview-table/fifo-overview-table.models';
 import type { Activity, Holding } from './ghostfolio-api';
 import {
+  allocateSparerPauschbetragChronologically,
   allocateSparerPauschbetragForYear,
   calculatePotentialTax,
   calculateTaxableGainAfterVap,
@@ -54,6 +55,15 @@ export interface TaxSellDetailRow extends FifoOverviewSellDetailRow {
   taxForSelling: number;
   totalValue: number;
   unitPrice: number;
+  /**
+   * Portion of the shared annual Sparer-Pauschbetrag this specific sale consumed, following
+   * the agreed allocation order: the year's taxable VAP is consumed first (in full), then any
+   * remaining allowance is distributed to sales chronologically by date, with same-day sales
+   * splitting that day's remaining allowance proportionally to their own taxable amount. This
+   * is a purely informative, additive breakdown - it never changes taxForSelling or any
+   * existing year-level total (see allocateSparerPauschbetragChronologically).
+   */
+  usedSparerPauschbetragForSelling: number;
   usedTaxableVapForSelling: number;
   usedVapForSelling: number;
 }
@@ -98,6 +108,8 @@ export interface TaxOverviewRow extends FifoOverviewRow {
   symbol: string;
   taxForSelling: number;
   totalTaxableVap: number;
+  /** Sum of usedSparerPauschbetragForSelling across all of this row's sellDetails. */
+  usedSparerPauschbetragForSelling: number;
   usedTaxableVapForSelling: number;
   totalVap: number;
   totalVapAfterTeilfreistellung: number;
@@ -257,6 +269,9 @@ export function calculateTaxOverview({
           taxForSelling,
           totalValue: sellProceeds,
           unitPrice: activity.unitPrice,
+          // Filled in by the chronological Sparer-Pauschbetrag allocation pass below, once all
+          // sellDetails for the year (across every symbol/account) are known.
+          usedSparerPauschbetragForSelling: 0,
           usedTaxableVapForSelling,
           usedVapForSelling
         });
@@ -268,6 +283,76 @@ export function calculateTaxOverview({
           fifoLots.shift();
         }
       }
+    }
+  }
+
+  // Distribute the shared annual Sparer-Pauschbetrag across every sale of every symbol/account,
+  // following the agreed order: each year's taxable VAP (across all symbols) is consumed first,
+  // then the remaining allowance goes to sales in chronological order (same-day sales split
+  // proportionally). This is a purely additive, informative breakdown attached to sellDetails -
+  // it never changes taxForSelling or any existing totals (see
+  // allocateSparerPauschbetragChronologically and calculateAnnualTaxSummaries, which apply the
+  // same combined allowance at the year-total level).
+  const taxableVapByYear = new Map<number, number>();
+  const saleEventsByYear = new Map<
+    number,
+    { id: string; date: Date; sellDetail: TaxSellDetailRow; taxableAmount: number }[]
+  >();
+  let saleEventCounter = 0;
+
+  for (const row of rows.values()) {
+    const rowTaxEvents = taxEvents.filter((taxEvent) => {
+      return taxEvent.accountId === row.accountId && taxEvent.symbolId === normalizeSymbol(row.symbol);
+    });
+
+    for (const activity of row.activities) {
+      if (activity.type === 'BUY') {
+        const vapByYear = calculateLotVapByYear({
+          acquisitionDate: activity.date,
+          asOfYear,
+          originalQuantity: activity.quantity,
+          sellDetails: activity.sellDetails,
+          taxEvents: rowTaxEvents
+        });
+
+        for (const [year, { taxableVap }] of vapByYear) {
+          taxableVapByYear.set(year, roundMoney((taxableVapByYear.get(year) ?? 0) + taxableVap));
+        }
+      }
+
+      for (const sellDetail of activity.sellDetails) {
+        if (!sellDetail.date) {
+          continue;
+        }
+
+        const saleYear = new Date(sellDetail.date).getFullYear();
+        const events = saleEventsByYear.get(saleYear) ?? [];
+
+        events.push({
+          date: new Date(sellDetail.date),
+          id: `sale-${saleEventCounter}`,
+          sellDetail,
+          taxableAmount: sellDetail.taxableGainBeforeAllowance
+        });
+        saleEventCounter += 1;
+        saleEventsByYear.set(saleYear, events);
+      }
+    }
+  }
+
+  const allowanceYears = new Set([...taxableVapByYear.keys(), ...saleEventsByYear.keys()]);
+
+  for (const year of allowanceYears) {
+    const events = saleEventsByYear.get(year) ?? [];
+    const allocation = allocateSparerPauschbetragChronologically({
+      saleEvents: events.map(({ id, date, taxableAmount }) => ({ date, id, taxableAmount })),
+      sparerPauschbetragAvailable: taxProfile.sparerPauschbetrag,
+      vapTaxableAmount: taxableVapByYear.get(year) ?? 0
+    });
+
+    for (const event of events) {
+      event.sellDetail.usedSparerPauschbetragForSelling =
+        allocation.saleAllocations.get(event.id)?.used ?? 0;
     }
   }
 
@@ -374,6 +459,9 @@ export function calculateTaxOverview({
       sumSellDetails(row.activities, 'usedTaxableVapForSelling')
     );
     const taxForSelling = roundMoney(sumSellDetails(row.activities, 'taxForSelling'));
+    const usedSparerPauschbetragForSelling = roundMoney(
+      sumSellDetails(row.activities, 'usedSparerPauschbetragForSelling')
+    );
     const gainAmount = currentPositionValue - entryPriceAmount;
     const gainPercentage = entryPriceAmount > 0 ? (gainAmount / entryPriceAmount) * 100 : 0;
     const realizedAmount = roundMoney(sumSellDetails(row.activities, 'realizedAmount'));
@@ -394,6 +482,7 @@ export function calculateTaxOverview({
     row.potentialTaxesWithoutVap = potentialTaxesWithoutVap;
     row.taxForSelling = taxForSelling;
     row.totalTaxableVap = totalVapAfterTeilfreistellung;
+    row.usedSparerPauschbetragForSelling = usedSparerPauschbetragForSelling;
     row.usedTaxableVapForSelling = usedTaxableVapForSelling;
     row.totalVap = totalVap;
     row.totalVapAfterTeilfreistellung = totalVapAfterTeilfreistellung;
@@ -704,7 +793,13 @@ export function calculateAnnualTaxSummaries({
 
 function sumSellDetails(
   activities: TaxActivityRow[],
-  field: 'realizedAmount' | 'realizedCostBasis' | 'taxForSelling' | 'usedTaxableVapForSelling' | 'usedVapForSelling'
+  field:
+    | 'realizedAmount'
+    | 'realizedCostBasis'
+    | 'taxForSelling'
+    | 'usedSparerPauschbetragForSelling'
+    | 'usedTaxableVapForSelling'
+    | 'usedVapForSelling'
 ): number {
   return activities.reduce((sum, activity) => {
     return sum + activity.sellDetails.reduce((activitySum, sellDetail) => activitySum + sellDetail[field], 0);
@@ -734,6 +829,7 @@ function createEmptyRow(activity: Activity, symbolKey: string): TaxOverviewRow {
     taxForSelling: 0,
     trackKey: symbolKey,
     totalTaxableVap: 0,
+    usedSparerPauschbetragForSelling: 0,
     usedTaxableVapForSelling: 0,
     totalVap: 0,
     totalVapAfterTeilfreistellung: 0,

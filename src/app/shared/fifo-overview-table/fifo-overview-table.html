@@ -78,6 +78,10 @@
       <span class="table-inline-highlight">
         {{ row.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol() }}
+      </span><br />
+      <span class="table-inline-highlight table-allowance-highlight">
+        used Sparer-Pauschbetrag: {{ row.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol() }}
       </span>
     </span>
 
@@ -302,7 +306,12 @@
                                     <span class="value-with-arrow">-</span>
                                   }
                                 </td>
-                                <td class="numeric">{{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                                <td class="numeric">
+                                  {{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}<br />
+                                  <span class="table-inline-highlight table-allowance-highlight">
+                                    used Sparer-Pauschbetrag: {{ sell.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                  </span>
+                                </td>
                                 <td class="numeric">
                                   <span class="table-primary-value">
                                     {{ sell.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}

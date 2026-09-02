@@ -1,5 +1,6 @@
 import { TaxEvent } from './tax-events';
 import {
+  allocateSparerPauschbetragChronologically,
   allocateSparerPauschbetragForYear,
   calculatePaidVap,
   calculatePotentialTax,
@@ -322,6 +323,73 @@ describe('tax calculator', () => {
       expect(result.used).toBe(0);
       expect(result.remaining).toBe(1000);
       expect(result.taxableAfterAllowance).toBe(0);
+    });
+  });
+
+  describe('allocateSparerPauschbetragChronologically', () => {
+    it('consumes the year VAP first, before any sale gets a share of the allowance', () => {
+      // VAP alone (1.000) already exhausts the whole allowance, so no sale gets anything.
+      const result = allocateSparerPauschbetragChronologically({
+        saleEvents: [{ date: new Date('2024-06-01'), id: 'sale-1', taxableAmount: 500 }],
+        sparerPauschbetragAvailable: 1000,
+        vapTaxableAmount: 1000
+      });
+
+      expect(result.vapAllowanceUsed).toBe(1000);
+      expect(result.saleAllocations.get('sale-1')?.used).toBe(0);
+      expect(result.saleAllocations.get('sale-1')?.taxableAfterAllowance).toBe(500);
+    });
+
+    it('distributes the remaining allowance to sales in chronological order, earliest sale first', () => {
+      // VAP uses 400, leaving 600. The earlier sale (300) is fully covered first, the later
+      // sale (500) only gets the remaining 300 of allowance, not an even split.
+      const result = allocateSparerPauschbetragChronologically({
+        saleEvents: [
+          { date: new Date('2024-08-01'), id: 'later', taxableAmount: 500 },
+          { date: new Date('2024-03-01'), id: 'earlier', taxableAmount: 300 }
+        ],
+        sparerPauschbetragAvailable: 1000,
+        vapTaxableAmount: 400
+      });
+
+      expect(result.vapAllowanceUsed).toBe(400);
+      expect(result.saleAllocations.get('earlier')?.used).toBe(300);
+      expect(result.saleAllocations.get('earlier')?.taxableAfterAllowance).toBe(0);
+      expect(result.saleAllocations.get('later')?.used).toBe(300);
+      expect(result.saleAllocations.get('later')?.taxableAfterAllowance).toBe(200);
+    });
+
+    it('splits the same-day remaining allowance proportionally, not sequentially by size', () => {
+      // No VAP. Two sales on the same day: 300 and 900 (total 1.200), but only 600 remains.
+      // Proportional split: 300/1200 * 600 = 150, and 900/1200 * 600 = 450.
+      const result = allocateSparerPauschbetragChronologically({
+        saleEvents: [
+          { date: new Date('2024-05-10'), id: 'small', taxableAmount: 300 },
+          { date: new Date('2024-05-10'), id: 'large', taxableAmount: 900 }
+        ],
+        sparerPauschbetragAvailable: 600,
+        vapTaxableAmount: 0
+      });
+
+      expect(result.saleAllocations.get('small')?.used).toBe(150);
+      expect(result.saleAllocations.get('small')?.taxableAfterAllowance).toBe(150);
+      expect(result.saleAllocations.get('large')?.used).toBe(450);
+      expect(result.saleAllocations.get('large')?.taxableAfterAllowance).toBe(450);
+    });
+
+    it('leaves later sales with zero allowance once the pool is exhausted by earlier ones', () => {
+      const result = allocateSparerPauschbetragChronologically({
+        saleEvents: [
+          { date: new Date('2024-01-15'), id: 'first', taxableAmount: 1000 },
+          { date: new Date('2024-12-01'), id: 'second', taxableAmount: 500 }
+        ],
+        sparerPauschbetragAvailable: 1000,
+        vapTaxableAmount: 0
+      });
+
+      expect(result.saleAllocations.get('first')?.used).toBe(1000);
+      expect(result.saleAllocations.get('second')?.used).toBe(0);
+      expect(result.saleAllocations.get('second')?.taxableAfterAllowance).toBe(500);
     });
   });
 });

@@ -711,3 +711,115 @@ describe('calculateAnnualTaxSummaries - Sparer-Pauschbetrag', () => {
     expect(summary2024?.sparerPauschbetragRemaining).toBe(600);
   });
 });
+
+describe('calculateTaxOverview - used Sparer-Pauschbetrag per sale', () => {
+  it('consumes the year VAP first, leaving the remaining allowance for the single sale of that year', () => {
+    // Same fixture as "shares a single annual allowance..." above: VAP 140 taxable, sale
+    // 1372 taxable, allowance 1000. VAP is consumed first (140), leaving 860 for the sale.
+    const activities = [
+      makeActivity({ date: '2023-01-01', quantity: 100, type: 'BUY', unitPrice: 100 }),
+      makeActivity({ date: '2024-06-01', quantity: 20, type: 'SELL', unitPrice: 200 })
+    ];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 2,
+        vorabpauschalePerShareAfterTeilfreistellung: 1.4
+      })
+    ];
+
+    const rows = calculateTaxOverview({
+      activities,
+      holdings: [makeHolding({ marketPrice: 200, quantity: 80 })],
+      taxEvents,
+      asOfDate: new Date('2024-12-31')
+    });
+    const sellDetail = rows[0].activities.find((activity) => activity.type === 'BUY')?.sellDetails[0];
+
+    expect(sellDetail?.taxableGainBeforeAllowance).toBe(1372);
+    expect(sellDetail?.usedSparerPauschbetragForSelling).toBe(860);
+    expect(rows[0].usedSparerPauschbetragForSelling).toBe(860);
+  });
+
+  it('gives every sale of a year zero allowance once the year VAP alone already exhausts it', () => {
+    const activities = [
+      makeActivity({ date: '2023-01-01', quantity: 100, type: 'BUY', unitPrice: 100 }),
+      makeActivity({ date: '2024-06-01', quantity: 20, type: 'SELL', unitPrice: 200 })
+    ];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 10,
+        vorabpauschalePerShareAfterTeilfreistellung: 10
+      })
+    ];
+
+    const rows = calculateTaxOverview({
+      activities,
+      holdings: [makeHolding({ marketPrice: 200, quantity: 80 })],
+      taxEvents,
+      asOfDate: new Date('2024-12-31')
+    });
+    const sellDetail = rows[0].activities.find((activity) => activity.type === 'BUY')?.sellDetails[0];
+
+    // 100 shares * 10 EUR taxable VAP per share = 1.000, exactly consuming the default allowance.
+    expect(sellDetail?.usedSparerPauschbetragForSelling).toBe(0);
+  });
+
+  it('gives the earliest sale of a year priority over a later sale in the same year (no VAP)', () => {
+    const activities = [
+      makeActivity({ date: '2023-01-01', quantity: 1000, type: 'BUY', unitPrice: 1 }),
+      // Earlier sale: gain 200*6 - 200*1 = 1000 => taxable 700 (after 30% Teilfreistellung).
+      makeActivity({ date: '2024-02-01', quantity: 200, type: 'SELL', unitPrice: 6 }),
+      // Later sale: gain 100*6 - 100*1 = 500 => taxable 350.
+      makeActivity({ date: '2024-08-01', quantity: 100, type: 'SELL', unitPrice: 6 })
+    ];
+
+    const rows = calculateTaxOverview({
+      activities,
+      holdings: [],
+      taxEvents: [],
+      taxProfile: { ...DEFAULT_TAX_PROFILE, sparerPauschbetrag: 600 },
+      asOfDate: new Date('2024-12-31')
+    });
+    const buyActivity = rows[0].activities.find((activity) => activity.type === 'BUY');
+    const earlierSell = buyActivity?.sellDetails.find((sellDetail) => sellDetail.soldQuantity === 200);
+    const laterSell = buyActivity?.sellDetails.find((sellDetail) => sellDetail.soldQuantity === 100);
+
+    expect(earlierSell?.taxableGainBeforeAllowance).toBe(700);
+    expect(laterSell?.taxableGainBeforeAllowance).toBe(350);
+    // The earlier sale claims the whole 600 EUR allowance first, even though its own taxable
+    // gain (700) is larger than the later sale's (350) - order is by date, not by size.
+    expect(earlierSell?.usedSparerPauschbetragForSelling).toBe(600);
+    expect(laterSell?.usedSparerPauschbetragForSelling).toBe(0);
+  });
+
+  it('splits the same-day remaining allowance proportionally between two sales on that date', () => {
+    const activities = [
+      makeActivity({ date: '2023-01-01', quantity: 10000, type: 'BUY', unitPrice: 1 }),
+      // Sale C: gain 500*3 - 500*1 = 1000 => taxable 700.
+      makeActivity({ date: '2024-05-10', quantity: 500, type: 'SELL', unitPrice: 3 }),
+      // Sale D: gain 1000*4 - 1000*1 = 3000 => taxable 2100.
+      makeActivity({ date: '2024-05-10', quantity: 1000, type: 'SELL', unitPrice: 4 })
+    ];
+
+    const rows = calculateTaxOverview({
+      activities,
+      holdings: [],
+      taxEvents: [],
+      taxProfile: { ...DEFAULT_TAX_PROFILE, sparerPauschbetrag: 800 },
+      asOfDate: new Date('2024-12-31')
+    });
+    const buyActivity = rows[0].activities.find((activity) => activity.type === 'BUY');
+    const saleC = buyActivity?.sellDetails.find((sellDetail) => sellDetail.soldQuantity === 500);
+    const saleD = buyActivity?.sellDetails.find((sellDetail) => sellDetail.soldQuantity === 1000);
+
+    expect(saleC?.taxableGainBeforeAllowance).toBe(700);
+    expect(saleD?.taxableGainBeforeAllowance).toBe(2100);
+    // 800 remaining allowance split proportionally: 800 * 700/2800 = 200, 800 * 2100/2800 = 600.
+    expect(saleC?.usedSparerPauschbetragForSelling).toBe(200);
+    expect(saleD?.usedSparerPauschbetragForSelling).toBe(600);
+  });
+});

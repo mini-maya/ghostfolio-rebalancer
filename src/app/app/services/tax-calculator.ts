@@ -211,6 +211,104 @@ export function allocateSparerPauschbetragForYear({
   };
 }
 
+export interface SparerPauschbetragSaleEvent {
+  /** Caller-supplied identifier used to map the allocation result back to the originating sale. */
+  id: string;
+  /** Date the sale occurred on; used to group same-day sales and to order sales chronologically. */
+  date: Date;
+  /** This sale's taxable gain (after used VAP and Teilfreistellung), before the allowance. */
+  taxableAmount: number;
+}
+
+export interface SparerPauschbetragChronologicalAllocationInput {
+  /** Sparer-Pauschbetrag available for the calendar year (does not carry over from prior years). */
+  sparerPauschbetragAvailable: number;
+  /**
+   * Sum of this year's taxable VAP (after Teilfreistellung), already known to always accrue
+   * "at the start of the year" (see module-level VAP timing rules) - consumed before any sale.
+   */
+  vapTaxableAmount: number;
+  /** This year's individual realized sale events, in any order. */
+  saleEvents: SparerPauschbetragSaleEvent[];
+}
+
+export interface SparerPauschbetragSaleAllocation {
+  /** Portion of the shared annual allowance this specific sale consumed. */
+  used: number;
+  /** This sale's taxable gain remaining after its share of the allowance. */
+  taxableAfterAllowance: number;
+}
+
+export interface SparerPauschbetragChronologicalAllocationResult {
+  /** Portion of the allowance consumed by this year's VAP (always applied first). */
+  vapAllowanceUsed: number;
+  /** Per-sale allocation, keyed by the sale event's `id`. */
+  saleAllocations: Map<string, SparerPauschbetragSaleAllocation>;
+}
+
+/**
+ * Distributes a single shared annual Sparer-Pauschbetrag across the individual capital-income
+ * events of one calendar year, following the order agreed with the user:
+ *  1. The year's taxable VAP is consumed first, in full, up to the available allowance.
+ *  2. Any remaining allowance is then consumed by realized sales in chronological order (by
+ *     sale date, ascending) - not sorted by tax amount.
+ *  3. Sales that share the exact same date split that day's remaining allowance
+ *     *proportionally* to their own taxable amount (not sequentially by size).
+ *
+ * This never changes the combined totals produced by allocateSparerPauschbetragForYear (the sum
+ * of vapAllowanceUsed + all saleAllocations[].used always equals that function's `used` for the
+ * same inputs) - it only determines how that fixed pool is attributed back to individual sales,
+ * purely as an additional, informative breakdown (e.g. for per-sale UI display).
+ */
+export function allocateSparerPauschbetragChronologically({
+  sparerPauschbetragAvailable,
+  vapTaxableAmount,
+  saleEvents
+}: SparerPauschbetragChronologicalAllocationInput): SparerPauschbetragChronologicalAllocationResult {
+  const allowanceAvailable = Math.max(sparerPauschbetragAvailable, 0);
+  const vapAllowanceUsed = roundMoney(Math.min(Math.max(vapTaxableAmount, 0), allowanceAvailable));
+  let remaining = Math.max(allowanceAvailable - vapAllowanceUsed, 0);
+
+  const saleAllocations = new Map<string, SparerPauschbetragSaleAllocation>();
+  const eventsByDate = new Map<number, SparerPauschbetragSaleEvent[]>();
+
+  for (const event of saleEvents) {
+    const dateKey = event.date.getTime();
+    const group = eventsByDate.get(dateKey) ?? [];
+    group.push(event);
+    eventsByDate.set(dateKey, group);
+  }
+
+  const orderedDateKeys = [...eventsByDate.keys()].sort((left, right) => left - right);
+
+  for (const dateKey of orderedDateKeys) {
+    const group = eventsByDate.get(dateKey)!;
+    const groupTotal = roundMoney(
+      group.reduce((sum, event) => sum + Math.max(event.taxableAmount, 0), 0)
+    );
+    const usedForGroup = Math.min(remaining, groupTotal);
+
+    for (const event of group) {
+      const eventTaxableAmount = Math.max(event.taxableAmount, 0);
+      const eventShare =
+        groupTotal > 0 ? (eventTaxableAmount / groupTotal) * usedForGroup : 0;
+      const usedForEvent = roundMoney(eventShare);
+
+      saleAllocations.set(event.id, {
+        taxableAfterAllowance: roundMoney(Math.max(eventTaxableAmount - usedForEvent, 0)),
+        used: usedForEvent
+      });
+    }
+
+    remaining = Math.max(remaining - usedForGroup, 0);
+  }
+
+  return {
+    saleAllocations,
+    vapAllowanceUsed
+  };
+}
+
 export function calculateVapForQuantity({
   accountId,
   quantity,
