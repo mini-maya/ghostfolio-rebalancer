@@ -269,7 +269,11 @@
         {{ projection().openTaxAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>At withdrawal start, considering VAP</small>
+      <small>
+        After Sparer-Pauschbetrag:
+        {{ projection().openTaxAtWithdrawalStartAfterAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
     </article>
 
     <article class="card stat">
@@ -284,6 +288,71 @@
         {{ currencySymbol(currency()) }}
       </small>
     </article>
+
+    <article class="card stat">
+      <span>Sparer-Pauschbetrag used</span>
+      <strong>
+        {{ projection().sparerPauschbetragUsedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        Unused (expired):
+        {{ projection().sparerPauschbetragUnusedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
+    </article>
+
+    <article class="card stat">
+      <span>Sold tax</span>
+      <strong>
+        {{ projection().soldTaxTotalBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        After Sparer-Pauschbetrag:
+        {{ projection().soldTaxTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
+    </article>
+  </section>
+
+  <section class="card">
+    <div class="section-header section-header-stack">
+      <div>
+        <h2>External VAP cash need by year</h2>
+        <p>
+          Vorabpauschale tax is always paid from external funds, not from the depot. This chart
+          shows, per calendar year, the full taxable VAP (bar) against the annual
+          Sparer-Pauschbetrag (line) - once the bar exceeds the line, that difference is the cash
+          you need to bring in from outside the depot. Note: the year shown is when the tax
+          becomes <strong>due</strong> (01.01 of the following year), not the accrual tax year
+          used on the VAP entries page - the tooltip footer shows the matching accrual tax year.
+        </p>
+      </div>
+    </div>
+
+    @if (annualVapCashNeedRows().length) {
+      <div class="portfolio-performance-chart">
+        <gf-investment-chart
+          [benchmarkDataItems]="vapChartBarItems()"
+          [benchmarkDataLabel]="'Taxable VAP'"
+          [benchmarkDisplayType]="'bar'"
+          [benchmarkStepped]="false"
+          [colorScheme]="portfolioChartColorScheme()"
+          [currency]="currency()"
+          [forceSharedAxis]="true"
+          [groupBy]="'year'"
+          [historicalDataItems]="vapChartLineItems()"
+          [historicalDataLabel]="'Sparer-Pauschbetrag'"
+          [isLoading]="isLoading()"
+          [timeRangeMode]="'leading'"
+          [timeRange]="'MAX'"
+          [tooltipFooterFormatter]="vapChartTooltipFooterFormatter"
+        />
+      </div>
+    } @else {
+      <p>No VAP tax has become due yet for this projection.</p>
+    }
   </section>
 
   <section class="card">
@@ -616,6 +685,9 @@
             </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToYtd()">
               YTD
+            </button>
+            <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToWithdrawalStart()">
+              Withdrawal
             </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToEndOfWithdrawal()">
               End

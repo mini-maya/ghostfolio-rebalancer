@@ -52,6 +52,17 @@
                 (input)="updateTaxProfileSolidaritySurchargeRate($event)"
               />
             </label>
+
+            <label class="field tax-profile-field">
+              <span>Sparer-Pauschbetrag (€ / Jahr)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().sparerPauschbetrag"
+                (input)="updateTaxProfileSparerPauschbetrag($event)"
+              />
+            </label>
           </div>
         } @else {
           <p class="secondary-value">The tax profile can only be edited by local users.</p>
@@ -119,7 +130,16 @@
             <span class="tax-year-summary-copy">
               <span class="tax-year-summary-toggle" aria-hidden="true">▸</span>
               <strong>{{ group.taxYear }}</strong>
-              <span class="secondary-value">{{ group.events.length }} entries</span>
+              @if (annualTaxSummaryByTaxYear().get(group.taxYear); as summary) {
+                <span class="secondary-value">
+                  Taxable VAP {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                  &middot;
+                  Taxable sale gain {{ summary.taxableSaleGainBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                  ({{ group.events.length }} entries)
+                </span>
+              } @else {
+                <span class="secondary-value">{{ group.events.length }} entries</span>
+              }
             </span>
           </summary>
 
@@ -194,6 +214,7 @@
       [currencySymbol]="currencySymbol()"
       emptyStateMessage="No tax overview available."
     />
+
   </section>
 
   @if (isDialogOpen()) {

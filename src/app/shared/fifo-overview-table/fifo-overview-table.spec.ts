@@ -44,6 +44,7 @@ describe('FifoOverviewTable', () => {
                 taxForSelling: 1,
                 totalValue: 24,
                 unitPrice: 24,
+                usedSparerPauschbetragForSelling: 0,
                 usedTaxableVapForSelling: 0.7,
                 usedVapForSelling: 1
               }
@@ -73,6 +74,7 @@ describe('FifoOverviewTable', () => {
         totalTaxableVap: 0.7,
         totalVap: 1,
         trackKey: 'AAA',
+        usedSparerPauschbetragForSelling: 0,
         usedTaxableVapForSelling: 0.7,
         usedVapForSelling: 1
       }
@@ -102,6 +104,7 @@ describe('FifoOverviewTable', () => {
                 taxForSelling: 1,
                 totalValue: 24,
                 unitPrice: 24,
+                usedSparerPauschbetragForSelling: 0,
                 usedTaxableVapForSelling: 0.7,
                 usedVapForSelling: 1
               }
@@ -131,6 +134,7 @@ describe('FifoOverviewTable', () => {
         totalTaxableVap: 0.7,
         totalVap: 1,
         trackKey: 'AAA',
+        usedSparerPauschbetragForSelling: 0,
         usedTaxableVapForSelling: 0.7,
         usedVapForSelling: 1
       }
@@ -241,6 +245,7 @@ function buildBaseRow(overrides: Partial<FifoOverviewRow> = {}): FifoOverviewRow
     totalTaxableVap: overrides.totalTaxableVap ?? 0.7,
     totalVap: overrides.totalVap ?? 1,
     trackKey: overrides.trackKey ?? 'AAA',
+    usedSparerPauschbetragForSelling: overrides.usedSparerPauschbetragForSelling ?? 0,
     usedTaxableVapForSelling: overrides.usedTaxableVapForSelling ?? 0.7,
     usedVapForSelling: overrides.usedVapForSelling ?? 1
   };

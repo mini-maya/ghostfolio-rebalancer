@@ -539,6 +539,30 @@ export class RetirePage implements OnInit {
   protected readonly hasVisibleWithdrawalSchedule = computed(() => {
     return this.withdrawalStarted() || this.effectiveWithdrawalStartDate() <= startOfMonth(this.currentDate());
   });
+  protected readonly annualVapCashNeedRows = computed(() => {
+    return this.projection().annualVapCashNeedSchedule;
+  });
+  protected readonly vapChartBarItems = computed<InvestmentItem[]>(() => {
+    return this.annualVapCashNeedRows().map(({ year, taxableVapBeforeAllowance }) => ({
+      date: `${year}-12-31`,
+      investment: taxableVapBeforeAllowance
+    }));
+  });
+  protected readonly vapChartLineItems = computed<LineChartItem[]>(() => {
+    return this.annualVapCashNeedRows().map(({ year, sparerPauschbetragAvailable }) => ({
+      date: `${year}-12-31`,
+      value: sparerPauschbetragAvailable
+    }));
+  });
+  /**
+   * The chart groups by the calendar year the VAP tax becomes *due* (01.01 of the following
+   * year), consistent with the rest of the tax figures in this app. Since the VAP entries page
+   * groups by the underlying *accrual* tax year instead, this adds that accrual year to the
+   * tooltip footer to avoid confusion when comparing the two views.
+   */
+  protected readonly vapChartTooltipFooterFormatter = (date: Date): string => {
+    return `Steuerjahr: ${date.getFullYear() - 1}`;
+  };
   protected readonly withdrawalScheduleRows = computed(() => {
     const snapshot = this.currentCalculationSnapshot();
     const currentMonth = startOfMonth(snapshot.currentDate);
@@ -846,6 +870,10 @@ export class RetirePage implements OnInit {
     const currentYear = this.currentDate().getFullYear();
 
     this.setSelectedFifoMonth(new Date(currentYear, 11, 1));
+  }
+
+  protected jumpSelectedFifoMonthToWithdrawalStart(): void {
+    this.setSelectedFifoMonth(startOfMonth(this.effectiveWithdrawalStartDate()));
   }
 
   protected jumpSelectedFifoMonthToEndOfWithdrawal(): void {

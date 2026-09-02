@@ -76,15 +76,19 @@ describe('calculateFutureFifoWithdrawalPlan', () => {
     // in a synthetic Vorabpauschale for it (based on the real 2024 -> 2026 price development),
     // which correctly reduces the taxable gain - unlike the previous behaviour where prior-year
     // VAP was silently ignored whenever no real TaxEvent had been entered yet.
-    expect(estimate?.tax).toBeCloseTo(
+    //
+    // The resulting taxable sale gain (~62,88 EUR after VAP and Teilfreistellung) is fully
+    // covered by the default annual Sparer-Pauschbetrag (1.000 EUR), so the actual 2026 tax owed
+    // is 0 - not the pre-allowance amount that calculateTaxForSale alone would report.
+    expect(
       calculateTaxForSale({
         acquisitionCost: 10,
         saleProceeds: 100,
         taxProfile: DEFAULT_TAX_PROFILE,
         usedVap: 0.175
-      }),
-      2
-    );
+      })
+    ).toBeCloseTo(16.58, 2);
+    expect(estimate?.tax).toBe(0);
     expect(estimate?.netWithdrawal).toBeCloseTo(100 - (estimate?.tax ?? 0), 2);
   });
 
@@ -184,5 +188,75 @@ describe('calculateFutureFifoWithdrawalPlan', () => {
     });
 
     expect(sixPercentReturnEstimate.get(0)?.gain).toBeGreaterThan(zeroReturnEstimate.get(0)?.gain ?? 0);
+  });
+
+  it('shares a single annual Sparer-Pauschbetrag across multiple withdrawals within the same calendar year', () => {
+    const estimates = calculateFutureFifoWithdrawalPlan({
+      accumulationAnnualReturnPercentage: 0,
+      accumulationMonths: 0,
+      activities: [
+        {
+          accountId: 'acc-1',
+          accountName: 'Main',
+          assetClass: 'ETF',
+          assetSubClass: 'WORLD',
+          currency: 'EUR',
+          date: new Date('2026-01-01T00:00:00.000Z'),
+          fee: 0,
+          name: 'ETF A',
+          quantity: 1000,
+          symbol: 'AAA',
+          type: 'BUY',
+          unitPrice: 1,
+          unitPriceInAssetProfileCurrency: 1,
+          valueInBaseCurrency: 1000
+        } as Activity
+      ],
+      allocations: [{ percentage: 100, symbol: 'AAA' }],
+      currentDate: new Date('2026-01-01T00:00:00.000Z'),
+      holdings: [
+        {
+          allocationInPercentage: 100,
+          currency: 'EUR',
+          marketPrice: 3,
+          name: 'ETF A',
+          quantity: 1000,
+          symbol: 'AAA',
+          valueInBaseCurrency: 3000
+        } as Holding
+      ],
+      monthlySavingsRate: 0,
+      taxEvents: [],
+      taxProfile: DEFAULT_TAX_PROFILE,
+      withdrawalAnnualReturnPercentage: 0,
+      withdrawalPoints: [
+        // Sells 500 of the 1.000 shares at 3 EUR each (1.500 EUR gross), for a taxable gain
+        // (after 30% Teilfreistellung) of 500 * (3 - 1) * 0.7 = 700 EUR.
+        { date: new Date('2026-02-01T00:00:00.000Z'), periodIndex: 0, withdrawal: 1500 },
+        // Sells the remaining 500 shares, an identical 700 EUR taxable gain, within the same
+        // calendar year.
+        { date: new Date('2026-06-01T00:00:00.000Z'), periodIndex: 1, withdrawal: 1500 }
+      ],
+      withdrawalStartDate: new Date('2026-01-01T00:00:00.000Z')
+    });
+
+    const firstWithdrawal = estimates.get(0);
+    const secondWithdrawal = estimates.get(1);
+
+    // Taken alone, 700 EUR taxable gain is fully covered by the default 1.000 EUR annual
+    // Sparer-Pauschbetrag, so the first withdrawal of the year is tax free...
+    expect(firstWithdrawal?.tax).toBe(0);
+    // ...but by the time the second withdrawal is sold, the shared annual allowance (1.000 EUR)
+    // has already been used up by the first 700 EUR, leaving only 300 EUR of it for the combined
+    // 1.400 EUR of taxable gains realized this year. So 400 EUR remains taxable, taxed at the
+    // effective 26,375 % rate (25 % KapSt + 5,5 % Soli) = 105,50 EUR - not 0, as it would be if
+    // the allowance were (incorrectly) granted anew for each withdrawal.
+    expect(secondWithdrawal?.tax).toBeCloseTo(105.5, 2);
+    // taxBeforeAllowance ignores the Sparer-Pauschbetrag entirely, so each withdrawal's own 700
+    // EUR taxable gain is taxed in full (700 * 26,375 % = 184,63 EUR) - clearly demonstrating that
+    // the allowance is what makes the first withdrawal tax free, not the underlying tax math.
+    expect(firstWithdrawal?.taxBeforeAllowance).toBeCloseTo(184.625, 1);
+    expect(secondWithdrawal?.taxBeforeAllowance).toBeCloseTo(184.625, 1);
+    expect(firstWithdrawal?.taxBeforeAllowance ?? 0).toBeGreaterThan(firstWithdrawal?.tax ?? 0);
   });
 });

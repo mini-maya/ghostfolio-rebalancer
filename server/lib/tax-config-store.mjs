@@ -5,7 +5,8 @@ const DEFAULT_TAX_CONFIG = Object.freeze({
   capitalGainsTaxRate: 0.25,
   churchTaxRate: 0,
   partialExemptionRate: 0.3,
-  solidaritySurchargeRate: 0.055
+  solidaritySurchargeRate: 0.055,
+  sparerPauschbetrag: 1000
 });
 
 export function createTaxConfigStore({ taxFilePath }) {
@@ -116,6 +117,10 @@ function normalizeTaxConfig(taxConfig) {
     solidaritySurchargeRate: readNonNegativeNumber(
       taxConfig.solidaritySurchargeRate,
       DEFAULT_TAX_CONFIG.solidaritySurchargeRate
+    ),
+    sparerPauschbetrag: readNonNegativeNumber(
+      taxConfig.sparerPauschbetrag,
+      DEFAULT_TAX_CONFIG.sparerPauschbetrag
     )
   };
 }

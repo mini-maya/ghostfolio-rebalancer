@@ -650,7 +650,8 @@ function readTaxConfig(value) {
     capitalGainsTaxRate: readNonNegativeNumber(value.capitalGainsTaxRate, 0.25),
     churchTaxRate: readNonNegativeNumber(value.churchTaxRate, 0),
     partialExemptionRate: readNonNegativeNumber(value.partialExemptionRate, 0.3),
-    solidaritySurchargeRate: readNonNegativeNumber(value.solidaritySurchargeRate, 0.055)
+    solidaritySurchargeRate: readNonNegativeNumber(value.solidaritySurchargeRate, 0.055),
+    sparerPauschbetrag: readNonNegativeNumber(value.sparerPauschbetrag, 1000)
   };
 }
 

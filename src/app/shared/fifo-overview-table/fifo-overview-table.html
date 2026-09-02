@@ -264,7 +264,7 @@
                               <th class="numeric">Unit price</th>
                               <th class="numeric">Total value</th>
                               <th class="numeric">Realized</th>
-                              <th class="numeric">Sold tax</th>
+                              <th class="numeric">Sold tax <br /> Used Sparer-Pauschbetrag</th>
                               <th class="numeric">Used VAP <br /> Used taxable VAP</th>
                             </tr>
                           </thead>
@@ -302,7 +302,14 @@
                                     <span class="value-with-arrow">-</span>
                                   }
                                 </td>
-                                <td class="numeric">{{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                                <td class="numeric">
+                                  <span class="table-primary-value">
+                                    {{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                  </span><br />
+                                  <span class="table-inline-highlight">
+                                    {{ sell.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                  </span>
+                                </td>
                                 <td class="numeric">
                                   <span class="table-primary-value">
                                     {{ sell.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}

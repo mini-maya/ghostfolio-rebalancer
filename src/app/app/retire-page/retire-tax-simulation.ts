@@ -1,13 +1,14 @@
-import { addMonths, differenceInCalendarMonths, endOfMonth, startOfMonth } from 'date-fns';
+import { addMonths, differenceInCalendarMonths, endOfMonth, startOfMonth, subMonths } from 'date-fns';
 
 import type { AllocationItem } from '../services/allocations';
 import type { Activity, Holding } from '../services/ghostfolio-api';
 import {
+  calculateTaxOnTaxableAmount,
   estimateVapForLotWithoutTaxEvent,
   type TaxProfile
 } from '../services/tax-calculator';
 import type { TaxEvent } from '../services/tax-events';
-import { calculateTaxOverview } from '../services/tax-engine';
+import { calculateAnnualTaxSummaries, calculateTaxOverview } from '../services/tax-engine';
 import { calculateNextWithdrawalSellPlan } from './retire-withdrawal-plan';
 
 const EPSILON = 0.000001;
@@ -157,7 +158,7 @@ export function buildTaxDataBySymbolFromOverviewInput(
   input: RetireTaxOverviewScenario,
   taxProfile: TaxProfile,
   asOfDate: Date
-): Map<string, { grossVap: number; taxableVap: number }> {
+): Map<string, { costBasis: number; grossVap: number; taxableVap: number }> {
   const rows = calculateTaxOverview({
     activities: input.combinedActivities,
     asOfDate,
@@ -170,6 +171,10 @@ export function buildTaxDataBySymbolFromOverviewInput(
     rows.map((row) => [
       row.symbol,
       {
+        // Cost basis of the currently open (not-yet-sold) quantity for this symbol, needed to
+        // compute the actual taxable gain of a future partial sale (see
+        // calculateNextWithdrawalSellPlan) instead of approximating it from market value alone.
+        costBasis: row.entryPriceAmount,
         grossVap: row.totalVap,
         taxableVap: row.totalTaxableVap
       }
@@ -192,7 +197,18 @@ export function calculateFutureWithdrawalTaxEstimates({
   withdrawalStartDate
 }: Omit<RetireTaxOverviewInput, 'asOfDate'>): Map<
   number,
-  { gain: number; netWithdrawal: number; tax: number; withdrawal: number }
+  {
+    gain: number;
+    netWithdrawal: number;
+    tax: number;
+    /**
+     * Same period tax, but as if no Sparer-Pauschbetrag existed at all (i.e. the combined
+     * taxable VAP + taxable realized sale gains taxed directly, ignoring the annual allowance).
+     * Always >= tax, since the allowance can only reduce (never increase) the taxable amount.
+     */
+    taxBeforeAllowance: number;
+    withdrawal: number;
+  }
 > {
   if (!withdrawalPoints.length) {
     return new Map();
@@ -232,9 +248,68 @@ export function calculateFutureWithdrawalTaxEstimates({
   const cumulativeSyntheticActivities: Activity[] = [];
   const sortedSyntheticActivities = [...scenario.syntheticActivities].sort(byActivityDate);
   let syntheticIndex = 0;
-  let previousRealizedAmount = 0;
-  let previousTaxForSelling = 0;
-  const estimates = new Map<number, { gain: number; netWithdrawal: number; tax: number; withdrawal: number }>();
+  const estimates = new Map<
+    number,
+    { gain: number; netWithdrawal: number; tax: number; taxBeforeAllowance: number; withdrawal: number }
+  >();
+
+  // The Vorabpauschale accrues annually on the *entire* held position, not just on sold shares,
+  // so cumulative tax up to any cutoff date already includes every accumulation-phase year's VAP.
+  // Without a baseline, the very first withdrawal period's diff (cumulative - 0) would absorb the
+  // *entire* multi-year/decade accumulation-phase VAP backlog in one lump sum instead of just that
+  // period's own incremental tax. To avoid this, establish the baseline as of the day before the
+  // first withdrawal point (i.e. before any withdrawal-phase activity), using only real activities
+  // and the accumulation-phase synthetic contribution activities that occurred by then.
+  const firstPoint = sortedPoints[0];
+  const baselineCutoffDate = endOfMonth(subMonths(startOfMonth(firstPoint.date), 1));
+
+  while (
+    syntheticIndex < sortedSyntheticActivities.length &&
+    activityTimestamp(sortedSyntheticActivities[syntheticIndex]) <= baselineCutoffDate.getTime()
+  ) {
+    cumulativeSyntheticActivities.push(sortedSyntheticActivities[syntheticIndex]);
+    syntheticIndex += 1;
+  }
+
+  const baselineScenario = buildRetireTaxOverviewInput({
+    accumulationAnnualReturnPercentage,
+    activities,
+    allocations,
+    asOfDate: baselineCutoffDate,
+    capitalPreservationTarget,
+    currentDate,
+    holdings,
+    includeCurrentMonthWithdrawals: true,
+    monthlySavingsRate,
+    taxEvents,
+    taxProfile,
+    withdrawalAnnualReturnPercentage,
+    withdrawalPoints: [],
+    withdrawalStartDate
+  });
+  const baselineRows = calculateTaxOverview({
+    activities: [...realActivities, ...cumulativeSyntheticActivities],
+    asOfDate: baselineCutoffDate,
+    holdings: baselineScenario.holdings,
+    taxEvents: scenario.combinedTaxEvents,
+    taxProfile
+  });
+  const baselineAnnualSummaries = calculateAnnualTaxSummaries({
+    activities: [...realActivities, ...cumulativeSyntheticActivities],
+    asOfDate: baselineCutoffDate,
+    holdings: baselineScenario.holdings,
+    taxEvents: scenario.combinedTaxEvents,
+    taxProfile
+  });
+  let previousRealizedAmount = baselineRows.reduce((sum, row) => sum + row.realizedAmount, 0);
+  let previousCumulativeTax = baselineAnnualSummaries.reduce(
+    (sum, summary) => sum + summary.totalTax,
+    0
+  );
+  let previousCumulativeTaxBeforeAllowance = calculateTaxOnTaxableAmount(
+    baselineAnnualSummaries.reduce((sum, summary) => sum + summary.totalTaxableCapitalIncome, 0),
+    taxProfile
+  );
 
   for (const point of sortedPoints) {
     const pointCutoffDate = endOfMonth(point.date);
@@ -271,22 +346,127 @@ export function calculateFutureWithdrawalTaxEstimates({
       taxProfile
     });
     const realizedAmount = rows.reduce((sum, row) => sum + row.realizedAmount, 0);
-    const taxForSelling = rows.reduce((sum, row) => sum + row.taxForSelling, 0);
+    // The annual Sparer-Pauschbetrag is reset every calendar year and applies to taxable VAP and
+    // taxable sale gains combined, so the tax owed up to this point cannot be derived by simply
+    // summing each row's lifetime taxForSelling (which ignores the allowance entirely). Instead,
+    // sum the allowance-aware totalTax across all calendar years up to this point.
+    const annualSummaries = calculateAnnualTaxSummaries({
+      activities: [...realActivities, ...cumulativeSyntheticActivities],
+      asOfDate: pointCutoffDate,
+      holdings: pointScenario.holdings,
+      taxEvents: scenario.combinedTaxEvents,
+      taxProfile
+    });
+    const cumulativeTax = annualSummaries.reduce((sum, summary) => sum + summary.totalTax, 0);
+    const cumulativeTaxableIncome = annualSummaries.reduce(
+      (sum, summary) => sum + summary.totalTaxableCapitalIncome,
+      0
+    );
+    // calculateTaxOnTaxableAmount is linear in the taxable amount (no allowance breakpoint), so
+    // diffing the cumulative gross tax across periods still yields the correct period tax, even
+    // when a period spans multiple calendar years.
+    const cumulativeTaxBeforeAllowance = calculateTaxOnTaxableAmount(
+      cumulativeTaxableIncome,
+      taxProfile
+    );
     const periodGain = roundToTwo(realizedAmount - previousRealizedAmount);
-    const periodTax = roundToTwo(taxForSelling - previousTaxForSelling);
+    const periodTax = roundToTwo(cumulativeTax - previousCumulativeTax);
+    const periodTaxBeforeAllowance = roundToTwo(
+      cumulativeTaxBeforeAllowance - previousCumulativeTaxBeforeAllowance
+    );
 
     estimates.set(point.periodIndex, {
       gain: periodGain,
       netWithdrawal: roundToTwo(Math.max(point.withdrawal - periodTax, 0)),
       tax: periodTax,
+      taxBeforeAllowance: periodTaxBeforeAllowance,
       withdrawal: roundToTwo(point.withdrawal)
     });
 
     previousRealizedAmount = realizedAmount;
-    previousTaxForSelling = taxForSelling;
+    previousCumulativeTax = cumulativeTax;
+    previousCumulativeTaxBeforeAllowance = cumulativeTaxBeforeAllowance;
   }
 
   return estimates;
+}
+
+export interface AnnualVapCashNeedEntry {
+  /** Calendar year the VAP became tax-relevant in (i.e. Jan 1 of the following year is due). */
+  year: number;
+  /**
+   * VAP-only tax still owed for this year after the annual Sparer-Pauschbetrag has been applied
+   * (VAP-first, see AnnualTaxSummary.vapTaxAfterAllowance). Since VAP tax is always paid from
+   * external funds (never from the depot), this is exactly the amount that must be contributed
+   * externally for this calendar year, once that year's allowance is exhausted.
+   */
+  externalVapCashNeeded: number;
+  /**
+   * Full taxable VAP for this year (after Teilfreistellung, before the Sparer-Pauschbetrag is
+   * applied) - i.e. the "full bar" that competes against the annual allowance.
+   */
+  taxableVapBeforeAllowance: number;
+  /** The annual Sparer-Pauschbetrag configured for this year (flat line for comparison). */
+  sparerPauschbetragAvailable: number;
+}
+
+/**
+ * Builds a year-by-year schedule of the external cash needed to pay VAP tax (after the annual
+ * Sparer-Pauschbetrag), across the *entire* projection - both the accumulation phase and the
+ * withdrawal phase (VAP keeps accruing on the remaining depot during withdrawal too). This lets
+ * users prepare for future external VAP payments rather than only seeing a single cumulative
+ * total. Reuses the same scenario-building logic as calculateFutureWithdrawalTaxEstimates.
+ */
+export function calculateAnnualVapCashNeedSchedule({
+  accumulationAnnualReturnPercentage,
+  activities,
+  allocations,
+  capitalPreservationTarget,
+  currentDate,
+  holdings,
+  monthlySavingsRate,
+  taxEvents,
+  taxProfile,
+  withdrawalAnnualReturnPercentage,
+  withdrawalPoints = [],
+  withdrawalStartDate
+}: Omit<RetireTaxOverviewInput, 'asOfDate'>): AnnualVapCashNeedEntry[] {
+  const sortedPoints = [...withdrawalPoints].sort((left, right) => {
+    return left.date.getTime() - right.date.getTime();
+  });
+  const lastPoint = sortedPoints.at(-1);
+  const asOfDate = endOfMonth(lastPoint ? lastPoint.date : withdrawalStartDate);
+
+  const scenario = buildRetireTaxOverviewInput({
+    accumulationAnnualReturnPercentage,
+    activities,
+    allocations,
+    asOfDate,
+    capitalPreservationTarget,
+    currentDate,
+    holdings,
+    includeCurrentMonthWithdrawals: true,
+    monthlySavingsRate,
+    taxEvents,
+    taxProfile,
+    withdrawalAnnualReturnPercentage,
+    withdrawalPoints: sortedPoints,
+    withdrawalStartDate
+  });
+  const annualSummaries = calculateAnnualTaxSummaries({
+    activities: scenario.combinedActivities,
+    asOfDate,
+    holdings: scenario.holdings,
+    taxEvents: scenario.combinedTaxEvents,
+    taxProfile
+  });
+
+  return annualSummaries.map((summary) => ({
+    externalVapCashNeeded: summary.vapTaxAfterAllowance,
+    sparerPauschbetragAvailable: summary.sparerPauschbetragAvailable,
+    taxableVapBeforeAllowance: summary.taxableVapBeforeAllowance,
+    year: summary.year
+  }));
 }
 
 export function reconstructHistoricalHoldings({

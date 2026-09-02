@@ -6,6 +6,7 @@ export interface FifoOverviewSellDetailRow {
   taxForSelling: number;
   totalValue: number;
   unitPrice: number;
+  usedSparerPauschbetragForSelling: number;
   usedTaxableVapForSelling: number;
   usedVapForSelling: number;
 }
@@ -44,6 +45,7 @@ export interface FifoOverviewRow {
   totalTaxableVap: number;
   totalVap: number;
   trackKey: string;
+  usedSparerPauschbetragForSelling: number;
   usedTaxableVapForSelling: number;
   usedVapForSelling: number;
 }

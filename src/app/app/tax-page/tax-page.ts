@@ -16,7 +16,9 @@ import {
   type TaxProfile
 } from '../services/tax-calculator';
 import {
+  calculateAnnualTaxSummaries,
   calculateTaxOverview,
+  type AnnualTaxSummary,
   type TaxActivityRow,
   type TaxOverviewRow
 } from '../services/tax-engine';
@@ -292,6 +294,33 @@ export class TaxPage implements OnInit, OnDestroy {
       asOfDate: new Date()
     });
   });
+  protected readonly annualTaxSummaries = computed<AnnualTaxSummary[]>(() => {
+    const activities = this.activities().filter((activity) => {
+      return this.selectedAccountId() === 'all' || activity.accountId === this.selectedAccountId();
+    });
+    const taxEvents = this.taxEvents().filter((taxEvent) => {
+      return this.selectedAccountId() === 'all' || taxEvent.accountId === this.selectedAccountId();
+    });
+
+    return [...calculateAnnualTaxSummaries({
+      activities,
+      holdings: this.holdings(),
+      taxEvents,
+      taxProfile: this.taxProfile(),
+      asOfDate: new Date()
+    })].sort((left, right) => right.year - left.year);
+  });
+  // Maps each year group's raw accrual `taxYear` to its matching AnnualTaxSummary, which is
+  // keyed by the tax-relevant "due year" (accrual year + 1) - see AnnualTaxSummary.year.
+  protected readonly annualTaxSummaryByTaxYear = computed<Map<number, AnnualTaxSummary>>(() => {
+    const map = new Map<number, AnnualTaxSummary>();
+
+    for (const summary of this.annualTaxSummaries()) {
+      map.set(summary.year - 1, summary);
+    }
+
+    return map;
+  });
   protected readonly taxYearOptions = computed(() => {
     const currentYear = getCurrentYear();
     const years = new Set<number>(this.taxEventRows().map(({ taxYear }) => taxYear));
@@ -539,6 +568,13 @@ export class TaxPage implements OnInit, OnDestroy {
     this.updateTaxProfile({
       ...this.taxProfile(),
       solidaritySurchargeRate: readPercentInput(event)
+    });
+  }
+
+  protected updateTaxProfileSparerPauschbetrag(event: Event): void {
+    this.updateTaxProfile({
+      ...this.taxProfile(),
+      sparerPauschbetrag: readNonNegativeNumberInput(event)
     });
   }
 
