@@ -130,7 +130,16 @@
             <span class="tax-year-summary-copy">
               <span class="tax-year-summary-toggle" aria-hidden="true">▸</span>
               <strong>{{ group.taxYear }}</strong>
-              <span class="secondary-value">{{ group.events.length }} entries</span>
+              @if (annualTaxSummaryByTaxYear().get(group.taxYear); as summary) {
+                <span class="secondary-value">
+                  Taxable VAP {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                  &middot;
+                  Taxable sale gain {{ summary.taxableSaleGainBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                  ({{ group.events.length }} entries)
+                </span>
+              } @else {
+                <span class="secondary-value">{{ group.events.length }} entries</span>
+              }
             </span>
           </summary>
 
@@ -194,59 +203,6 @@
       }
     </div>
 
-    @if (!annualTaxSummaries().length) {
-      <p class="empty-state">No annual tax summary available.</p>
-    } @else {
-      <div class="table-wrapper">
-        <table class="annual-summary-table">
-          <thead>
-          <tr>
-            <th>Tax year</th>
-            <th class="numeric">Taxable VAP</th>
-            <th class="numeric">Taxable sale gain</th>
-            <th class="numeric">Capital income before allowance</th>
-            <th class="numeric">Sparer-Pauschbetrag used / available</th>
-            <th class="numeric">Taxable after allowance</th>
-            <th class="numeric">Total tax</th>
-          </tr>
-          </thead>
-          <tbody>
-            @for (summary of annualTaxSummaries(); track summary.year) {
-              <tr>
-                <td><strong>{{ summary.year - 1 }}</strong></td>
-                <td class="numeric">
-                  {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol() }}
-                </td>
-                <td class="numeric">
-                  {{ summary.taxableSaleGainBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol() }}
-                </td>
-                <td class="numeric">
-                  {{ summary.totalTaxableCapitalIncome | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol() }}
-                </td>
-                <td class="numeric">
-                  {{ summary.sparerPauschbetragUsed | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  /
-                  {{ summary.sparerPauschbetragAvailable | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol() }}
-                </td>
-                <td class="numeric">
-                  <strong>{{ summary.taxableCapitalIncomeAfterAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
-                  {{ currencySymbol() }}
-                </td>
-                <td class="numeric">
-                  <strong>{{ summary.totalTax | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
-                  {{ currencySymbol() }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-
     <div class="section-header section-header-stack tax-summary-header">
       <div>
         <h3>Overview</h3>
@@ -258,16 +214,6 @@
       [currencySymbol]="currencySymbol()"
       emptyStateMessage="No tax overview available."
     />
-
-    <div class="section-header section-header-stack tax-summary-header">
-      <div>
-        <h3>Sparer-Pauschbetrag by year</h3>
-        <p>
-          The Sparer-Pauschbetrag is granted anew each calendar year and applied jointly to the
-          taxable VAP and taxable realized sale gains. Unused amounts expire at year end.
-        </p>
-      </div>
-    </div>
 
   </section>
 

@@ -310,6 +310,17 @@ export class TaxPage implements OnInit, OnDestroy {
       asOfDate: new Date()
     })].sort((left, right) => right.year - left.year);
   });
+  // Maps each year group's raw accrual `taxYear` to its matching AnnualTaxSummary, which is
+  // keyed by the tax-relevant "due year" (accrual year + 1) - see AnnualTaxSummary.year.
+  protected readonly annualTaxSummaryByTaxYear = computed<Map<number, AnnualTaxSummary>>(() => {
+    const map = new Map<number, AnnualTaxSummary>();
+
+    for (const summary of this.annualTaxSummaries()) {
+      map.set(summary.year - 1, summary);
+    }
+
+    return map;
+  });
   protected readonly taxYearOptions = computed(() => {
     const currentYear = getCurrentYear();
     const years = new Set<number>(this.taxEventRows().map(({ taxYear }) => taxYear));
