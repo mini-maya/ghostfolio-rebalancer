@@ -7,7 +7,7 @@ import {
   type TaxProfile
 } from '../services/tax-calculator';
 import type { TaxEvent } from '../services/tax-events';
-import { calculateTaxOverview } from '../services/tax-engine';
+import { calculateAnnualTaxSummaries, calculateTaxOverview } from '../services/tax-engine';
 import { calculateNextWithdrawalSellPlan } from './retire-withdrawal-plan';
 
 const EPSILON = 0.000001;
@@ -157,7 +157,7 @@ export function buildTaxDataBySymbolFromOverviewInput(
   input: RetireTaxOverviewScenario,
   taxProfile: TaxProfile,
   asOfDate: Date
-): Map<string, { grossVap: number; taxableVap: number }> {
+): Map<string, { costBasis: number; grossVap: number; taxableVap: number }> {
   const rows = calculateTaxOverview({
     activities: input.combinedActivities,
     asOfDate,
@@ -170,6 +170,10 @@ export function buildTaxDataBySymbolFromOverviewInput(
     rows.map((row) => [
       row.symbol,
       {
+        // Cost basis of the currently open (not-yet-sold) quantity for this symbol, needed to
+        // compute the actual taxable gain of a future partial sale (see
+        // calculateNextWithdrawalSellPlan) instead of approximating it from market value alone.
+        costBasis: row.entryPriceAmount,
         grossVap: row.totalVap,
         taxableVap: row.totalTaxableVap
       }
@@ -233,7 +237,7 @@ export function calculateFutureWithdrawalTaxEstimates({
   const sortedSyntheticActivities = [...scenario.syntheticActivities].sort(byActivityDate);
   let syntheticIndex = 0;
   let previousRealizedAmount = 0;
-  let previousTaxForSelling = 0;
+  let previousCumulativeTax = 0;
   const estimates = new Map<number, { gain: number; netWithdrawal: number; tax: number; withdrawal: number }>();
 
   for (const point of sortedPoints) {
@@ -271,9 +275,20 @@ export function calculateFutureWithdrawalTaxEstimates({
       taxProfile
     });
     const realizedAmount = rows.reduce((sum, row) => sum + row.realizedAmount, 0);
-    const taxForSelling = rows.reduce((sum, row) => sum + row.taxForSelling, 0);
+    // The annual Sparer-Pauschbetrag is reset every calendar year and applies to taxable VAP and
+    // taxable sale gains combined, so the tax owed up to this point cannot be derived by simply
+    // summing each row's lifetime taxForSelling (which ignores the allowance entirely). Instead,
+    // sum the allowance-aware totalTax across all calendar years up to this point.
+    const annualSummaries = calculateAnnualTaxSummaries({
+      activities: [...realActivities, ...cumulativeSyntheticActivities],
+      asOfDate: pointCutoffDate,
+      holdings: pointScenario.holdings,
+      taxEvents: scenario.combinedTaxEvents,
+      taxProfile
+    });
+    const cumulativeTax = annualSummaries.reduce((sum, summary) => sum + summary.totalTax, 0);
     const periodGain = roundToTwo(realizedAmount - previousRealizedAmount);
-    const periodTax = roundToTwo(taxForSelling - previousTaxForSelling);
+    const periodTax = roundToTwo(cumulativeTax - previousCumulativeTax);
 
     estimates.set(point.periodIndex, {
       gain: periodGain,
@@ -283,7 +298,7 @@ export function calculateFutureWithdrawalTaxEstimates({
     });
 
     previousRealizedAmount = realizedAmount;
-    previousTaxForSelling = taxForSelling;
+    previousCumulativeTax = cumulativeTax;
   }
 
   return estimates;

@@ -210,15 +210,19 @@ describe('calculateRetirementProjection', () => {
     // date. Even without a real TaxEvent, the shared engine now fills in a synthetic
     // Vorabpauschale for 2024 (based on the real 2024 -> 2026 price development), which
     // correctly reduces the taxable gain instead of silently ignoring prior-year VAP.
-    expect(firstWithdrawalPoint?.tax).toBeCloseTo(
+    //
+    // The resulting taxable sale gain (~62,88 EUR after VAP and Teilfreistellung) is fully
+    // covered by the default annual Sparer-Pauschbetrag (1.000 EUR), so the actual 2026 tax
+    // owed is 0 - not the pre-allowance amount that calculateTaxForSale alone would report.
+    expect(
       calculateTaxForSale({
         acquisitionCost: 110,
         saleProceeds: 200,
         taxProfile: DEFAULT_TAX_PROFILE,
         usedVap: 0.175
-      }),
-      2
-    );
+      })
+    ).toBeCloseTo(16.58, 2);
+    expect(firstWithdrawalPoint?.tax).toBe(0);
     expect(firstWithdrawalPoint?.netWithdrawal).toBeCloseTo(
       200 - (firstWithdrawalPoint?.tax ?? 0),
       2
@@ -271,5 +275,69 @@ describe('calculateRetirementProjection', () => {
     expect(result.projectedVapTotal).toBeGreaterThan(0);
     expect(result.taxableVapTotal).toBeGreaterThan(0);
     expect(result.openTaxAtWithdrawalStart).toBeGreaterThanOrEqual(0);
+    // The small taxable VAP here fits well within the default 1.000 EUR annual allowance, so
+    // the allowance-aware tax estimate should be zero (fully sheltered) and most of the
+    // allowance remains unused.
+    expect(result.openTaxAtWithdrawalStartAfterAllowance).toBe(0);
+    expect(result.sparerPauschbetragUsedTotal).toBeGreaterThan(0);
+    expect(result.sparerPauschbetragUsedTotal).toBeLessThanOrEqual(DEFAULT_TAX_PROFILE.sparerPauschbetrag);
+    expect(result.sparerPauschbetragUnusedTotal).toBeGreaterThan(0);
+  });
+
+  it('reduces the allowance-aware open tax estimate once the annual Sparer-Pauschbetrag is exceeded', () => {
+    // A large, long-held position generates enough taxable VAP across the years to exceed the
+    // default 1.000 EUR annual allowance, so the allowance-aware estimate must be strictly lower
+    // than (and never higher than) the pre-allowance estimate.
+    const result = calculateRetirementProjection(
+      {
+        ...baseInput,
+        activities: [
+          {
+            accountId: 'acc-1',
+            accountName: 'Main',
+            assetClass: 'ETF',
+            assetSubClass: 'WORLD',
+            currency: 'EUR',
+            date: new Date('2015-01-01T00:00:00.000Z'),
+            fee: 0,
+            name: 'ETF A',
+            quantity: 1000,
+            symbol: 'AAA',
+            type: 'BUY',
+            unitPrice: 100,
+            unitPriceInAssetProfileCurrency: 100,
+            valueInBaseCurrency: 100000
+          }
+        ],
+        allocations: [{ percentage: 100, symbol: 'AAA' }],
+        accumulationAnnualReturnPercentage: 6,
+        accumulationMonthlyContribution: 100,
+        accumulationMonths: 13,
+        holdings: [
+          {
+            allocationInPercentage: 100,
+            currency: 'EUR',
+            marketPrice: 300,
+            name: 'ETF A',
+            quantity: 1000,
+            symbol: 'AAA',
+            valueInBaseCurrency: 300000
+          }
+        ],
+        projectionYears: 1,
+        taxProfile: DEFAULT_TAX_PROFILE
+      },
+      new Date('2026-01-01T00:00:00.000Z')
+    );
+
+    expect(result.openTaxAtWithdrawalStart).toBeGreaterThan(0);
+    expect(result.openTaxAtWithdrawalStartAfterAllowance).toBeGreaterThan(0);
+    expect(result.openTaxAtWithdrawalStartAfterAllowance).toBeLessThan(
+      result.openTaxAtWithdrawalStart
+    );
+    // The allowance is fully used up by such a large gain across the multi-year holding period,
+    // so nothing remains unused.
+    expect(result.sparerPauschbetragUsedTotal).toBeGreaterThan(0);
+    expect(result.sparerPauschbetragUnusedTotal).toBe(0);
   });
 });

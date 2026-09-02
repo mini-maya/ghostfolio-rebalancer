@@ -4,7 +4,7 @@ import type { AllocationItem } from '../services/allocations';
 import type { Activity, Holding } from '../services/ghostfolio-api';
 import type { TaxProfile } from '../services/tax-calculator';
 import type { TaxEvent } from '../services/tax-events';
-import { calculateTaxOverview } from '../services/tax-engine';
+import { calculateAnnualTaxSummaries, calculateTaxOverview } from '../services/tax-engine';
 import {
   addContributionToLots,
   applyLotGrowth,
@@ -55,8 +55,19 @@ export interface RetirementProjectionResult {
   firstWithdrawal: number;
   lastWithdrawal: number;
   openTaxAtWithdrawalStart: number;
+  /**
+   * Same as openTaxAtWithdrawalStart, but with the annual Sparer-Pauschbetrag applied once per
+   * calendar year to the combined taxable VAP + taxable realized sale gains up to
+   * withdrawalStartDate (see calculateAnnualTaxSummaries). This never changes the underlying VAP
+   * itself - only the resulting tax estimate.
+   */
+  openTaxAtWithdrawalStartAfterAllowance: number;
   projectedVapTotal: number;
   taxableVapTotal: number;
+  /** Sum of the annual Sparer-Pauschbetrag actually consumed across all years up to withdrawalStartDate. */
+  sparerPauschbetragUsedTotal: number;
+  /** Sum of the annual Sparer-Pauschbetrag that expired unused (never carried over) across all years up to withdrawalStartDate. */
+  sparerPauschbetragUnusedTotal: number;
   points: RetirementProjectionPoint[];
   targetCapital: number;
   totalGrowth: number;
@@ -229,7 +240,10 @@ export function calculateRetirementProjection(
         })
       : {
           openTaxAtWithdrawalStart: 0,
+          openTaxAtWithdrawalStartAfterAllowance: 0,
           projectedVapTotal: 0,
+          sparerPauschbetragUnusedTotal: 0,
+          sparerPauschbetragUsedTotal: 0,
           taxableVapTotal: 0
         };
 
@@ -239,8 +253,11 @@ export function calculateRetirementProjection(
     firstWithdrawal: withdrawalPoints[0]?.withdrawal ?? 0,
     lastWithdrawal: withdrawalPoints.at(-1)?.withdrawal ?? 0,
     openTaxAtWithdrawalStart: taxSummary.openTaxAtWithdrawalStart,
+    openTaxAtWithdrawalStartAfterAllowance: taxSummary.openTaxAtWithdrawalStartAfterAllowance,
     points,
     projectedVapTotal: taxSummary.projectedVapTotal,
+    sparerPauschbetragUnusedTotal: taxSummary.sparerPauschbetragUnusedTotal,
+    sparerPauschbetragUsedTotal: taxSummary.sparerPauschbetragUsedTotal,
     targetCapital,
     taxableVapTotal: taxSummary.taxableVapTotal,
     totalGrowth: roundToTwo(points.reduce((sum, point) => sum + point.growth, 0)),
@@ -274,7 +291,10 @@ function calculateProjectedTaxSummary({
   withdrawalStartDate: Date;
 }): {
   openTaxAtWithdrawalStart: number;
+  openTaxAtWithdrawalStartAfterAllowance: number;
   projectedVapTotal: number;
+  sparerPauschbetragUnusedTotal: number;
+  sparerPauschbetragUsedTotal: number;
   taxableVapTotal: number;
 } {
   const overviewInput = buildRetireTaxOverviewInput({
@@ -298,10 +318,26 @@ function calculateProjectedTaxSummary({
     taxEvents: overviewInput.combinedTaxEvents,
     taxProfile
   });
+  const annualSummaries = calculateAnnualTaxSummaries({
+    activities: overviewInput.combinedActivities,
+    asOfDate,
+    holdings: overviewInput.holdings,
+    taxEvents: overviewInput.combinedTaxEvents,
+    taxProfile
+  });
 
   return {
     openTaxAtWithdrawalStart: roundToTwo(rows.reduce((sum, row) => sum + row.potentialTaxes, 0)),
+    openTaxAtWithdrawalStartAfterAllowance: roundToTwo(
+      annualSummaries.reduce((sum, summary) => sum + summary.totalTax, 0)
+    ),
     projectedVapTotal: roundToTwo(rows.reduce((sum, row) => sum + row.totalVap, 0)),
+    sparerPauschbetragUnusedTotal: roundToTwo(
+      annualSummaries.reduce((sum, summary) => sum + summary.sparerPauschbetragRemaining, 0)
+    ),
+    sparerPauschbetragUsedTotal: roundToTwo(
+      annualSummaries.reduce((sum, summary) => sum + summary.sparerPauschbetragUsed, 0)
+    ),
     taxableVapTotal: roundToTwo(rows.reduce((sum, row) => sum + row.totalTaxableVap, 0))
   };
 }

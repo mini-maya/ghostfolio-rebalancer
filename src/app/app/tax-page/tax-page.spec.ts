@@ -206,7 +206,8 @@ describe('TaxPage', () => {
       capitalGainsTaxRate: 0.3,
       churchTaxRate: 0,
       partialExemptionRate: 0.3,
-      solidaritySurchargeRate: 0.055
+      solidaritySurchargeRate: 0.055,
+      sparerPauschbetrag: 1000
     });
   }));
 
@@ -225,7 +226,29 @@ describe('TaxPage', () => {
       capitalGainsTaxRate: 0.305,
       churchTaxRate: 0,
       partialExemptionRate: 0.3,
-      solidaritySurchargeRate: 0.055
+      solidaritySurchargeRate: 0.055,
+      sparerPauschbetrag: 1000
+    });
+  }));
+
+  it('updates and saves the Sparer-Pauschbetrag as a Euro amount, not a percentage', fakeAsync(() => {
+    const fixture = TestBed.createComponent(TaxPage);
+    const component = fixture.componentInstance as any;
+
+    fixture.detectChanges();
+
+    component.updateTaxProfileSparerPauschbetrag({
+      target: { value: '2000' }
+    } as unknown as Event);
+    tick(300);
+
+    expect(component.taxProfile().sparerPauschbetrag).toBe(2000);
+    expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
+      capitalGainsTaxRate: 0.25,
+      churchTaxRate: 0,
+      partialExemptionRate: 0.3,
+      solidaritySurchargeRate: 0.055,
+      sparerPauschbetrag: 2000
     });
   }));
 
@@ -357,6 +380,86 @@ describe('TaxPage', () => {
     expect(summary.usedTaxableVapForSelling).toBe(expectedUsedTaxableVap);
     expect(summary.usedVapForSelling).toBeGreaterThan(0);
     expect(summary.usedTaxableVapForSelling).toBeGreaterThan(0);
+  });
+
+  it('exposes annual Sparer-Pauschbetrag summaries grouped by calendar year', () => {
+    const fixture = TestBed.createComponent(TaxPage);
+    const component = fixture.componentInstance as any;
+
+    component.activities.set([
+      {
+        accountId: 'acc-1',
+        accountName: 'Depot A',
+        assetClass: 'ETF',
+        assetSubClass: 'World',
+        currency: 'EUR',
+        date: new Date('2024-01-01'),
+        fee: 0,
+        name: 'Vanguard FTSE All-World',
+        quantity: 10,
+        symbol: 'VWCE',
+        type: 'BUY',
+        unitPrice: 100,
+        unitPriceInAssetProfileCurrency: 100,
+        valueInBaseCurrency: 1000
+      },
+      {
+        accountId: 'acc-1',
+        accountName: 'Depot A',
+        assetClass: 'ETF',
+        assetSubClass: 'World',
+        currency: 'EUR',
+        date: new Date('2026-02-01'),
+        fee: 0,
+        name: 'Vanguard FTSE All-World',
+        quantity: 4,
+        symbol: 'VWCE',
+        type: 'SELL',
+        unitPrice: 120,
+        unitPriceInAssetProfileCurrency: 120,
+        valueInBaseCurrency: 480
+      }
+    ]);
+    component.holdings.set([
+      {
+        allocationInPercentage: 100,
+        currency: 'EUR',
+        marketPrice: 110,
+        name: 'Vanguard FTSE All-World',
+        quantity: 6,
+        symbol: 'VWCE',
+        valueInBaseCurrency: 660
+      }
+    ]);
+    component.taxEvents.set([
+      {
+        accountId: 'acc-1',
+        id: 'tax-1',
+        quantity: 10,
+        symbolId: 'VWCE',
+        taxYear: 2024,
+        vorabpauschalePerShare: 1,
+        vorabpauschalePerShareAfterTeilfreistellung: 0.7
+      }
+    ]);
+
+    fixture.detectChanges();
+
+    const summaries = component.annualTaxSummaries();
+    // The VAP for tax year 2024 only becomes tax-relevant on 01.01.2025, and the sale happens
+    // in 2026, so both the VAP and the sale gain must be attributed to 2025/2026 respectively
+    // and never end up unattributed or duplicated.
+    expect(summaries.length).toBeGreaterThan(0);
+    // Years are sorted descending (most recent first) for display.
+    expect(summaries[0].year).toBeGreaterThanOrEqual(summaries.at(-1)?.year ?? 0);
+
+    const summary2026 = summaries.find((entry: any) => entry.year === 2026);
+
+    expect(summary2026?.taxableSaleGainBeforeAllowance).toBeGreaterThan(0);
+    // The gain fits well within the default 1.000 EUR allowance, so it is fully sheltered.
+    expect(summary2026?.taxableCapitalIncomeAfterAllowance).toBe(0);
+    expect(summary2026?.totalTax).toBe(0);
+    expect(summary2026?.sparerPauschbetragAvailable).toBe(1000);
   });
 
   it('expands BUY rows in the tax overview when sell details exist', () => {

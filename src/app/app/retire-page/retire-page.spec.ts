@@ -131,6 +131,30 @@ describe('RetirePage', () => {
     expect(fixture.nativeElement.querySelector('section.stats')).not.toBeNull();
   }));
 
+  it('shows the Sparer-Pauschbetrag usage tiles once a calculation completes', fakeAsync(() => {
+    const fixture = TestBed.createComponent(RetirePage);
+    const component = fixture.componentInstance as any;
+    setSingleSymbolPortfolio(component);
+    fixture.detectChanges();
+
+    runCalculation(component);
+    fixture.detectChanges();
+
+    const statsText = fixture.nativeElement.querySelector('section.stats').textContent;
+
+    expect(statsText).toContain('After Sparer-Pauschbetrag');
+    expect(statsText).toContain('Sparer-Pauschbetrag used');
+    expect(statsText).toContain('Unused (expired)');
+    expect(component.projection().openTaxAtWithdrawalStartAfterAllowance).toBeGreaterThanOrEqual(0);
+    expect(component.projection().sparerPauschbetragUsedTotal).toBeGreaterThanOrEqual(0);
+    expect(component.projection().sparerPauschbetragUnusedTotal).toBeGreaterThanOrEqual(0);
+    // The allowance-aware open tax estimate never exceeds the pre-allowance estimate, since the
+    // Sparer-Pauschbetrag can only reduce (never increase) the taxable amount.
+    expect(component.projection().openTaxAtWithdrawalStartAfterAllowance).toBeLessThanOrEqual(
+      component.projection().openTaxAtWithdrawalStart
+    );
+  }));
+
   it('hides the below-fold sections again while a subsequent calculation is running', fakeAsync(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;

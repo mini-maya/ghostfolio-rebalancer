@@ -5,8 +5,11 @@ import type {
 } from '../../shared/fifo-overview-table/fifo-overview-table.models';
 import type { Activity, Holding } from './ghostfolio-api';
 import {
+  allocateSparerPauschbetragForYear,
   calculatePotentialTax,
+  calculateTaxableGainAfterVap,
   calculateTaxForSale,
+  calculateTaxOnTaxableAmount,
   calculateVapMonthFactor,
   DEFAULT_TAX_PROFILE,
   type TaxProfile
@@ -42,6 +45,12 @@ export interface TaxSellDetailRow extends FifoOverviewSellDetailRow {
   realizedCostBasis: number;
   realizedPercentage: number;
   soldQuantity: number;
+  /**
+   * Taxable sale gain (after used VAP and Teilfreistellung), *before* the annual
+   * Sparer-Pauschbetrag is applied. Used by calculateAnnualTaxSummaries to aggregate this
+   * sale's contribution to its calendar year's combined taxable capital income.
+   */
+  taxableGainBeforeAllowance: number;
   taxForSelling: number;
   totalValue: number;
   unitPrice: number;
@@ -224,6 +233,12 @@ export function calculateTaxOverview({
         const usedTaxableVapForSelling = roundMoney(
           matchedQuantity * accruedPerShareBeforeSale.taxablePerShare
         );
+        const taxableGainBeforeAllowance = calculateTaxableGainAfterVap({
+          acquisitionCost: buyCostBasis,
+          saleProceeds: sellProceeds,
+          taxProfile,
+          usedVap: usedVapForSelling
+        });
         const taxForSelling = calculateTaxForSale({
           acquisitionCost: buyCostBasis,
           saleProceeds: sellProceeds,
@@ -238,6 +253,7 @@ export function calculateTaxOverview({
           realizedCostBasis: buyCostBasis,
           realizedPercentage,
           soldQuantity: matchedQuantity,
+          taxableGainBeforeAllowance,
           taxForSelling,
           totalValue: sellProceeds,
           unitPrice: activity.unitPrice,
@@ -503,6 +519,189 @@ function remainingQuantityAtEndOfYear({
   return Math.max(originalQuantity - soldByEndOfYear, 0);
 }
 
+/**
+ * Per-year breakdown of a BUY lot's taxable VAP, keyed by the *calendar year the VAP becomes
+ * tax-relevant in* (a taxEvent declared for taxYear Y is only taxable from 01.01 of year Y+1
+ * onwards - see the module doc comment). Only years in which the lot still had a remaining,
+ * unsold quantity at year-end contribute. Used exclusively to feed the annual Sparer-
+ * Pauschbetrag aggregation in calculateAnnualTaxSummaries; calculateLotLifetimeVap (the
+ * lifetime total used for the regular per-symbol overview rows) is intentionally left
+ * unchanged.
+ */
+function calculateLotVapByYear({
+  acquisitionDate,
+  asOfYear,
+  originalQuantity,
+  sellDetails,
+  taxEvents
+}: {
+  acquisitionDate: Date | string | null;
+  asOfYear: number;
+  originalQuantity: number;
+  sellDetails: TaxSellDetailRow[];
+  taxEvents: TaxEvent[];
+}): Map<number, { grossVap: number; taxableVap: number }> {
+  const vapByTaxRelevantYear = new Map<number, { grossVap: number; taxableVap: number }>();
+
+  if (!acquisitionDate) {
+    return vapByTaxRelevantYear;
+  }
+
+  const lotYear = new Date(acquisitionDate).getFullYear();
+
+  if (Number.isNaN(lotYear)) {
+    return vapByTaxRelevantYear;
+  }
+
+  for (let year = lotYear; year < asOfYear; year += 1) {
+    const remainingQuantity = remainingQuantityAtEndOfYear({ originalQuantity, sellDetails, year });
+
+    if (remainingQuantity <= 0) {
+      continue;
+    }
+
+    const monthFactor = year === lotYear ? calculateVapMonthFactor({ acquisitionDate }) : 1;
+    const yearEvents = taxEvents.filter((taxEvent) => taxEvent.taxYear === year);
+
+    if (!yearEvents.length) {
+      continue;
+    }
+
+    let grossVap = 0;
+    let taxableVap = 0;
+
+    for (const taxEvent of yearEvents) {
+      grossVap += remainingQuantity * monthFactor * taxEvent.vorabpauschalePerShare;
+      taxableVap +=
+        remainingQuantity * monthFactor * taxEvent.vorabpauschalePerShareAfterTeilfreistellung;
+    }
+
+    // The VAP declared for tax year `year` only becomes tax-relevant on 01.01 of `year + 1`.
+    const taxRelevantYear = year + 1;
+    const existing = vapByTaxRelevantYear.get(taxRelevantYear) ?? { grossVap: 0, taxableVap: 0 };
+
+    vapByTaxRelevantYear.set(taxRelevantYear, {
+      grossVap: roundMoney(existing.grossVap + grossVap),
+      taxableVap: roundMoney(existing.taxableVap + taxableVap)
+    });
+  }
+
+  return vapByTaxRelevantYear;
+}
+
+export interface AnnualTaxSummary {
+  /** Calendar year the Sparer-Pauschbetrag was applied for. */
+  year: number;
+  /** Sum of taxable VAP that becomes tax-relevant in this calendar year. */
+  taxableVapBeforeAllowance: number;
+  /** Sum of taxable realized sale gains from sales that occurred in this calendar year. */
+  taxableSaleGainBeforeAllowance: number;
+  /** taxableVapBeforeAllowance + taxableSaleGainBeforeAllowance. */
+  totalTaxableCapitalIncome: number;
+  /** The configured annual Sparer-Pauschbetrag (does not carry over from other years). */
+  sparerPauschbetragAvailable: number;
+  /** Portion of the allowance consumed by this year's combined capital income. */
+  sparerPauschbetragUsed: number;
+  /** Unused portion of this year's allowance. It expires and is never carried forward. */
+  sparerPauschbetragRemaining: number;
+  /** Taxable capital income remaining after the allowance has been applied. */
+  taxableCapitalIncomeAfterAllowance: number;
+  capitalGainsTax: number;
+  solidaritySurcharge: number;
+  churchTax: number;
+  totalTax: number;
+}
+
+/**
+ * Builds one summary per calendar year that combines *all* taxable VAP (attributed to the
+ * calendar year it becomes tax-relevant in) and *all* taxable realized sale gains (attributed
+ * to the calendar year of the sale) across every symbol/account, applies the annual Sparer-
+ * Pauschbetrag exactly once to that combined amount, and calculates the resulting tax.
+ *
+ * This never modifies the VAP itself (see calculateTaxOverview/TaxOverviewRow.totalVap) - it
+ * only reduces the tax base derived from it. It reuses calculateTaxOverview's FIFO/VAP
+ * attribution (the single shared engine) rather than re-implementing it.
+ */
+export function calculateAnnualTaxSummaries({
+  activities,
+  holdings,
+  taxEvents,
+  taxProfile = DEFAULT_TAX_PROFILE,
+  asOfDate = new Date()
+}: CalculateTaxOverviewInput): AnnualTaxSummary[] {
+  const asOfYear = asOfDate.getFullYear();
+  const rows = calculateTaxOverview({ activities, asOfDate, holdings, taxEvents, taxProfile });
+  const taxableVapByYear = new Map<number, number>();
+  const taxableSaleGainByYear = new Map<number, number>();
+
+  for (const row of rows) {
+    const rowTaxEvents = taxEvents.filter((taxEvent) => {
+      return taxEvent.accountId === row.accountId && taxEvent.symbolId === normalizeSymbol(row.symbol);
+    });
+
+    for (const activity of row.activities) {
+      if (activity.type === 'BUY') {
+        const vapByYear = calculateLotVapByYear({
+          acquisitionDate: activity.date,
+          asOfYear,
+          originalQuantity: activity.quantity,
+          sellDetails: activity.sellDetails,
+          taxEvents: rowTaxEvents
+        });
+
+        for (const [year, { taxableVap }] of vapByYear) {
+          taxableVapByYear.set(year, roundMoney((taxableVapByYear.get(year) ?? 0) + taxableVap));
+        }
+      }
+
+      for (const sellDetail of activity.sellDetails) {
+        const saleYear = sellDetail.date ? new Date(sellDetail.date).getFullYear() : asOfYear;
+
+        taxableSaleGainByYear.set(
+          saleYear,
+          roundMoney(
+            (taxableSaleGainByYear.get(saleYear) ?? 0) + sellDetail.taxableGainBeforeAllowance
+          )
+        );
+      }
+    }
+  }
+
+  const years = [...new Set([...taxableVapByYear.keys(), ...taxableSaleGainByYear.keys()])].sort(
+    (left, right) => left - right
+  );
+
+  return years.map((year) => {
+    const taxableVapBeforeAllowance = roundMoney(taxableVapByYear.get(year) ?? 0);
+    const taxableSaleGainBeforeAllowance = roundMoney(taxableSaleGainByYear.get(year) ?? 0);
+    const allocation = allocateSparerPauschbetragForYear({
+      sparerPauschbetragAvailable: taxProfile.sparerPauschbetrag,
+      taxableAmounts: [taxableVapBeforeAllowance, taxableSaleGainBeforeAllowance]
+    });
+    const capitalGainsTax = roundMoney(
+      allocation.taxableAfterAllowance * taxProfile.capitalGainsTaxRate
+    );
+    const solidaritySurcharge = roundMoney(capitalGainsTax * taxProfile.solidaritySurchargeRate);
+    const churchTax = roundMoney(allocation.taxableAfterAllowance * taxProfile.churchTaxRate);
+    const totalTax = calculateTaxOnTaxableAmount(allocation.taxableAfterAllowance, taxProfile);
+
+    return {
+      capitalGainsTax,
+      churchTax,
+      solidaritySurcharge,
+      sparerPauschbetragAvailable: roundMoney(Math.max(taxProfile.sparerPauschbetrag, 0)),
+      sparerPauschbetragRemaining: allocation.remaining,
+      sparerPauschbetragUsed: allocation.used,
+      taxableCapitalIncomeAfterAllowance: allocation.taxableAfterAllowance,
+      taxableSaleGainBeforeAllowance,
+      taxableVapBeforeAllowance,
+      totalTax,
+      totalTaxableCapitalIncome: allocation.totalTaxableAmount,
+      year
+    };
+  });
+}
+
 function sumSellDetails(
   activities: TaxActivityRow[],
   field: 'realizedAmount' | 'realizedCostBasis' | 'taxForSelling' | 'usedTaxableVapForSelling' | 'usedVapForSelling'
@@ -511,6 +710,7 @@ function sumSellDetails(
     return sum + activity.sellDetails.reduce((activitySum, sellDetail) => activitySum + sellDetail[field], 0);
   }, 0);
 }
+
 
 function createEmptyRow(activity: Activity, symbolKey: string): TaxOverviewRow {
   return {

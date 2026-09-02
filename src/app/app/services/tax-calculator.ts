@@ -5,13 +5,22 @@ export interface TaxProfile {
   churchTaxRate: number;
   partialExemptionRate: number;
   solidaritySurchargeRate: number;
+  /**
+   * Annual Sparer-Pauschbetrag (German saver's lump-sum allowance) in EUR. Applied once per
+   * calendar year against the *combined* taxable capital income of that year (taxable VAP plus
+   * taxable realized sale gains) - never against VAP itself, and never carried over into the
+   * following year. Defaults to 1.000 EUR (single filer); jointly assessed spouses/partners can
+   * configure 2.000 EUR.
+   */
+  sparerPauschbetrag: number;
 }
 
 export const DEFAULT_TAX_PROFILE: TaxProfile = {
   capitalGainsTaxRate: 0.25,
   churchTaxRate: 0,
   partialExemptionRate: 0.3,
-  solidaritySurchargeRate: 0.055
+  solidaritySurchargeRate: 0.055,
+  sparerPauschbetrag: 1000
 };
 
 // Tolerance for floating-point residuals when a running "remaining quantity"
@@ -107,6 +116,28 @@ export function calculateTotalVapAfterTeilfreistellung(
   );
 }
 
+/**
+ * Applies the configured capital-gains-tax rate, solidarity surcharge and (optional) church
+ * tax to an already-determined taxable amount. This is the single shared tax-rate formula
+ * (KapSt + Soli + Kirchensteuer) used for VAP, unrealized potential gains and realized sale
+ * gains alike - callers are responsible for first arriving at the correct taxable amount
+ * (e.g. after Teilfreistellung and, where relevant, after the Sparer-Pauschbetrag).
+ */
+export function calculateTaxOnTaxableAmount(
+  taxableAmount: number,
+  taxProfile: TaxProfile = DEFAULT_TAX_PROFILE
+): number {
+  if (taxableAmount <= 0) {
+    return 0;
+  }
+
+  const taxOnAmount = taxableAmount * taxProfile.capitalGainsTaxRate;
+  const solidaritySurcharge = taxOnAmount * taxProfile.solidaritySurchargeRate;
+  const churchTax = taxableAmount * taxProfile.churchTaxRate;
+
+  return roundMoney(taxOnAmount + solidaritySurcharge + churchTax);
+}
+
 export function calculatePaidVap({
   taxProfile = DEFAULT_TAX_PROFILE,
   grossVap,
@@ -120,15 +151,7 @@ export function calculatePaidVap({
     taxableVap ??
     (grossVap !== undefined ? grossVap * (1 - taxProfile.partialExemptionRate) : 0);
 
-  if (calculatedTaxableVap <= 0) {
-    return 0;
-  }
-
-  const taxOnVap = calculatedTaxableVap * taxProfile.capitalGainsTaxRate;
-  const solidaritySurcharge = taxOnVap * taxProfile.solidaritySurchargeRate;
-  const churchTax = calculatedTaxableVap * taxProfile.churchTaxRate;
-
-  return roundMoney(taxOnVap + solidaritySurcharge + churchTax);
+  return calculateTaxOnTaxableAmount(calculatedTaxableVap, taxProfile);
 }
 
 export function calculatePotentialTax({
@@ -140,15 +163,52 @@ export function calculatePotentialTax({
   const gainAfterVap = Math.max(currentValue - acquisitionCost - usedVap, 0);
   const taxableGain = gainAfterVap * (1 - taxProfile.partialExemptionRate);
 
-  if (taxableGain <= 0) {
-    return 0;
-  }
+  return calculateTaxOnTaxableAmount(taxableGain, taxProfile);
+}
 
-  const taxOnGain = taxableGain * taxProfile.capitalGainsTaxRate;
-  const solidaritySurcharge = taxOnGain * taxProfile.solidaritySurchargeRate;
-  const churchTax = taxableGain * taxProfile.churchTaxRate;
+export interface SparerPauschbetragAllocationInput {
+  /** Taxable capital income amounts (already after Teilfreistellung) for a single calendar year. */
+  taxableAmounts: number[];
+  /** Sparer-Pauschbetrag available for that calendar year (does not carry over from prior years). */
+  sparerPauschbetragAvailable: number;
+}
 
-  return roundMoney(taxOnGain + solidaritySurcharge + churchTax);
+export interface SparerPauschbetragAllocationResult {
+  /** Sum of all taxableAmounts, before applying the allowance. */
+  totalTaxableAmount: number;
+  /** Portion of the allowance consumed by this year's combined capital income. */
+  used: number;
+  /** Unused portion of this year's allowance. It expires and must not be carried forward. */
+  remaining: number;
+  /** Taxable amount remaining after the allowance has been applied. */
+  taxableAfterAllowance: number;
+}
+
+/**
+ * Applies the annual Sparer-Pauschbetrag to the *combined* taxable capital income of a single
+ * calendar year (taxable VAP and taxable realized sale gains together - the allowance must
+ * never be applied separately per income type, see spec section 17). The allowance itself is
+ * never subtracted from the VAP; it only reduces the resulting tax base. Unused amounts expire
+ * at year end and must not be passed as `sparerPauschbetragAvailable` for a later year.
+ */
+export function allocateSparerPauschbetragForYear({
+  sparerPauschbetragAvailable,
+  taxableAmounts
+}: SparerPauschbetragAllocationInput): SparerPauschbetragAllocationResult {
+  const totalTaxableAmount = roundMoney(
+    taxableAmounts.reduce((sum, amount) => sum + Math.max(amount, 0), 0)
+  );
+  const allowanceAvailable = Math.max(sparerPauschbetragAvailable, 0);
+  const used = roundMoney(Math.min(totalTaxableAmount, allowanceAvailable));
+  const remaining = roundMoney(Math.max(allowanceAvailable - used, 0));
+  const taxableAfterAllowance = roundMoney(Math.max(totalTaxableAmount - used, 0));
+
+  return {
+    remaining,
+    taxableAfterAllowance,
+    totalTaxableAmount,
+    used
+  };
 }
 
 export function calculateVapForQuantity({
@@ -287,24 +347,38 @@ export function estimateVapForLotWithoutTaxEvent({
   return { grossVap, taxableVap };
 }
 
-export function calculateTaxForSale({
+/**
+ * Returns the taxable sale gain (after subtracting already-taxed VAP and applying the fund's
+ * Teilfreistellung), *before* any annual Sparer-Pauschbetrag is applied. Exposed separately so
+ * callers that need to aggregate several taxable amounts of the same calendar year (VAP and
+ * sale gains together) before applying the shared annual allowance can do so without
+ * duplicating this formula.
+ */
+export function calculateTaxableGainAfterVap({
   acquisitionCost,
   saleProceeds,
   taxProfile = DEFAULT_TAX_PROFILE,
   usedVap
 }: TaxForSaleInput): number {
   const gainAfterVap = Math.max(saleProceeds - acquisitionCost - usedVap, 0);
-  const taxableGain = gainAfterVap * (1 - taxProfile.partialExemptionRate);
 
-  if (taxableGain <= 0) {
-    return 0;
-  }
+  return roundMoney(gainAfterVap * (1 - taxProfile.partialExemptionRate));
+}
 
-  const taxOnGain = taxableGain * taxProfile.capitalGainsTaxRate;
-  const solidaritySurcharge = taxOnGain * taxProfile.solidaritySurchargeRate;
-  const churchTax = taxableGain * taxProfile.churchTaxRate;
+export function calculateTaxForSale({
+  acquisitionCost,
+  saleProceeds,
+  taxProfile = DEFAULT_TAX_PROFILE,
+  usedVap
+}: TaxForSaleInput): number {
+  const taxableGain = calculateTaxableGainAfterVap({
+    acquisitionCost,
+    saleProceeds,
+    taxProfile,
+    usedVap
+  });
 
-  return roundMoney(taxOnGain + solidaritySurcharge + churchTax);
+  return calculateTaxOnTaxableAmount(taxableGain, taxProfile);
 }
 
 function roundMoney(value: number): number {

@@ -52,6 +52,17 @@
                 (input)="updateTaxProfileSolidaritySurchargeRate($event)"
               />
             </label>
+
+            <label class="field tax-profile-field">
+              <span>Sparer-Pauschbetrag (€ / Jahr)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().sparerPauschbetrag"
+                (input)="updateTaxProfileSparerPauschbetrag($event)"
+              />
+            </label>
           </div>
         } @else {
           <p class="secondary-value">The tax profile can only be edited by local users.</p>
@@ -194,6 +205,70 @@
       [currencySymbol]="currencySymbol()"
       emptyStateMessage="No tax overview available."
     />
+
+    <div class="section-header section-header-stack tax-summary-header">
+      <div>
+        <h3>Sparer-Pauschbetrag pro Jahr</h3>
+        <p>
+          Der Sparer-Pauschbetrag wird jedes Kalenderjahr neu gewährt und auf die
+          steuerpflichtige VAP und die steuerpflichtigen Veräußerungsgewinne gemeinsam
+          angewendet. Nicht genutzte Beträge verfallen am Jahresende.
+        </p>
+      </div>
+    </div>
+
+    @if (!annualTaxSummaries().length) {
+      <p class="empty-state">No annual tax summary available.</p>
+    } @else {
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Jahr</th>
+              <th class="numeric">Steuerpflichtige VAP</th>
+              <th class="numeric">Steuerpflichtiger Veräußerungsgewinn</th>
+              <th class="numeric">Kapitalertrag vor Freibetrag</th>
+              <th class="numeric">Sparer-Pauschbetrag genutzt / verfügbar</th>
+              <th class="numeric">Steuerpflichtig nach Freibetrag</th>
+              <th class="numeric">Gesamtsteuer</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (summary of annualTaxSummaries(); track summary.year) {
+              <tr>
+                <td><strong>{{ summary.year }}</strong></td>
+                <td class="numeric">
+                  {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </td>
+                <td class="numeric">
+                  {{ summary.taxableSaleGainBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </td>
+                <td class="numeric">
+                  {{ summary.totalTaxableCapitalIncome | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </td>
+                <td class="numeric">
+                  {{ summary.sparerPauschbetragUsed | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  /
+                  {{ summary.sparerPauschbetragAvailable | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+                  {{ currencySymbol() }}
+                </td>
+                <td class="numeric">
+                  <strong>{{ summary.taxableCapitalIncomeAfterAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
+                  {{ currencySymbol() }}
+                </td>
+                <td class="numeric">
+                  <strong>{{ summary.totalTax | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
+                  {{ currencySymbol() }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   </section>
 
   @if (isDialogOpen()) {

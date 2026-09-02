@@ -1,7 +1,9 @@
 import type { AllocationItem } from '../services/allocations';
 import type { Holding } from '../services/ghostfolio-api';
 import {
-  calculateTaxForSale,
+  allocateSparerPauschbetragForYear,
+  calculateTaxableGainAfterVap,
+  calculateTaxOnTaxableAmount,
   DEFAULT_TAX_PROFILE,
   type TaxProfile
 } from '../services/tax-calculator';
@@ -34,6 +36,9 @@ export interface NextWithdrawalSellPlan {
   projectedVapTotal: number;
   requestedSellAmount: number;
   rows: NextWithdrawalSellRow[];
+  /** Portion of `sparerPauschbetragRemainingForYear` consumed by this withdrawal's taxable sale gain. */
+  sparerPauschbetragRemainingAfter: number;
+  sparerPauschbetragUsed: number;
   taxableVapTotal: number;
   totalPlannedSell: number;
 }
@@ -45,21 +50,34 @@ export function calculateNextWithdrawalSellPlan({
   taxProfile = DEFAULT_TAX_PROFILE,
   withdrawalAmount,
   minimumRemainingValueBySymbol,
-  sellWholeSharesOnly = false
+  sellWholeSharesOnly = false,
+  sparerPauschbetragRemainingForYear
 }: {
   allocations: AllocationItem[];
   holdings: Holding[];
-  symbolTaxDataBySymbol?: Map<string, { grossVap: number; taxableVap: number }>;
+  symbolTaxDataBySymbol?: Map<string, { costBasis?: number; grossVap: number; taxableVap: number }>;
   taxProfile?: TaxProfile;
   withdrawalAmount: number;
   minimumRemainingValueBySymbol?: Map<string, number>;
   sellWholeSharesOnly?: boolean;
+  /**
+   * Sparer-Pauschbetrag still available for the calendar year this withdrawal falls into,
+   * i.e. the annual allowance minus whatever has already been consumed by earlier withdrawals
+   * (or taxable VAP) in the same year. Callers tracking a running annual allowance across
+   * several withdrawals must pass the previous call's `sparerPauschbetragRemainingAfter` here.
+   * Defaults to the full configured annual allowance when the caller does not track state.
+   */
+  sparerPauschbetragRemainingForYear?: number;
 }): NextWithdrawalSellPlan {
   const portfolioTotal = holdings.reduce((sum, holding) => {
     return sum + Math.max(holding.valueInBaseCurrency, 0);
   }, 0);
   const requestedSellAmount = clampToRange(withdrawalAmount, 0, portfolioTotal);
   const portfolioAfterSell = Math.max(portfolioTotal - requestedSellAmount, 0);
+  const sparerPauschbetragAvailable = Math.max(
+    sparerPauschbetragRemainingForYear ?? taxProfile.sparerPauschbetrag,
+    0
+  );
 
   if (allocations.length === 0) {
     return {
@@ -70,6 +88,8 @@ export function calculateNextWithdrawalSellPlan({
       projectedVapTotal: 0,
       requestedSellAmount: roundToTwo(requestedSellAmount),
       rows: [],
+      sparerPauschbetragRemainingAfter: roundToTwo(sparerPauschbetragAvailable),
+      sparerPauschbetragUsed: 0,
       taxableVapTotal: 0,
       totalPlannedSell: 0
     };
@@ -141,25 +161,62 @@ export function calculateNextWithdrawalSellPlan({
     applyWholeShareConstraint(rows, requestedSellAmount);
   }
 
-  const resultRows = rows.map((row) => {
+  const preliminaryRows = rows.map((row) => {
     const sellAmount = clampToRange(row.sellAmount, 0, row.currentValue);
-    const remainingValue = Math.max(row.currentValue - sellAmount, 0);
-    const rawSharesToSell = row.marketPrice > 0 ? sellAmount / row.marketPrice : 0;
-    const sharesToSell =
-      row.quantity > 0 ? clampToRange(rawSharesToSell, 0, row.quantity) : Math.max(rawSharesToSell, 0);
     const projectedTaxData = symbolTaxDataBySymbol?.get(row.symbol) ?? {
+      costBasis: undefined,
       grossVap: 0,
       taxableVap: 0
     };
     const projectedVap = roundToTwo(projectedTaxData.grossVap);
-    const taxableVap = roundToTwo(projectedTaxData.taxableVap);
-    const acquisitionCost = Math.max(row.currentValue - projectedVap, 0);
-    const estimatedTax = calculateTaxForSale({
+    // Fraction of the currently held position's value that this withdrawal sells. Both the
+    // position's cost basis and its accrued (not-yet-taxed) VAP are attributed to the sale
+    // proportionally, since this function only receives aggregate per-symbol holding/tax data,
+    // not individual FIFO lots (that precise attribution happens in tax-engine.ts).
+    const soldFraction = row.currentValue > 0 ? sellAmount / row.currentValue : 0;
+    // Falls back to the full current value (i.e. an assumed zero unrealized gain) when no real
+    // cost-basis data is supplied, preserving prior behavior for callers that only pass VAP data.
+    const costBasisForPosition = projectedTaxData.costBasis ?? row.currentValue;
+    const acquisitionCost = costBasisForPosition * soldFraction;
+    const usedVap = projectedVap * soldFraction;
+    const taxableGainBeforeAllowance = calculateTaxableGainAfterVap({
       acquisitionCost,
       saleProceeds: sellAmount,
       taxProfile,
-      usedVap: projectedVap
+      usedVap
     });
+
+    return { ...row, acquisitionCost, projectedVap, sellAmount, taxableGainBeforeAllowance, usedVap };
+  });
+  const totalTaxableGainBeforeAllowance = preliminaryRows.reduce((sum, row) => {
+    return sum + row.taxableGainBeforeAllowance;
+  }, 0);
+  const allowanceAllocation = allocateSparerPauschbetragForYear({
+    sparerPauschbetragAvailable: sparerPauschbetragAvailable,
+    taxableAmounts: [totalTaxableGainBeforeAllowance]
+  });
+  // Distribute the combined post-allowance taxable amount back across rows in proportion to
+  // each row's pre-allowance share, so the single shared Sparer-Pauschbetrag is never applied
+  // more than once across the rows sold in this withdrawal.
+  const postAllowanceRatio =
+    totalTaxableGainBeforeAllowance > 0
+      ? allowanceAllocation.taxableAfterAllowance / totalTaxableGainBeforeAllowance
+      : 0;
+
+  const resultRows = preliminaryRows.map((row) => {
+    const sellAmount = row.sellAmount;
+    const remainingValue = Math.max(row.currentValue - sellAmount, 0);
+    const rawSharesToSell = row.marketPrice > 0 ? sellAmount / row.marketPrice : 0;
+    const sharesToSell =
+      row.quantity > 0 ? clampToRange(rawSharesToSell, 0, row.quantity) : Math.max(rawSharesToSell, 0);
+    const projectedVap = row.projectedVap;
+    const projectedTaxData = symbolTaxDataBySymbol?.get(row.symbol) ?? {
+      grossVap: 0,
+      taxableVap: 0
+    };
+    const taxableVap = roundToTwo(projectedTaxData.taxableVap);
+    const rowTaxableAfterAllowance = row.taxableGainBeforeAllowance * postAllowanceRatio;
+    const estimatedTax = calculateTaxOnTaxableAmount(rowTaxableAfterAllowance, taxProfile);
     const netSellAmount = Math.max(sellAmount - estimatedTax, 0);
 
     return {
@@ -198,6 +255,8 @@ export function calculateNextWithdrawalSellPlan({
     projectedVapTotal: roundToTwo(projectedVapTotal),
     requestedSellAmount: roundToTwo(requestedSellAmount),
     rows: resultRows,
+    sparerPauschbetragRemainingAfter: allowanceAllocation.remaining,
+    sparerPauschbetragUsed: allowanceAllocation.used,
     taxableVapTotal: roundToTwo(taxableVapTotal),
     totalPlannedSell: roundToTwo(totalPlannedSell)
   };

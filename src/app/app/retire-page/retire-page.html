@@ -269,7 +269,11 @@
         {{ projection().openTaxAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </strong>
-      <small>At withdrawal start, considering VAP</small>
+      <small>
+        After Sparer-Pauschbetrag:
+        {{ projection().openTaxAtWithdrawalStartAfterAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
     </article>
 
     <article class="card stat">
@@ -281,6 +285,19 @@
       <small>
         Total taxable VAP:
         {{ projection().taxableVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </small>
+    </article>
+
+    <article class="card stat">
+      <span>Sparer-Pauschbetrag used</span>
+      <strong>
+        {{ projection().sparerPauschbetragUsedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
+        {{ currencySymbol(currency()) }}
+      </strong>
+      <small>
+        Unused (expired):
+        {{ projection().sparerPauschbetragUnusedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
         {{ currencySymbol(currency()) }}
       </small>
     </article>

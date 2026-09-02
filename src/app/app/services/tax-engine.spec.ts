@@ -1,5 +1,5 @@
 import type { Activity, Holding } from './ghostfolio-api';
-import { calculateTaxOverview } from './tax-engine';
+import { calculateAnnualTaxSummaries, calculateTaxOverview } from './tax-engine';
 import { DEFAULT_TAX_PROFILE } from './tax-calculator';
 import type { TaxEvent } from './tax-events';
 
@@ -558,5 +558,156 @@ describe('calculateTaxOverview - Stichtag (asOfDate)', () => {
 
     expect(rows[0].potentialTaxes).toBeGreaterThan(0);
     expect(DEFAULT_TAX_PROFILE.capitalGainsTaxRate).toBe(0.25);
+  });
+});
+
+describe('calculateAnnualTaxSummaries - Sparer-Pauschbetrag', () => {
+  it('shares a single annual allowance between taxable VAP and a realized sale gain of the same year', () => {
+    const activities = [
+      makeActivity({ date: '2023-01-01', quantity: 100, type: 'BUY', unitPrice: 100 }),
+      makeActivity({ date: '2024-06-01', quantity: 20, type: 'SELL', unitPrice: 200 })
+    ];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 2,
+        vorabpauschalePerShareAfterTeilfreistellung: 1.4
+      })
+    ];
+
+    const summaries = calculateAnnualTaxSummaries({
+      activities,
+      holdings: [makeHolding({ marketPrice: 200, quantity: 80 })],
+      taxEvents,
+      asOfDate: new Date('2024-12-31')
+    });
+    const summary2024 = summaries.find((entry) => entry.year === 2024);
+
+    expect(summary2024).toBeDefined();
+    // 2023's VAP only becomes tax-relevant on 01.01.2024, the lot was still fully held at the
+    // end of 2023 (the sale happens mid-2024), so the full 100 * 1.4 taxable VAP counts here.
+    expect(summary2024?.taxableVapBeforeAllowance).toBe(140);
+    // gainAfterVap = (4000 - 2000 - 40) = 1960; after 30% Teilfreistellung => 1372.
+    expect(summary2024?.taxableSaleGainBeforeAllowance).toBe(1372);
+    expect(summary2024?.totalTaxableCapitalIncome).toBe(1512);
+    expect(summary2024?.sparerPauschbetragAvailable).toBe(1000);
+    expect(summary2024?.sparerPauschbetragUsed).toBe(1000);
+    expect(summary2024?.sparerPauschbetragRemaining).toBe(0);
+    expect(summary2024?.taxableCapitalIncomeAfterAllowance).toBe(512);
+    // 512 * 25% = 128; plus 5,5% Soli on that (7.04) => 135.04.
+    expect(summary2024?.totalTax).toBe(135.04);
+  });
+
+  it('does not apply the allowance twice by treating VAP and sale gain separately', () => {
+    const activities = [
+      makeActivity({ date: '2023-01-01', quantity: 100, type: 'BUY', unitPrice: 100 }),
+      makeActivity({ date: '2024-06-01', quantity: 20, type: 'SELL', unitPrice: 200 })
+    ];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 2,
+        vorabpauschalePerShareAfterTeilfreistellung: 1.4
+      })
+    ];
+
+    const summaries = calculateAnnualTaxSummaries({
+      activities,
+      holdings: [makeHolding({ marketPrice: 200, quantity: 80 })],
+      taxEvents,
+      asOfDate: new Date('2024-12-31')
+    });
+    const summary2024 = summaries.find((entry) => entry.year === 2024);
+
+    // Applying the 1.000 EUR allowance separately to VAP (140) and sale gain (1372) would wrongly
+    // fully cover the VAP and leave 372 taxable for the sale - the combined result must differ.
+    expect(summary2024?.taxableCapitalIncomeAfterAllowance).not.toBe(372);
+  });
+
+  it('never carries an unused allowance from one calendar year into the next', () => {
+    const activities = [
+      makeActivity({ date: '2022-01-01', quantity: 100, type: 'BUY', unitPrice: 100 }),
+      makeActivity({ date: '2024-06-01', quantity: 100, type: 'SELL', unitPrice: 150 })
+    ];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2022,
+        vorabpauschalePerShare: 1,
+        vorabpauschalePerShareAfterTeilfreistellung: 0.7
+      }),
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 1,
+        vorabpauschalePerShareAfterTeilfreistellung: 0.7
+      })
+    ];
+
+    const summaries = calculateAnnualTaxSummaries({
+      activities,
+      holdings: [],
+      taxEvents,
+      asOfDate: new Date('2024-12-31')
+    });
+    // 2022's VAP (70 taxable) becomes relevant in 2023 and is far below the 1.000 EUR
+    // allowance, leaving 930 unused - that unused amount must not reappear in 2024.
+    const summary2023 = summaries.find((entry) => entry.year === 2023);
+    const summary2024 = summaries.find((entry) => entry.year === 2024);
+
+    expect(summary2023?.sparerPauschbetragUsed).toBe(70);
+    expect(summary2023?.sparerPauschbetragRemaining).toBe(930);
+    expect(summary2024?.sparerPauschbetragAvailable).toBe(1000);
+  });
+
+  it('only counts a year’s VAP as tax-relevant starting the following calendar year', () => {
+    const activities = [makeActivity({ date: '2023-01-01', quantity: 100, type: 'BUY', unitPrice: 100 })];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 2,
+        vorabpauschalePerShareAfterTeilfreistellung: 1.4
+      })
+    ];
+
+    const withinSameYear = calculateAnnualTaxSummaries({
+      activities,
+      holdings: [makeHolding({ marketPrice: 100, quantity: 100 })],
+      taxEvents,
+      asOfDate: new Date('2023-12-31')
+    });
+    const followingYear = calculateAnnualTaxSummaries({
+      activities,
+      holdings: [makeHolding({ marketPrice: 100, quantity: 100 })],
+      taxEvents,
+      asOfDate: new Date('2024-01-01')
+    });
+
+    expect(withinSameYear.find((entry) => entry.year === 2023)).toBeUndefined();
+    expect(followingYear.find((entry) => entry.year === 2024)?.taxableVapBeforeAllowance).toBe(140);
+  });
+
+  it('respects a configured Sparer-Pauschbetrag other than the 1.000 EUR default', () => {
+    const activities = [makeActivity({ date: '2024-06-01', quantity: 20, type: 'SELL', unitPrice: 200 })];
+
+    const summaries = calculateAnnualTaxSummaries({
+      activities: [
+        makeActivity({ date: '2023-01-01', quantity: 20, type: 'BUY', unitPrice: 100 }),
+        ...activities
+      ],
+      holdings: [],
+      taxEvents: [],
+      taxProfile: { ...DEFAULT_TAX_PROFILE, sparerPauschbetrag: 2000 },
+      asOfDate: new Date('2024-12-31')
+    });
+    const summary2024 = summaries.find((entry) => entry.year === 2024);
+
+    expect(summary2024?.sparerPauschbetragAvailable).toBe(2000);
+    // gain = (4000 - 2000) * 0.7 = 1400, fully covered by the higher 2.000 EUR allowance.
+    expect(summary2024?.taxableCapitalIncomeAfterAllowance).toBe(0);
+    expect(summary2024?.sparerPauschbetragRemaining).toBe(600);
   });
 });
