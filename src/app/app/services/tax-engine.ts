@@ -56,12 +56,15 @@ export interface TaxSellDetailRow extends FifoOverviewSellDetailRow {
   totalValue: number;
   unitPrice: number;
   /**
-   * Portion of the shared annual Sparer-Pauschbetrag this specific sale consumed, following
-   * the agreed allocation order: the year's taxable VAP is consumed first (in full), then any
-   * remaining allowance is distributed to sales chronologically by date, with same-day sales
-   * splitting that day's remaining allowance proportionally to their own taxable amount. This
-   * is a purely informative, additive breakdown - it never changes taxForSelling or any
-   * existing year-level total (see allocateSparerPauschbetragChronologically).
+   * Tax equivalent (in currency, using the same capital-gains-tax + solidarity surcharge +
+   * church tax formula as taxForSelling) of the portion of the shared annual Sparer-Pauschbetrag
+   * this specific sale consumed, following the agreed allocation order: the year's taxable VAP
+   * is consumed first (in full), then any remaining allowance is distributed to sales
+   * chronologically by date, with same-day sales splitting that day's remaining allowance
+   * proportionally to their own taxable amount. This shows how much of taxForSelling was
+   * effectively "paid for" by the allowance - it is a purely informative, additive breakdown
+   * and never changes taxForSelling or any existing year-level total (see
+   * allocateSparerPauschbetragChronologically).
    */
   usedSparerPauschbetragForSelling: number;
   usedTaxableVapForSelling: number;
@@ -108,7 +111,10 @@ export interface TaxOverviewRow extends FifoOverviewRow {
   symbol: string;
   taxForSelling: number;
   totalTaxableVap: number;
-  /** Sum of usedSparerPauschbetragForSelling across all of this row's sellDetails. */
+  /**
+   * Sum of usedSparerPauschbetragForSelling across all of this row's sellDetails - i.e. how
+   * much tax was effectively "paid for" by the Sparer-Pauschbetrag for this symbol/account.
+   */
   usedSparerPauschbetragForSelling: number;
   usedTaxableVapForSelling: number;
   totalVap: number;
@@ -351,8 +357,14 @@ export function calculateTaxOverview({
     });
 
     for (const event of events) {
-      event.sellDetail.usedSparerPauschbetragForSelling =
-        allocation.saleAllocations.get(event.id)?.used ?? 0;
+      const allowanceUsed = allocation.saleAllocations.get(event.id)?.used ?? 0;
+      // Store the tax equivalent of the allocated allowance (not the raw allowance amount)
+      // so it can be directly compared to taxForSelling in the UI - i.e. how much of the
+      // displayed sale tax was effectively covered by the Sparer-Pauschbetrag.
+      event.sellDetail.usedSparerPauschbetragForSelling = calculateTaxOnTaxableAmount(
+        allowanceUsed,
+        taxProfile
+      );
     }
   }
 

@@ -848,6 +848,10 @@ export class RetirePage implements OnInit {
     this.setSelectedFifoMonth(new Date(currentYear, 11, 1));
   }
 
+  protected jumpSelectedFifoMonthToWithdrawalStart(): void {
+    this.setSelectedFifoMonth(startOfMonth(this.effectiveWithdrawalStartDate()));
+  }
+
   protected jumpSelectedFifoMonthToEndOfWithdrawal(): void {
     this.setSelectedFifoMonth(this.fifoMonthBounds().maximumMonth);
   }

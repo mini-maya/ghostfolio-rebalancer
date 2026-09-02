@@ -738,8 +738,9 @@ describe('calculateTaxOverview - used Sparer-Pauschbetrag per sale', () => {
     const sellDetail = rows[0].activities.find((activity) => activity.type === 'BUY')?.sellDetails[0];
 
     expect(sellDetail?.taxableGainBeforeAllowance).toBe(1372);
-    expect(sellDetail?.usedSparerPauschbetragForSelling).toBe(860);
-    expect(rows[0].usedSparerPauschbetragForSelling).toBe(860);
+    // Tax equivalent of the allocated 860 EUR allowance: 860 * 26,375% = 226.83.
+    expect(sellDetail?.usedSparerPauschbetragForSelling).toBe(226.83);
+    expect(rows[0].usedSparerPauschbetragForSelling).toBe(226.83);
   });
 
   it('gives every sale of a year zero allowance once the year VAP alone already exhausts it', () => {
@@ -792,7 +793,8 @@ describe('calculateTaxOverview - used Sparer-Pauschbetrag per sale', () => {
     expect(laterSell?.taxableGainBeforeAllowance).toBe(350);
     // The earlier sale claims the whole 600 EUR allowance first, even though its own taxable
     // gain (700) is larger than the later sale's (350) - order is by date, not by size.
-    expect(earlierSell?.usedSparerPauschbetragForSelling).toBe(600);
+    // Tax equivalent of the allocated 600 EUR allowance: 600 * 26,375% = 158.25.
+    expect(earlierSell?.usedSparerPauschbetragForSelling).toBe(158.25);
     expect(laterSell?.usedSparerPauschbetragForSelling).toBe(0);
   });
 
@@ -819,7 +821,8 @@ describe('calculateTaxOverview - used Sparer-Pauschbetrag per sale', () => {
     expect(saleC?.taxableGainBeforeAllowance).toBe(700);
     expect(saleD?.taxableGainBeforeAllowance).toBe(2100);
     // 800 remaining allowance split proportionally: 800 * 700/2800 = 200, 800 * 2100/2800 = 600.
-    expect(saleC?.usedSparerPauschbetragForSelling).toBe(200);
-    expect(saleD?.usedSparerPauschbetragForSelling).toBe(600);
+    // Tax equivalents: 200 * 26,375% = 52.75, 600 * 26,375% = 158.25.
+    expect(saleC?.usedSparerPauschbetragForSelling).toBe(52.75);
+    expect(saleD?.usedSparerPauschbetragForSelling).toBe(158.25);
   });
 });
