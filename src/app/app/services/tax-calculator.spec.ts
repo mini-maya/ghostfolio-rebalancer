@@ -254,8 +254,8 @@ describe('tax calculator', () => {
     it('includes church tax when configured', () => {
       const taxProfile = { ...DEFAULT_TAX_PROFILE, churchTaxRate: 0.09 };
 
-      // 400 * 25% = 100, Soli 5.5 on that = 5.5, Kirchensteuer 400 * 9% = 36 => 141.50
-      expect(calculateTaxOnTaxableAmount(400, taxProfile)).toBe(141.5);
+      // 400 * 25% = 100, Soli 5.5 on that = 5.5, Kirchensteuer 9% of the KapSt (100) = 9 => 114.50
+      expect(calculateTaxOnTaxableAmount(400, taxProfile)).toBe(114.5);
     });
   });
 

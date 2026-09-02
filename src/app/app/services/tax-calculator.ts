@@ -133,7 +133,9 @@ export function calculateTaxOnTaxableAmount(
 
   const taxOnAmount = taxableAmount * taxProfile.capitalGainsTaxRate;
   const solidaritySurcharge = taxOnAmount * taxProfile.solidaritySurchargeRate;
-  const churchTax = taxableAmount * taxProfile.churchTaxRate;
+  // Kirchensteuer is a percentage (typically 8% or 9%) of the capital-gains tax itself, not of
+  // the taxable amount it was calculated on.
+  const churchTax = taxOnAmount * taxProfile.churchTaxRate;
 
   return roundMoney(taxOnAmount + solidaritySurcharge + churchTax);
 }
