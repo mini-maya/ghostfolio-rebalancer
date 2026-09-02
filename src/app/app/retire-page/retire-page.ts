@@ -539,6 +539,21 @@ export class RetirePage implements OnInit {
   protected readonly hasVisibleWithdrawalSchedule = computed(() => {
     return this.withdrawalStarted() || this.effectiveWithdrawalStartDate() <= startOfMonth(this.currentDate());
   });
+  protected readonly annualVapCashNeedRows = computed(() => {
+    return this.projection().annualVapCashNeedSchedule;
+  });
+  protected readonly vapChartBarItems = computed<InvestmentItem[]>(() => {
+    return this.annualVapCashNeedRows().map(({ year, taxableVapBeforeAllowance }) => ({
+      date: `${year}-12-31`,
+      investment: taxableVapBeforeAllowance
+    }));
+  });
+  protected readonly vapChartLineItems = computed<LineChartItem[]>(() => {
+    return this.annualVapCashNeedRows().map(({ year, sparerPauschbetragAvailable }) => ({
+      date: `${year}-12-31`,
+      value: sparerPauschbetragAvailable
+    }));
+  });
   protected readonly withdrawalScheduleRows = computed(() => {
     const snapshot = this.currentCalculationSnapshot();
     const currentMonth = startOfMonth(snapshot.currentDate);

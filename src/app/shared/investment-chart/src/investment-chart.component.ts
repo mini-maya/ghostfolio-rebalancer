@@ -85,6 +85,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
   @Input() benchmarkStepped = true;
   @Input() colorScheme: ColorScheme = 'LIGHT';
   @Input() currency = 'USD';
+  @Input() forceSharedAxis = false;
   @Input() groupBy?: GroupBy;
   @Input() historicalDataItems: LineChartItem[] = [];
   @Input() historicalDataLabel = 'Total Amount';
@@ -231,6 +232,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
     const filteredHistoricalItems = this.getFilteredData(this.historicalDataItems);
     const axisAssignment = getAxisAssignment({
       benchmarkDataItems: filteredBenchmarkItems,
+      forceSharedAxis: this.forceSharedAxis,
       historicalDataItems: filteredHistoricalItems
     });
 
@@ -430,9 +432,11 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
 
 function getAxisAssignment({
   benchmarkDataItems,
+  forceSharedAxis = false,
   historicalDataItems
 }: {
   benchmarkDataItems: InvestmentItem[];
+  forceSharedAxis?: boolean;
   historicalDataItems: LineChartItem[];
 }): AxisAssignment {
   const benchmarkMax = getSeriesMaxValue(
@@ -443,7 +447,8 @@ function getAxisAssignment({
   );
   const smallerMax = Math.min(benchmarkMax, historicalMax);
   const largerMax = Math.max(benchmarkMax, historicalMax);
-  const shouldUseSecondaryAxis = smallerMax > 0 && largerMax / smallerMax > 10;
+  const shouldUseSecondaryAxis =
+    !forceSharedAxis && smallerMax > 0 && largerMax / smallerMax > 10;
 
   if (!shouldUseSecondaryAxis || benchmarkMax === historicalMax) {
     return {

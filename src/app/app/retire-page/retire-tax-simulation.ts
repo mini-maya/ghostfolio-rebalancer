@@ -391,6 +391,84 @@ export function calculateFutureWithdrawalTaxEstimates({
   return estimates;
 }
 
+export interface AnnualVapCashNeedEntry {
+  /** Calendar year the VAP became tax-relevant in (i.e. Jan 1 of the following year is due). */
+  year: number;
+  /**
+   * VAP-only tax still owed for this year after the annual Sparer-Pauschbetrag has been applied
+   * (VAP-first, see AnnualTaxSummary.vapTaxAfterAllowance). Since VAP tax is always paid from
+   * external funds (never from the depot), this is exactly the amount that must be contributed
+   * externally for this calendar year, once that year's allowance is exhausted.
+   */
+  externalVapCashNeeded: number;
+  /**
+   * Full taxable VAP for this year (after Teilfreistellung, before the Sparer-Pauschbetrag is
+   * applied) - i.e. the "full bar" that competes against the annual allowance.
+   */
+  taxableVapBeforeAllowance: number;
+  /** The annual Sparer-Pauschbetrag configured for this year (flat line for comparison). */
+  sparerPauschbetragAvailable: number;
+}
+
+/**
+ * Builds a year-by-year schedule of the external cash needed to pay VAP tax (after the annual
+ * Sparer-Pauschbetrag), across the *entire* projection - both the accumulation phase and the
+ * withdrawal phase (VAP keeps accruing on the remaining depot during withdrawal too). This lets
+ * users prepare for future external VAP payments rather than only seeing a single cumulative
+ * total. Reuses the same scenario-building logic as calculateFutureWithdrawalTaxEstimates.
+ */
+export function calculateAnnualVapCashNeedSchedule({
+  accumulationAnnualReturnPercentage,
+  activities,
+  allocations,
+  capitalPreservationTarget,
+  currentDate,
+  holdings,
+  monthlySavingsRate,
+  taxEvents,
+  taxProfile,
+  withdrawalAnnualReturnPercentage,
+  withdrawalPoints = [],
+  withdrawalStartDate
+}: Omit<RetireTaxOverviewInput, 'asOfDate'>): AnnualVapCashNeedEntry[] {
+  const sortedPoints = [...withdrawalPoints].sort((left, right) => {
+    return left.date.getTime() - right.date.getTime();
+  });
+  const lastPoint = sortedPoints.at(-1);
+  const asOfDate = endOfMonth(lastPoint ? lastPoint.date : withdrawalStartDate);
+
+  const scenario = buildRetireTaxOverviewInput({
+    accumulationAnnualReturnPercentage,
+    activities,
+    allocations,
+    asOfDate,
+    capitalPreservationTarget,
+    currentDate,
+    holdings,
+    includeCurrentMonthWithdrawals: true,
+    monthlySavingsRate,
+    taxEvents,
+    taxProfile,
+    withdrawalAnnualReturnPercentage,
+    withdrawalPoints: sortedPoints,
+    withdrawalStartDate
+  });
+  const annualSummaries = calculateAnnualTaxSummaries({
+    activities: scenario.combinedActivities,
+    asOfDate,
+    holdings: scenario.holdings,
+    taxEvents: scenario.combinedTaxEvents,
+    taxProfile
+  });
+
+  return annualSummaries.map((summary) => ({
+    externalVapCashNeeded: summary.vapTaxAfterAllowance,
+    sparerPauschbetragAvailable: summary.sparerPauschbetragAvailable,
+    taxableVapBeforeAllowance: summary.taxableVapBeforeAllowance,
+    year: summary.year
+  }));
+}
+
 export function reconstructHistoricalHoldings({
   activities,
   asOfDate,

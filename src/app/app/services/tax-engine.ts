@@ -711,6 +711,22 @@ export interface AnnualTaxSummary {
   solidaritySurcharge: number;
   churchTax: number;
   totalTax: number;
+  /**
+   * Portion of this year's allowance consumed by VAP specifically, using the "VAP first" order
+   * (see allocateSparerPauschbetragChronologically) - i.e. the allowance is applied to VAP
+   * before any sale gain. This never changes totalTax/taxableCapitalIncomeAfterAllowance (which
+   * remain order-independent, since they only depend on the combined total); it is purely an
+   * additional breakdown used to show how much VAP tax remains after the allowance.
+   */
+  vapAllowanceUsed: number;
+  /** taxableVapBeforeAllowance - vapAllowanceUsed (floored at 0). */
+  vapTaxableAfterAllowance: number;
+  /**
+   * The actual VAP-only tax still owed after the allowance is applied - i.e. the amount that,
+   * since VAP is always paid from external funds (never from the depot), must be contributed
+   * externally once the Sparer-Pauschbetrag for the year is exhausted.
+   */
+  vapTaxAfterAllowance: number;
 }
 
 /**
@@ -783,8 +799,19 @@ export function calculateAnnualTaxSummaries({
       allocation.taxableAfterAllowance * taxProfile.capitalGainsTaxRate
     );
     const solidaritySurcharge = roundMoney(capitalGainsTax * taxProfile.solidaritySurchargeRate);
-    const churchTax = roundMoney(allocation.taxableAfterAllowance * taxProfile.churchTaxRate);
+    // Kirchensteuer is a percentage of the capital-gains tax itself, not of the taxable amount
+    // (kept consistent with calculateTaxOnTaxableAmount).
+    const churchTax = roundMoney(capitalGainsTax * taxProfile.churchTaxRate);
     const totalTax = calculateTaxOnTaxableAmount(allocation.taxableAfterAllowance, taxProfile);
+    // VAP is consumed first (see allocateSparerPauschbetragChronologically), independently of
+    // the combined-total calculation above (which stays order-independent for totalTax).
+    const vapAllowanceUsed = roundMoney(
+      Math.min(Math.max(taxableVapBeforeAllowance, 0), Math.max(taxProfile.sparerPauschbetrag, 0))
+    );
+    const vapTaxableAfterAllowance = roundMoney(
+      Math.max(taxableVapBeforeAllowance - vapAllowanceUsed, 0)
+    );
+    const vapTaxAfterAllowance = calculateTaxOnTaxableAmount(vapTaxableAfterAllowance, taxProfile);
 
     return {
       capitalGainsTax,
@@ -798,6 +825,9 @@ export function calculateAnnualTaxSummaries({
       taxableVapBeforeAllowance,
       totalTax,
       totalTaxableCapitalIncome: allocation.totalTaxableAmount,
+      vapAllowanceUsed,
+      vapTaxableAfterAllowance,
+      vapTaxAfterAllowance,
       year
     };
   });

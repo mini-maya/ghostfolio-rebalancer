@@ -319,6 +319,43 @@
   <section class="card">
     <div class="section-header section-header-stack">
       <div>
+        <h2>External VAP cash need by year</h2>
+        <p>
+          Vorabpauschale tax is always paid from external funds, not from the depot. This table
+          shows, per calendar year, how much VAP tax remains due after that year's
+          Sparer-Pauschbetrag has been applied - i.e. the cash you need to bring in from outside
+          the depot once the allowance for that year is exhausted, so you can prepare for future
+          payments.
+        </p>
+      </div>
+    </div>
+
+    @if (annualVapCashNeedRows().length) {
+      <div class="portfolio-performance-chart">
+        <gf-investment-chart
+          [benchmarkDataItems]="vapChartBarItems()"
+          [benchmarkDataLabel]="'Taxable VAP'"
+          [benchmarkDisplayType]="'bar'"
+          [benchmarkStepped]="false"
+          [colorScheme]="portfolioChartColorScheme()"
+          [currency]="currency()"
+          [forceSharedAxis]="true"
+          [groupBy]="'year'"
+          [historicalDataItems]="vapChartLineItems()"
+          [historicalDataLabel]="'Sparer-Pauschbetrag'"
+          [isLoading]="isLoading()"
+          [timeRangeMode]="'leading'"
+          [timeRange]="'MAX'"
+        />
+      </div>
+    } @else {
+      <p>No VAP tax has become due yet for this projection.</p>
+    }
+  </section>
+
+  <section class="card">
+    <div class="section-header section-header-stack">
+      <div>
         <h2>Next withdrawal by symbol</h2>
         @if (!withdrawalStarted()) {
           <p>

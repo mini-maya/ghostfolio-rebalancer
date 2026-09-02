@@ -14,7 +14,11 @@ import {
   sellLotsForAmount,
   solveWithdrawalAmountForLots
 } from './future-fifo-projection';
-import { buildRetireTaxOverviewInput } from './retire-tax-simulation';
+import {
+  buildRetireTaxOverviewInput,
+  calculateAnnualVapCashNeedSchedule,
+  type AnnualVapCashNeedEntry
+} from './retire-tax-simulation';
 
 export type WithdrawalFrequency = 'monthly' | 'yearly';
 
@@ -81,6 +85,13 @@ export interface RetirementProjectionResult {
   targetCapital: number;
   totalGrowth: number;
   totalWithdrawals: number;
+  /**
+   * Year-by-year schedule of the external cash needed to pay VAP tax (after the annual
+   * Sparer-Pauschbetrag), spanning the whole projection (accumulation + withdrawal phase). VAP
+   * tax is always paid externally (never reduces the simulated depot), so this shows how much
+   * must be contributed each year once that year's allowance is exhausted.
+   */
+  annualVapCashNeedSchedule: AnnualVapCashNeedEntry[];
 }
 
 const DATE_FORMAT = 'yyyy-MM-dd';
@@ -239,6 +250,31 @@ export function calculateRetirementProjection(
   );
   const soldTaxTotalBeforeAllowanceRounded = roundToTwo(soldTaxTotalBeforeAllowance);
 
+  const annualVapCashNeedSchedule =
+    input.allocations?.length &&
+    input.activities?.length &&
+    input.holdings?.length &&
+    input.taxProfile
+      ? calculateAnnualVapCashNeedSchedule({
+          accumulationAnnualReturnPercentage: input.accumulationAnnualReturnPercentage,
+          activities: input.activities,
+          allocations: input.allocations,
+          capitalPreservationTarget: targetCapital,
+          currentDate: startDate,
+          holdings: input.holdings,
+          monthlySavingsRate: accumulationMonthlyContribution,
+          taxEvents: input.taxEvents ?? [],
+          taxProfile: input.taxProfile,
+          withdrawalAnnualReturnPercentage: input.withdrawalAnnualReturnPercentage,
+          withdrawalPoints: withdrawalPoints.map((point) => ({
+            date: new Date(point.date),
+            periodIndex: point.periodIndex,
+            withdrawal: point.withdrawal
+          })),
+          withdrawalStartDate
+        })
+      : [];
+
   const taxSummary =
     input.capitalAtWithdrawalStart === undefined &&
     input.allocations?.length &&
@@ -268,6 +304,7 @@ export function calculateRetirementProjection(
         };
 
   return {
+    annualVapCashNeedSchedule,
     capitalAtWithdrawalStart,
     endingCapital: withdrawalPoints.at(-1)?.endingBalance ?? capitalAtWithdrawalStart,
     firstWithdrawal: withdrawalPoints[0]?.withdrawal ?? 0,

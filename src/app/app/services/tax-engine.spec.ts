@@ -597,6 +597,37 @@ describe('calculateAnnualTaxSummaries - Sparer-Pauschbetrag', () => {
     expect(summary2024?.taxableCapitalIncomeAfterAllowance).toBe(512);
     // 512 * 25% = 128; plus 5,5% Soli on that (7.04) => 135.04.
     expect(summary2024?.totalTax).toBe(135.04);
+    // VAP is consumed first: 140 of the 1.000 EUR allowance goes to VAP, leaving it fully covered.
+    expect(summary2024?.vapAllowanceUsed).toBe(140);
+    expect(summary2024?.vapTaxableAfterAllowance).toBe(0);
+    expect(summary2024?.vapTaxAfterAllowance).toBe(0);
+  });
+
+  it('reports the VAP-only tax still due after the allowance once VAP alone exceeds it', () => {
+    const activities = [makeActivity({ date: '2023-01-01', quantity: 100, type: 'BUY', unitPrice: 100 })];
+    const taxEvents = [
+      makeTaxEvent({
+        quantity: 100,
+        taxYear: 2023,
+        vorabpauschalePerShare: 20,
+        vorabpauschalePerShareAfterTeilfreistellung: 14
+      })
+    ];
+
+    const summaries = calculateAnnualTaxSummaries({
+      activities,
+      holdings: [makeHolding({ marketPrice: 200, quantity: 100 })],
+      taxEvents,
+      asOfDate: new Date('2024-12-31')
+    });
+    const summary2024 = summaries.find((entry) => entry.year === 2024);
+
+    // Taxable VAP = 100 * 14 = 1400, exceeding the 1.000 EUR allowance.
+    expect(summary2024?.taxableVapBeforeAllowance).toBe(1400);
+    expect(summary2024?.vapAllowanceUsed).toBe(1000);
+    expect(summary2024?.vapTaxableAfterAllowance).toBe(400);
+    // 400 * 25% = 100; plus 5,5% Soli (5.5) => 105.50 external cash still due for VAP.
+    expect(summary2024?.vapTaxAfterAllowance).toBe(105.5);
   });
 
   it('does not apply the allowance twice by treating VAP and sale gain separately', () => {
