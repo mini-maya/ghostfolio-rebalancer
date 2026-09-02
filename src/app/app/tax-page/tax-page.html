@@ -194,49 +194,26 @@
       }
     </div>
 
-    <div class="section-header section-header-stack tax-summary-header">
-      <div>
-        <h3>Overview</h3>
-      </div>
-    </div>
-
-    <app-fifo-overview-table
-      [rows]="taxOverviewRows()"
-      [currencySymbol]="currencySymbol()"
-      emptyStateMessage="No tax overview available."
-    />
-
-    <div class="section-header section-header-stack tax-summary-header">
-      <div>
-        <h3>Sparer-Pauschbetrag pro Jahr</h3>
-        <p>
-          Der Sparer-Pauschbetrag wird jedes Kalenderjahr neu gewährt und auf die
-          steuerpflichtige VAP und die steuerpflichtigen Veräußerungsgewinne gemeinsam
-          angewendet. Nicht genutzte Beträge verfallen am Jahresende.
-        </p>
-      </div>
-    </div>
-
     @if (!annualTaxSummaries().length) {
       <p class="empty-state">No annual tax summary available.</p>
     } @else {
       <div class="table-wrapper">
-        <table>
+        <table class="annual-summary-table">
           <thead>
-            <tr>
-              <th>Jahr</th>
-              <th class="numeric">Steuerpflichtige VAP</th>
-              <th class="numeric">Steuerpflichtiger Veräußerungsgewinn</th>
-              <th class="numeric">Kapitalertrag vor Freibetrag</th>
-              <th class="numeric">Sparer-Pauschbetrag genutzt / verfügbar</th>
-              <th class="numeric">Steuerpflichtig nach Freibetrag</th>
-              <th class="numeric">Gesamtsteuer</th>
-            </tr>
+          <tr>
+            <th>Tax year</th>
+            <th class="numeric">Taxable VAP</th>
+            <th class="numeric">Taxable sale gain</th>
+            <th class="numeric">Capital income before allowance</th>
+            <th class="numeric">Sparer-Pauschbetrag used / available</th>
+            <th class="numeric">Taxable after allowance</th>
+            <th class="numeric">Total tax</th>
+          </tr>
           </thead>
           <tbody>
             @for (summary of annualTaxSummaries(); track summary.year) {
               <tr>
-                <td><strong>{{ summary.year }}</strong></td>
+                <td><strong>{{ summary.year - 1 }}</strong></td>
                 <td class="numeric">
                   {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
                   {{ currencySymbol() }}
@@ -269,6 +246,29 @@
         </table>
       </div>
     }
+
+    <div class="section-header section-header-stack tax-summary-header">
+      <div>
+        <h3>Overview</h3>
+      </div>
+    </div>
+
+    <app-fifo-overview-table
+      [rows]="taxOverviewRows()"
+      [currencySymbol]="currencySymbol()"
+      emptyStateMessage="No tax overview available."
+    />
+
+    <div class="section-header section-header-stack tax-summary-header">
+      <div>
+        <h3>Sparer-Pauschbetrag by year</h3>
+        <p>
+          The Sparer-Pauschbetrag is granted anew each calendar year and applied jointly to the
+          taxable VAP and taxable realized sale gains. Unused amounts expire at year end.
+        </p>
+      </div>
+    </div>
+
   </section>
 
   @if (isDialogOpen()) {

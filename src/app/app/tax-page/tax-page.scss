@@ -76,9 +76,10 @@ h2, h3, h4 {
 }
 
 .tax-profile-editor {
+  align-items: end;
   display: grid;
   gap: .75rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: .75rem 0 1rem
 }
 
@@ -227,6 +228,10 @@ h2, h3, h4 {
 .table-wrapper > table td {
   width: auto;
   white-space: nowrap
+}
+
+.table-wrapper > table.annual-summary-table th {
+  white-space: normal
 }
 
 .buy-row-expandable {
