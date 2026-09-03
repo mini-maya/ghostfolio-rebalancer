@@ -14,18 +14,19 @@ export interface TaxProfile {
    */
   sparerPauschbetrag: number;
   /**
-   * Assumed Basiszins (%) used to estimate the Vorabpauschale for future/projected calendar
-   * years that have no real tax-page entry yet (Basisertrag = start-of-year price * Basiszins *
-   * 0.7, capped at the year's actual price gain - see estimateVapForLotWithoutTaxEvent). The
-   * real, legally binding Basiszins is only published shortly before each year begins and has
-   * varied widely historically (e.g. 0.07% in 2020, 2.55% in 2023, 3.20% in 2026), so this is
-   * only ever a configurable *assumption* for years that are still in the future.
+   * Assumed Basiszins rate (as a fraction, e.g. 0.025 for 2.5%) used to estimate the
+   * Vorabpauschale for future/projected calendar years that have no real tax-page entry yet
+   * (Basisertrag = start-of-year price * Basiszins * 0.7, capped at the year's actual price
+   * gain - see estimateVapForLotWithoutTaxEvent). The real, legally binding Basiszins is only
+   * published shortly before each year begins and has varied widely historically (e.g. 0.07% in
+   * 2020, 2.55% in 2023, 3.20% in 2026), so this is only ever a configurable *assumption* for
+   * years that are still in the future.
    */
-  assumedBasiszinsPercentage: number;
+  assumedBasiszinsRate: number;
 }
 
 export const DEFAULT_TAX_PROFILE: TaxProfile = {
-  assumedBasiszinsPercentage: 2.5,
+  assumedBasiszinsRate: 0.025,
   capitalGainsTaxRate: 0.25,
   churchTaxRate: 0,
   partialExemptionRate: 0.3,
@@ -423,7 +424,7 @@ export function calculateVapForBuyLot({
  * * 0.7, capped at the year's actual price gain (0 if the price fell), prorated by the month
  * the lot was acquired in. Callers are responsible for deriving startOfYearPrice/endOfYearPrice
  * from their own price-projection model. The Basiszins itself comes from
- * `taxProfile.assumedBasiszinsPercentage` (a configurable assumption, since the real, legally
+ * `taxProfile.assumedBasiszinsRate` (a configurable assumption, since the real, legally
  * binding rate is only published shortly before each year begins).
  */
 export function estimateVapForLotWithoutTaxEvent({
@@ -443,8 +444,7 @@ export function estimateVapForLotWithoutTaxEvent({
     return { grossVap: 0, taxableVap: 0 };
   }
 
-  const basisertragPerShare =
-    startOfYearPrice * (taxProfile.assumedBasiszinsPercentage / 100) * 0.7;
+  const basisertragPerShare = startOfYearPrice * taxProfile.assumedBasiszinsRate * 0.7;
   const priceGainPerShare = Math.max(endOfYearPrice - startOfYearPrice, 0);
   const vapPerShare = Math.min(basisertragPerShare, priceGainPerShare);
   const monthFactor = calculateVapMonthFactor({ acquisitionDate });

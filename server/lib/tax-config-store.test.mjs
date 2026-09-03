@@ -24,7 +24,7 @@ test('creates, loads and updates tax config records', async () => {
     const taxConfig = await reloadedTaxConfigStore.getTaxConfig('local-user');
 
     assert.deepEqual(taxConfig, {
-      assumedBasiszinsPercentage: 2.5,
+      assumedBasiszinsRate: 0.025,
       capitalGainsTaxRate: 0.25,
       churchTaxRate: 0.08,
       partialExemptionRate: 0.3,
@@ -43,7 +43,7 @@ test('creates, loads and updates tax config records', async () => {
     const updatedTaxConfig = await reloadedTaxConfigStore.getTaxConfig('local-user');
 
     assert.deepEqual(updatedTaxConfig, {
-      assumedBasiszinsPercentage: 2.5,
+      assumedBasiszinsRate: 0.025,
       capitalGainsTaxRate: 0.2,
       churchTaxRate: 0.05,
       partialExemptionRate: 0.25,
@@ -83,6 +83,41 @@ test('defaults sparerPauschbetrag to 1000 EUR when missing or invalid', async ()
     const negativeTaxConfig = await taxConfigStore.getTaxConfig('local-user');
 
     assert.equal(negativeTaxConfig.sparerPauschbetrag, 1000);
+  } finally {
+    await rm(tempDirectory, { force: true, recursive: true });
+  }
+});
+
+test('floors a negative assumedBasiszinsRate to 0 instead of falling back to the default', async () => {
+  const tempDirectory = await mkdtemp(path.join(os.tmpdir(), 'ghostfolio-tax-config-'));
+  const taxFilePath = path.join(tempDirectory, 'tax.json');
+  const taxConfigStore = createTaxConfigStore({ taxFilePath });
+
+  try {
+    await taxConfigStore.updateTaxConfig('local-user', {
+      assumedBasiszinsRate: -0.0045,
+      capitalGainsTaxRate: 0.25,
+      churchTaxRate: 0,
+      partialExemptionRate: 0.3,
+      solidaritySurchargeRate: 0.055,
+      sparerPauschbetrag: 1000
+    });
+
+    const taxConfig = await taxConfigStore.getTaxConfig('local-user');
+
+    assert.equal(taxConfig.assumedBasiszinsRate, 0);
+
+    await taxConfigStore.updateTaxConfig('local-user', {
+      capitalGainsTaxRate: 0.25,
+      churchTaxRate: 0,
+      partialExemptionRate: 0.3,
+      solidaritySurchargeRate: 0.055,
+      sparerPauschbetrag: 1000
+    });
+
+    const missingTaxConfig = await taxConfigStore.getTaxConfig('local-user');
+
+    assert.equal(missingTaxConfig.assumedBasiszinsRate, 0.025);
   } finally {
     await rm(tempDirectory, { force: true, recursive: true });
   }

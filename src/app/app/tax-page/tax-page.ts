@@ -578,10 +578,10 @@ export class TaxPage implements OnInit, OnDestroy {
     });
   }
 
-  protected updateTaxProfileAssumedBasiszinsPercentage(event: Event): void {
+  protected updateTaxProfileAssumedBasiszinsRate(event: Event): void {
     this.updateTaxProfile({
       ...this.taxProfile(),
-      assumedBasiszinsPercentage: readNonNegativeNumberInput(event)
+      assumedBasiszinsRate: readPercentInput(event)
     });
   }
 

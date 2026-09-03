@@ -70,8 +70,8 @@
                 type="text"
                 min="0"
                 inputmode="decimal"
-                [value]="taxProfile().assumedBasiszinsPercentage"
-                (input)="updateTaxProfileAssumedBasiszinsPercentage($event)"
+                [value]="taxProfile().assumedBasiszinsRate * 100"
+                (input)="updateTaxProfileAssumedBasiszinsRate($event)"
               />
             </label>
           </div>

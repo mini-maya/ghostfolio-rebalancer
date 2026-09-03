@@ -647,7 +647,7 @@ function readTaxConfig(value) {
   }
 
   return {
-    assumedBasiszinsPercentage: readNonNegativeNumber(value.assumedBasiszinsPercentage, 2.5),
+    assumedBasiszinsRate: readBasiszinsRate(value.assumedBasiszinsRate, 0.025),
     capitalGainsTaxRate: readNonNegativeNumber(value.capitalGainsTaxRate, 0.25),
     churchTaxRate: readNonNegativeNumber(value.churchTaxRate, 0),
     partialExemptionRate: readNonNegativeNumber(value.partialExemptionRate, 0.3),
@@ -681,6 +681,19 @@ function readNonNegativeNumber(value, fallback) {
   const numberValue = Number(value);
 
   return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : fallback;
+}
+
+// A negative Basiszins is legally floored to 0% for the Basisertrag calculation
+// (§18 Abs. 4 InvStG), unlike other tax fields where a negative value is invalid
+// and falls back to the configured default.
+function readBasiszinsRate(value, fallback) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return fallback;
+  }
+
+  return Math.max(0, numberValue);
 }
 
 function readPositiveNumber(value, message) {
