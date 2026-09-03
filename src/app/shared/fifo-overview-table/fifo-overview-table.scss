@@ -336,18 +336,6 @@
 }
 
 @media (max-width: 860px) {
-  .metrics-grid {
-    min-width: 900px;
-    width: 100%;
-  }
-
-  .metrics-grid-header,
-  .activity-details,
-  .activity-details summary.metrics-grid {
-    min-width: 900px;
-    width: 100%;
-  }
-
   .metrics-header-cell,
   .metrics-cell {
     padding-left: 0.62rem;
@@ -370,14 +358,6 @@
 }
 
 @media (max-width: 780px) {
-  .metrics-grid,
-  .metrics-grid-header,
-  .activity-details,
-  .activity-details summary.metrics-grid {
-    min-width: 900px;
-    width: 100%;
-  }
-
   .metrics-header-cell,
   .metrics-cell {
     padding: 0.5rem 0.35rem;
@@ -411,14 +391,6 @@
 }
 
 @media (max-width: 560px) {
-  .metrics-grid,
-  .metrics-grid-header,
-  .activity-details,
-  .activity-details summary.metrics-grid {
-    min-width: 900px;
-    width: 100%;
-  }
-
   .metrics-header-cell,
   .metrics-cell {
     padding: 0.4rem 0.28rem;

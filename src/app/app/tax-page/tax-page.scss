@@ -368,37 +368,9 @@ h2, h3, h4 {
 }
 
 @media (max-width: 780px) {
-  .metrics-grid, .metrics-grid-header, .activity-details, .activity-details summary.metrics-grid {
-    min-width: 600px;
-    width: 100%
-  }
-  .metrics-grid {
-    grid-template-columns: minmax(100px, 1fr) repeat(7, minmax(70px, 1fr))
-  }
-  .metrics-header-cell, .metrics-cell {
-    padding: .6rem .45rem
-  }
-  .metrics-grid-header .metrics-header-cell:first-child, .metrics-name-cell {
-    padding-left: 1.15rem
-  }
   .table-wrapper > table th,
-  .table-wrapper > table td,
-  .sell-details-table th,
-  .sell-details-table td {
+  .table-wrapper > table td {
     padding: .4rem .5rem
-  }
-}
-
-@media (max-width: 560px) {
-  .metrics-grid, .metrics-grid-header, .activity-details, .activity-details summary.metrics-grid {
-    min-width: 440px;
-    width: 100%
-  }
-  .metrics-grid {
-    grid-template-columns: minmax(85px, 1fr) repeat(7, minmax(50px, 1fr))
-  }
-  .metrics-header-cell, .metrics-cell {
-    padding: .5rem .35rem
   }
 }
 
