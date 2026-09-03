@@ -35,6 +35,7 @@
 .metrics-header-cell {
   border-bottom: 1px solid var(--app-border);
   display: flex;
+  font-size: clamp(0.78rem, 0.68rem + 0.3vw, 0.9rem);
   justify-content: flex-start;
   padding: 0.85rem 0.75rem;
   white-space: nowrap;
@@ -120,6 +121,7 @@
 .metrics-cell {
   border-bottom: 1px solid var(--app-border);
   display: block;
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
   padding: 0.85rem 0.75rem;
 }
 
@@ -180,6 +182,7 @@
 .sell-details-table th,
 .sell-details-table td {
   border-bottom: 1px solid var(--app-border);
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
   padding: 0.5rem 0.75rem;
   text-align: left;
   white-space: nowrap;
@@ -188,7 +191,7 @@
 .table-wrapper th,
 .sell-details-table th {
   color: var(--app-muted-text);
-  font-size: 0.9rem;
+  font-size: clamp(0.78rem, 0.68rem + 0.3vw, 0.9rem);
 }
 
 .table-wrapper tbody tr:last-child td,
@@ -310,5 +313,55 @@
 
   .metrics-name-cell::before {
     left: 0.55rem;
+  }
+}
+
+@media (max-width: 780px) {
+  .metrics-grid,
+  .metrics-grid-header,
+  .activity-details,
+  .activity-details summary.metrics-grid {
+    min-width: 620px;
+    width: 100%;
+  }
+
+  .metrics-grid {
+    grid-template-columns: minmax(140px, 1.8fr) repeat(7, minmax(0, 1fr));
+  }
+
+  .metrics-header-cell,
+  .metrics-cell {
+    padding: 0.6rem 0.45rem;
+  }
+
+  .metrics-grid-header .metrics-header-cell:first-child,
+  .metrics-name-cell {
+    padding-left: 1.15rem;
+  }
+
+  .table-wrapper th,
+  .table-wrapper td,
+  .sell-details-table th,
+  .sell-details-table td {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .metrics-grid,
+  .metrics-grid-header,
+  .activity-details,
+  .activity-details summary.metrics-grid {
+    min-width: 480px;
+    width: 100%;
+  }
+
+  .metrics-grid {
+    grid-template-columns: minmax(110px, 1.6fr) repeat(7, minmax(0, 1fr));
+  }
+
+  .metrics-header-cell,
+  .metrics-cell {
+    padding: 0.5rem 0.35rem;
   }
 }

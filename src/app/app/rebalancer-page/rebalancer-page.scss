@@ -324,3 +324,23 @@ code {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@media (max-width: 780px) {
+  .col-sticky-1 {
+    min-width: 130px;
+  }
+
+  .allocation-dialog-table {
+    min-width: 420px;
+  }
+}
+
+@media (max-width: 560px) {
+  .col-sticky-1 {
+    min-width: 110px;
+  }
+
+  .allocation-dialog-table {
+    min-width: 340px;
+  }
+}

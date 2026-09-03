@@ -36,6 +36,7 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--app-border);
+  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
   padding: 0.85rem 0.75rem;
   text-align: left;
   white-space: nowrap;
@@ -43,7 +44,7 @@ td {
 
 th {
   color: var(--app-muted-text);
-  font-size: 0.9rem;
+  font-size: clamp(0.78rem, 0.68rem + 0.3vw, 0.9rem);
 }
 
 tbody tr:last-child td {
@@ -156,5 +157,19 @@ tbody tr:last-child td {
   .card {
     border-radius: 0.85rem;
     padding: 1rem;
+  }
+}
+
+@media (max-width: 780px) {
+  th,
+  td {
+    padding: 0.55rem 0.45rem;
+  }
+}
+
+@media (max-width: 560px) {
+  th,
+  td {
+    padding: 0.42rem 0.32rem;
   }
 }
