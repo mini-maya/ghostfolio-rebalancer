@@ -3,7 +3,7 @@
 }
 
 .metrics-grid {
-  --fifo-overview-grid-template: minmax(170px, 260px) minmax(74px, 100px) minmax(92px, 145px) minmax(62px, 105px) minmax(68px, 100px) minmax(80px, 96px) minmax(102px, 112px) minmax(102px, 112px);
+  --fifo-overview-grid-template: minmax(170px, 2.6fr) minmax(74px, 1fr) minmax(92px, 1.45fr) minmax(62px, 1.05fr) minmax(68px, 1fr) minmax(80px, 0.96fr) minmax(102px, 1.12fr) minmax(102px, 1.12fr);
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
@@ -243,16 +243,22 @@
 .table-inline-highlight {
   background: var(--app-surface-soft);
   border-radius: 0.4rem;
+  box-sizing: border-box;
   display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 0.1rem 0.35rem;
 }
 
 .value-with-arrow {
   align-items: center;
   border-radius: 0.4rem;
+  box-sizing: border-box;
   display: inline-flex;
   gap: 0.35rem;
   line-height: 1;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 0.2rem 0.4rem;
   width: fit-content;
 }
@@ -286,7 +292,7 @@
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(150px, 230px) minmax(70px, 92px) minmax(84px, 132px) minmax(58px, 96px) minmax(62px, 92px) minmax(76px, 88px) minmax(96px, 104px) minmax(96px, 104px);
+    --fifo-overview-grid-template: minmax(150px, 2.3fr) minmax(70px, 0.92fr) minmax(84px, 1.32fr) minmax(58px, 0.96fr) minmax(62px, 0.92fr) minmax(76px, 0.88fr) minmax(96px, 1.04fr) minmax(96px, 1.04fr);
   }
 }
 
