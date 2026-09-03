@@ -256,6 +256,12 @@ select {
   vertical-align: top;
 }
 
+.sell-plan-table th:first-child,
+.sell-plan-table td:first-child {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .sell-plan-table .numeric {
   text-align: right;
 }

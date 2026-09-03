@@ -87,7 +87,7 @@ h4 {
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
+  grid-template-columns: minmax(150px, 1fr) repeat(5, minmax(140px, 1fr));
   min-width: 900px;
   width: 100%;
 }
@@ -156,6 +156,7 @@ h4 {
   border-bottom: 1px solid var(--app-border);
   display: block;
   font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
+  overflow-wrap: anywhere;
   padding: 0.85rem 0.75rem;
 }
 
@@ -268,7 +269,7 @@ h4 {
   }
 
   .metrics-grid {
-    grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
+    grid-template-columns: minmax(130px, 1fr) repeat(5, minmax(120px, 1fr));
   }
 }
 
@@ -302,12 +303,12 @@ h4 {
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 560px;
+    min-width: 460px;
     width: 100%;
   }
 
   .metrics-grid {
-    grid-template-columns: minmax(140px, 1.8fr) repeat(5, minmax(70px, 1fr));
+    grid-template-columns: minmax(100px, 1fr) repeat(5, minmax(70px, 1fr));
   }
 
   .metrics-header-cell,
@@ -333,12 +334,12 @@ h4 {
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 420px;
+    min-width: 380px;
     width: 100%;
   }
 
   .metrics-grid {
-    grid-template-columns: minmax(110px, 1.6fr) repeat(5, minmax(55px, 1fr));
+    grid-template-columns: minmax(85px, 1fr) repeat(5, minmax(55px, 1fr));
   }
 
   .metrics-header-cell,

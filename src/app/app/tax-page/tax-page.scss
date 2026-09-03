@@ -115,7 +115,7 @@ h2, h3, h4 {
 }
 
 .tax-metrics-grid {
-  grid-template-columns:minmax(220px, 1.6fr) repeat(7, minmax(100px, 1fr))
+  grid-template-columns:minmax(140px, 1fr) repeat(7, minmax(100px, 1fr))
 }
 
 .metrics-grid-header {
@@ -181,6 +181,7 @@ h2, h3, h4 {
   border-bottom: 1px solid var(--app-border);
   display: block;
   font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
+  overflow-wrap: anywhere;
   padding: .85rem .75rem
 }
 
@@ -324,7 +325,7 @@ h2, h3, h4 {
     overflow-x: auto
   }
   .metrics-grid {
-    grid-template-columns:minmax(200px, 2fr) repeat(7, minmax(120px, 1fr));
+    grid-template-columns:minmax(130px, 1fr) repeat(7, minmax(120px, 1fr));
     min-width: 1280px;
     width: max-content
   }
@@ -370,11 +371,11 @@ h2, h3, h4 {
 
 @media (max-width: 780px) {
   .metrics-grid, .metrics-grid-header, .activity-details, .activity-details summary.metrics-grid {
-    min-width: 720px;
+    min-width: 600px;
     width: 100%
   }
   .metrics-grid {
-    grid-template-columns: minmax(140px, 1.8fr) repeat(7, minmax(70px, 1fr))
+    grid-template-columns: minmax(100px, 1fr) repeat(7, minmax(70px, 1fr))
   }
   .metrics-header-cell, .metrics-cell {
     padding: .6rem .45rem
@@ -392,11 +393,11 @@ h2, h3, h4 {
 
 @media (max-width: 560px) {
   .metrics-grid, .metrics-grid-header, .activity-details, .activity-details summary.metrics-grid {
-    min-width: 480px;
+    min-width: 440px;
     width: 100%
   }
   .metrics-grid {
-    grid-template-columns: minmax(110px, 1.6fr) repeat(7, minmax(50px, 1fr))
+    grid-template-columns: minmax(85px, 1fr) repeat(7, minmax(50px, 1fr))
   }
   .metrics-header-cell, .metrics-cell {
     padding: .5rem .35rem

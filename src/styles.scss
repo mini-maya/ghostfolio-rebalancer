@@ -64,3 +64,21 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/*
+ * Almost all spacing/typography across the app is expressed in `rem`, which is
+ * relative to the root font-size. Scaling the root font-size down at tablet
+ * portrait / mobile widths therefore shrinks text, padding and gaps
+ * proportionally site-wide, on top of the table-specific responsive rules.
+ */
+@media (max-width: 780px) {
+  html {
+    font-size: 93.75%; /* ~15px base */
+  }
+}
+
+@media (max-width: 560px) {
+  html {
+    font-size: 87.5%; /* ~14px base */
+  }
+}
