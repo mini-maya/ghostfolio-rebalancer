@@ -49,6 +49,10 @@
   padding-left: 1.75rem;
 }
 
+.metrics-grid-header .metrics-header-cell:last-child {
+  padding-right: 1.75rem;
+}
+
 .sort-button {
   -webkit-appearance: none;
   align-items: center;
@@ -123,6 +127,10 @@
   display: block;
   overflow-wrap: anywhere;
   padding: 0.85rem 0.75rem;
+}
+
+.metrics-cell:last-child {
+  padding-right: 1.75rem;
 }
 
 .activity-details[open] .metrics-cell {
@@ -325,10 +333,6 @@
     min-width: 900px;
     width: 100%;
   }
-
-  .metrics-grid {
-    --fifo-overview-grid-template: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
-  }
 }
 
 @media (max-width: 860px) {
@@ -355,6 +359,11 @@
     padding-left: 1.4rem;
   }
 
+  .metrics-grid-header .metrics-header-cell:last-child,
+  .metrics-cell:last-child {
+    padding-right: 1.4rem;
+  }
+
   .metrics-name-cell::before {
     left: 0.55rem;
   }
@@ -365,12 +374,8 @@
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 460px;
+    min-width: 900px;
     width: 100%;
-  }
-
-  .metrics-grid {
-    --fifo-overview-grid-template: minmax(100px, 1fr) repeat(5, minmax(70px, 1fr));
   }
 
   .metrics-header-cell,
@@ -381,6 +386,11 @@
   .metrics-grid-header .metrics-header-cell:first-child,
   .metrics-name-cell {
     padding-left: 1.15rem;
+  }
+
+  .metrics-grid-header .metrics-header-cell:last-child,
+  .metrics-cell:last-child {
+    padding-right: 1.15rem;
   }
 
   .table-inline-highlight {
@@ -405,12 +415,8 @@
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 380px;
+    min-width: 900px;
     width: 100%;
-  }
-
-  .metrics-grid {
-    --fifo-overview-grid-template: minmax(85px, 1fr) repeat(5, minmax(55px, 1fr));
   }
 
   .metrics-header-cell,

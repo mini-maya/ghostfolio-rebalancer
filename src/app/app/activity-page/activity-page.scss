@@ -122,6 +122,10 @@ h4 {
   padding-left: 1.75rem;
 }
 
+.metrics-grid-header .metrics-header-cell:last-child {
+  padding-right: 1.75rem;
+}
+
 .activity-details {
   border: 1px solid var(--app-border);
   border-radius: 0.75rem;
@@ -156,6 +160,10 @@ h4 {
   display: block;
   overflow-wrap: anywhere;
   padding: 0.85rem 0.75rem;
+}
+
+.metrics-grid-row .metrics-cell:last-child {
+  padding-right: 1.75rem;
 }
 
 .activity-details[open] .metrics-cell {
@@ -257,10 +265,6 @@ h4 {
     min-width: 900px;
     width: 100%;
   }
-
-  .metrics-grid {
-    grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
-  }
 }
 
 @media (max-width: 860px) {
@@ -283,6 +287,11 @@ h4 {
     padding-left: 1.4rem;
   }
 
+  .metrics-grid-header .metrics-header-cell:last-child,
+  .metrics-grid-row .metrics-cell:last-child {
+    padding-right: 1.4rem;
+  }
+
   .metrics-name-cell::before {
     left: 0.55rem;
   }
@@ -293,12 +302,8 @@ h4 {
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 460px;
+    min-width: 900px;
     width: 100%;
-  }
-
-  .metrics-grid {
-    grid-template-columns: minmax(100px, 1fr) repeat(5, minmax(70px, 1fr));
   }
 
   .metrics-header-cell,
@@ -309,6 +314,11 @@ h4 {
   .metrics-grid-header .metrics-header-cell:first-child,
   .metrics-name-cell {
     padding-left: 1.15rem;
+  }
+
+  .metrics-grid-header .metrics-header-cell:last-child,
+  .metrics-grid-row .metrics-cell:last-child {
+    padding-right: 1.15rem;
   }
 
   .table-wrapper th,
@@ -324,12 +334,8 @@ h4 {
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 380px;
+    min-width: 900px;
     width: 100%;
-  }
-
-  .metrics-grid {
-    grid-template-columns: minmax(85px, 1fr) repeat(5, minmax(55px, 1fr));
   }
 
   .metrics-header-cell,
