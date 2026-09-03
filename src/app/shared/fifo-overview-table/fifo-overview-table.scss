@@ -3,12 +3,12 @@
 }
 
 .metrics-grid {
-  --fifo-overview-grid-template: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
+  --fifo-overview-grid-template: minmax(220px, 2fr) minmax(140px, 1fr) minmax(170px, 1.35fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr);
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: var(--fifo-overview-grid-template);
-  min-width: 900px;
+  min-width: 970px;
   width: 100%;
 }
 
@@ -21,7 +21,7 @@
   color: var(--app-muted-text);
   font-weight: 600;
   margin-bottom: 0.35rem;
-  min-width: 900px;
+  min-width: 970px;
   position: sticky;
   top: 0;
   width: 100%;
@@ -93,7 +93,7 @@
   border-radius: 0.75rem;
   box-sizing: border-box;
   margin-bottom: 1rem;
-  min-width: 900px;
+  min-width: 970px;
   overflow: hidden;
   width: 100%;
 }
@@ -110,7 +110,7 @@
   box-sizing: border-box;
   display: grid;
   grid-template-columns: var(--fifo-overview-grid-template);
-  min-width: 900px;
+  min-width: 970px;
   width: 100%;
 }
 
@@ -330,7 +330,7 @@
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 900px;
+    min-width: 970px;
     width: 100%;
   }
 }

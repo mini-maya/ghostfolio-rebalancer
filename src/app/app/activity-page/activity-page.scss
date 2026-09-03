@@ -87,8 +87,8 @@ h4 {
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
-  min-width: 900px;
+  grid-template-columns: minmax(220px, 2fr) minmax(140px, 1fr) minmax(170px, 1.35fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr);
+  min-width: 970px;
   width: 100%;
 }
 
@@ -96,7 +96,7 @@ h4 {
   color: var(--app-muted-text);
   font-weight: 600;
   margin-bottom: 0.35rem;
-  min-width: 900px;
+  min-width: 970px;
   width: 100%;
 }
 
@@ -130,7 +130,7 @@ h4 {
   border: 1px solid var(--app-border);
   border-radius: 0.75rem;
   margin-bottom: 1rem;
-  min-width: 900px;
+  min-width: 970px;
   overflow: hidden;
   width: 100%;
 }
@@ -143,7 +143,7 @@ h4 {
 .activity-details summary.metrics-grid {
   box-sizing: border-box;
   display: grid;
-  min-width: 900px;
+  min-width: 970px;
   width: 100%;
 }
 
@@ -262,7 +262,7 @@ h4 {
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 900px;
+    min-width: 970px;
     width: 100%;
   }
 }
