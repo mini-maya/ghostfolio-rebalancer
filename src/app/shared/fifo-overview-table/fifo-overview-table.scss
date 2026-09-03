@@ -3,7 +3,7 @@
 }
 
 .metrics-grid {
-  --fifo-overview-grid-template: minmax(150px, 1fr) repeat(7, minmax(64px, 1fr));
+  --fifo-overview-grid-template: minmax(170px, 1.3fr) minmax(80px, 1fr) minmax(86px, 1fr) minmax(64px, 1fr) minmax(70px, 1fr) minmax(92px, 1fr) minmax(148px, 1fr) minmax(148px, 1fr);
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
@@ -38,7 +38,7 @@
   font-size: clamp(0.74rem, 0.64rem + 0.3vw, 0.9rem);
   justify-content: flex-start;
   padding: 0.85rem 0.75rem;
-  white-space: nowrap;
+  white-space: normal;
   width: 100%;
 }
 
@@ -60,6 +60,7 @@
   color: inherit;
   cursor: pointer;
   display: inline-flex;
+  flex-wrap: wrap;
   font: inherit;
   gap: 0.35rem;
   justify-content: flex-start;
@@ -285,7 +286,7 @@
   }
 
   .metrics-grid {
-    grid-template-columns: minmax(115px, 1fr) repeat(7, minmax(66px, 1fr));
+    grid-template-columns: minmax(150px, 1.2fr) minmax(74px, 1fr) minmax(80px, 1fr) minmax(60px, 1fr) minmax(64px, 1fr) minmax(86px, 1fr) minmax(136px, 1fr) minmax(136px, 1fr);
   }
 }
 

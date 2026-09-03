@@ -115,7 +115,7 @@ h2, h3, h4 {
 }
 
 .tax-metrics-grid {
-  grid-template-columns:minmax(140px, 1fr) repeat(7, minmax(100px, 1fr))
+  grid-template-columns:minmax(220px, 1.6fr) repeat(7, minmax(100px, 1fr))
 }
 
 .metrics-grid-header {
@@ -325,7 +325,7 @@ h2, h3, h4 {
     overflow-x: auto
   }
   .metrics-grid {
-    grid-template-columns:minmax(130px, 1fr) repeat(7, minmax(120px, 1fr));
+    grid-template-columns:minmax(200px, 2fr) repeat(7, minmax(120px, 1fr));
     min-width: 1280px;
     width: max-content
   }

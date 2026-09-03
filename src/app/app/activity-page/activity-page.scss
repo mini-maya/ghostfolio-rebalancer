@@ -87,7 +87,7 @@ h4 {
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) repeat(5, minmax(140px, 1fr));
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
   min-width: 900px;
   width: 100%;
 }
@@ -269,7 +269,7 @@ h4 {
   }
 
   .metrics-grid {
-    grid-template-columns: minmax(130px, 1fr) repeat(5, minmax(120px, 1fr));
+    grid-template-columns: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
   }
 }
 
