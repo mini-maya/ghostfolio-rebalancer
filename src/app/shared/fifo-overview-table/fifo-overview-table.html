@@ -73,21 +73,30 @@
       </span>
     </span>
 
-    <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span><br />
-      <span class="table-inline-highlight">
-        {{ row.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
-      </span>
-    </span>
+  </ng-template>
 
-    <span class="metrics-cell numeric">
-      <span class="table-primary-value">
-        {{ row.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
-      </span><br />
-      <span class="table-inline-highlight">
-        {{ row.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
+  <ng-template #vapSummaryRow let-row>
+    <div class="expanded-vap-summary">
+      <span class="expanded-vap-item">
+        <span class="expanded-vap-label">Total VAP</span>
+        <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span>
+        <span class="expanded-vap-label">Total taxable VAP</span>
+        <span class="table-inline-highlight">
+          {{ row.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
+        </span>
       </span>
-    </span>
+
+      <span class="expanded-vap-item">
+        <span class="expanded-vap-label">Used VAP</span>
+        <span class="table-primary-value">
+          {{ row.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
+        </span>
+        <span class="expanded-vap-label">Used taxable VAP</span>
+        <span class="table-inline-highlight">
+          {{ row.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
+        </span>
+      </span>
+    </div>
   </ng-template>
 
   <div class="metrics-scroll-wrapper" [style.max-height]="maxHeight()" [style.overflow-y]="maxHeight() ? 'auto' : null">
@@ -122,16 +131,6 @@
           Open tax <br /> Sold tax <span>{{ sortIndicator('openTax') }}</span>
         </button>
       </div>
-      <div class="metrics-header-cell numeric">
-        <button class="sort-button numeric" type="button" [class.sort-button-active]="isSortColumn('totalVap')" (click)="sortBy('totalVap')">
-          Total VAP <br /> Total taxable VAP <span>{{ sortIndicator('totalVap') }}</span>
-        </button>
-      </div>
-      <div class="metrics-header-cell numeric">
-        <button class="sort-button numeric" type="button" [class.sort-button-active]="isSortColumn('usedVap')" (click)="sortBy('usedVap')">
-          Used VAP <br /> Used taxable VAP <span>{{ sortIndicator('usedVap') }}</span>
-        </button>
-      </div>
     </div>
 
     @for (row of sortedRows(); track row.trackKey) {
@@ -140,6 +139,8 @@
           <summary class="metrics-grid overview-metrics-grid metrics-grid-row">
             <ng-container [ngTemplateOutlet]="summaryRow" [ngTemplateOutletContext]="{$implicit: row}" />
           </summary>
+
+          <ng-container [ngTemplateOutlet]="vapSummaryRow" [ngTemplateOutletContext]="{$implicit: row}" />
 
           <div class="table-wrapper">
             <table>

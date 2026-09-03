@@ -3,7 +3,7 @@
 }
 
 .metrics-grid {
-  --fifo-overview-grid-template: minmax(150px, 2.2fr) minmax(74px, 1fr) minmax(92px, 1.65fr) minmax(62px, 1.15fr) minmax(68px, 1.1fr) minmax(80px, 0.96fr) minmax(102px, 1.12fr) minmax(102px, 1.12fr);
+  --fifo-overview-grid-template: minmax(150px, 2.2fr) minmax(74px, 1fr) minmax(92px, 1.65fr) minmax(62px, 1.15fr) minmax(68px, 1.1fr) minmax(80px, 0.96fr);
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
@@ -168,6 +168,38 @@
   font-weight: 700;
 }
 
+.expanded-vap-summary {
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: flex-end;
+  padding: 0.6rem 1.75rem;
+  width: 100%;
+}
+
+.expanded-vap-item {
+  align-items: baseline;
+  column-gap: 0.6rem;
+  display: grid;
+  grid-template-columns: auto auto;
+  row-gap: 0.15rem;
+}
+
+.expanded-vap-item .table-primary-value,
+.expanded-vap-item .table-inline-highlight {
+  justify-self: end;
+  text-align: right;
+}
+
+.expanded-vap-label {
+  color: var(--app-muted-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
@@ -295,7 +327,7 @@
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(135px, 1.9fr) minmax(70px, 0.94fr) minmax(84px, 1.52fr) minmax(58px, 1.06fr) minmax(62px, 1.02fr) minmax(76px, 0.88fr) minmax(96px, 1.04fr) minmax(96px, 1.04fr);
+    --fifo-overview-grid-template: minmax(135px, 1.9fr) minmax(70px, 0.94fr) minmax(84px, 1.52fr) minmax(58px, 1.06fr) minmax(62px, 1.02fr) minmax(76px, 0.88fr);
   }
 }
 
@@ -338,7 +370,7 @@
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(90px, 1fr) repeat(7, minmax(60px, 1fr));
+    --fifo-overview-grid-template: minmax(90px, 1fr) repeat(5, minmax(60px, 1fr));
   }
 
   .metrics-header-cell,
@@ -378,7 +410,7 @@
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(75px, 1fr) repeat(7, minmax(52px, 1fr));
+    --fifo-overview-grid-template: minmax(75px, 1fr) repeat(5, minmax(52px, 1fr));
   }
 
   .metrics-header-cell,
