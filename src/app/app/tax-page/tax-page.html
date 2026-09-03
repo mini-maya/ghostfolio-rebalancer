@@ -143,9 +143,9 @@
               <strong>{{ group.taxYear }}</strong>
               @if (annualTaxSummaryByTaxYear().get(group.taxYear); as summary) {
                 <span class="secondary-value">
-                  Taxable VAP {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                  Taxable VAP {{ summary.taxableVapBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                   &middot;
-                  Taxable sale gain {{ summary.taxableSaleGainBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                  Taxable sale gain {{ summary.taxableSaleGainBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                   ({{ group.events.length }} entries)
                 </span>
               } @else {
@@ -180,19 +180,15 @@
                       {{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}
                     </td>
                     <td class="numeric">
-                      {{ row.vorabpauschalePerShare | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                      {{ currencySymbol() }}<br />
+                      {{ row.vorabpauschalePerShare | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}<br />
                       <span class="table-inline-highlight">
-                        {{ row.vorabpauschalePerShareAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ currencySymbol() }}
+                        {{ row.vorabpauschalePerShareAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                       </span>
                     </td>
                     <td class="numeric">
-                      <strong>{{ row.totalAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>
-                      {{ currencySymbol() }}<br />
+                      <strong>{{ row.totalAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>{{ currencySymbol() }}<br />
                       <span class="table-inline-highlight">
-                        {{ row.totalAmountAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                        {{ currencySymbol() }}
+                        {{ row.totalAmountAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                       </span>
                     </td>
                     <td class="numeric tax-actions-cell">
@@ -347,16 +343,14 @@
             <article class="card dialog-summary-card">
               <span>Gesamt-Vorabpauschale</span>
               <strong>
-                {{ dialogTotalAmount() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                {{ currencySymbol() }}
+                {{ dialogTotalAmount() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
               </strong>
             </article>
 
             <article class="card dialog-summary-card">
               <span>Gesamt-Vorabpauschale inkl. TF</span>
               <strong>
-                {{ dialogTotalAmountAfterTeilfreistellung() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                {{ currencySymbol() }}
+                {{ dialogTotalAmountAfterTeilfreistellung() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
               </strong>
             </article>
           </div>

@@ -8,26 +8,21 @@
     </span>
 
     <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
-      {{ currencySymbol() }}<br />
-      {{ row.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
-      {{ currencySymbol() }}
+      <span class="table-primary-value">{{ row.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
+      {{ row.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}
     </span>
 
     <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
-      {{ currencySymbol() }}<br />
+      <span class="table-primary-value">{{ row.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
       <span class="table-inline-highlight">
         {{ row.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} x
-      </span>
-      {{ row.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
-      {{ currencySymbol() }}
+      </span><br />
+      {{ row.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}
     </span>
 
     <span class="metrics-cell numeric">
       <span class="table-primary-value">
-        {{ row.gainAmount > 0 ? '+' : row.gainAmount < 0 ? '-' : '' }}{{ abs(row.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.gainAmount > 0 ? '+' : row.gainAmount < 0 ? '-' : '' }}{{ abs(row.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span><br />
       @if (row.gainPercentage !== 0) {
         <span
@@ -49,8 +44,7 @@
 
     <span class="metrics-cell numeric">
       <span class="table-primary-value">
-        {{ row.realizedAmount > 0 ? '+' : row.realizedAmount < 0 ? '-' : '' }}{{ abs(row.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.realizedAmount > 0 ? '+' : row.realizedAmount < 0 ? '-' : '' }}{{ abs(row.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span><br />
       @if (row.realizedPercentage !== 0) {
         <span
@@ -72,32 +66,26 @@
 
     <span class="metrics-cell numeric">
       <span class="table-primary-value">
-        {{ row.potentialTaxes | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.potentialTaxes | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span><br />
       <span class="table-inline-highlight">
-        {{ row.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span>
     </span>
 
     <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
-      {{ currencySymbol() }}<br />
+      <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
       <span class="table-inline-highlight">
-        {{ row.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span>
     </span>
 
     <span class="metrics-cell numeric">
       <span class="table-primary-value">
-        {{ row.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span><br />
       <span class="table-inline-highlight">
-        {{ row.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol() }}
+        {{ row.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span>
     </span>
   </ng-template>
@@ -202,12 +190,12 @@
                         }
                       }
                     </td>
-                    <td class="numeric">{{ activity.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol() }}</td>
-                    <td class="numeric">{{ activity.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                    <td class="numeric">{{ activity.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}</td>
+                    <td class="numeric">{{ activity.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</td>
                     <td class="numeric">
                       @if (activity.gainAmount !== null && activity.gainPercentage !== null) {
                         <span class="table-primary-value">
-                          {{ activity.gainAmount > 0 ? '+' : activity.gainAmount < 0 ? '-' : '' }}{{ abs(activity.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                          {{ activity.gainAmount > 0 ? '+' : activity.gainAmount < 0 ? '-' : '' }}{{ abs(activity.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                         </span><br />
                         @if (activity.gainPercentage !== 0) {
                           <span
@@ -231,11 +219,9 @@
                     </td>
                     <td class="numeric">
                       @if (activity.type === 'BUY') {
-                        <span class="table-primary-value">{{ activity.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
-                        {{ currencySymbol() }}<br />
+                        <span class="table-primary-value">{{ activity.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
                         <span class="table-inline-highlight">
-                          {{ activity.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                          {{ currencySymbol() }}
+                          {{ activity.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                         </span>
                       } @else {
                         <span class="table-primary-value">-</span>
@@ -244,8 +230,7 @@
                     <td class="numeric">
                       @if (activity.type === 'BUY') {
                         <span class="table-primary-value">
-                          {{ activity.potentialTaxes | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                          {{ currencySymbol() }}
+                          {{ activity.potentialTaxes | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                         </span>
                       } @else {
                         <span class="table-primary-value">-</span>
@@ -279,11 +264,11 @@
                                   }
                                 </td>
                                 <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
-                                <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol() }}</td>
-                                <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}</td>
+                                <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}</td>
+                                <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</td>
                                 <td class="numeric">
                                   <span class="table-primary-value">
-                                    {{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ abs(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    {{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ abs(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                                   </span><br />
                                   @if (sell.realizedPercentage !== 0) {
                                     <span
@@ -304,18 +289,18 @@
                                 </td>
                                 <td class="numeric">
                                   <span class="table-primary-value">
-                                    {{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    {{ sell.taxForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                                   </span><br />
                                   <span class="table-inline-highlight">
-                                    {{ sell.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    {{ sell.usedSparerPauschbetragForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                                   </span>
                                 </td>
                                 <td class="numeric">
                                   <span class="table-primary-value">
-                                    {{ sell.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    {{ sell.usedVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                                   </span><br />
                                   <span class="table-inline-highlight">
-                                    {{ sell.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol() }}
+                                    {{ sell.usedTaxableVapForSelling | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                                   </span>
                                 </td>
                               </tr>
