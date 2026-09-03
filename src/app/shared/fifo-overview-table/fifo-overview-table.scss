@@ -3,7 +3,7 @@
 }
 
 .metrics-grid {
-  --fifo-overview-grid-template: minmax(150px, 2.2fr) minmax(74px, 1fr) minmax(92px, 1.65fr) minmax(62px, 1.15fr) minmax(68px, 1.1fr) minmax(80px, 0.96fr);
+  --fifo-overview-grid-template: minmax(220px, 2fr) repeat(5, minmax(140px, 1fr));
   align-items: stretch;
   box-sizing: border-box;
   display: grid;
@@ -327,7 +327,7 @@
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(135px, 1.9fr) minmax(70px, 0.94fr) minmax(84px, 1.52fr) minmax(58px, 1.06fr) minmax(62px, 1.02fr) minmax(76px, 0.88fr);
+    --fifo-overview-grid-template: minmax(200px, 2fr) repeat(5, minmax(120px, 1fr));
   }
 }
 
@@ -365,12 +365,12 @@
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 520px;
+    min-width: 460px;
     width: 100%;
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(90px, 1fr) repeat(5, minmax(60px, 1fr));
+    --fifo-overview-grid-template: minmax(100px, 1fr) repeat(5, minmax(70px, 1fr));
   }
 
   .metrics-header-cell,
@@ -405,12 +405,12 @@
   .metrics-grid-header,
   .activity-details,
   .activity-details summary.metrics-grid {
-    min-width: 450px;
+    min-width: 380px;
     width: 100%;
   }
 
   .metrics-grid {
-    --fifo-overview-grid-template: minmax(75px, 1fr) repeat(5, minmax(52px, 1fr));
+    --fifo-overview-grid-template: minmax(85px, 1fr) repeat(5, minmax(55px, 1fr));
   }
 
   .metrics-header-cell,
