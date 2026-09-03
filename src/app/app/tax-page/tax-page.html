@@ -63,6 +63,17 @@
                 (input)="updateTaxProfileSparerPauschbetrag($event)"
               />
             </label>
+
+            <label class="field tax-profile-field">
+              <span>Angenommener Basiszins (% / Jahr, für Prognosejahre)</span>
+              <input
+                type="text"
+                min="0"
+                inputmode="decimal"
+                [value]="taxProfile().assumedBasiszinsPercentage"
+                (input)="updateTaxProfileAssumedBasiszinsPercentage($event)"
+              />
+            </label>
           </div>
         } @else {
           <p class="secondary-value">The tax profile can only be edited by local users.</p>

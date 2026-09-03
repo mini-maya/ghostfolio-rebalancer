@@ -537,6 +537,7 @@
           [isLoading]="isLoading()"
           [timeRangeMode]="'leading'"
           [timeRange]="selectedChartTimeRange()"
+          [tooltipFooterFormatter]="projectionChartTooltipFooterFormatter"
           (timeRangeChange)="onChartTimeRangeChange($event)"
         />
       </div>

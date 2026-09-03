@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const DEFAULT_TAX_CONFIG = Object.freeze({
+  assumedBasiszinsPercentage: 2.5,
   capitalGainsTaxRate: 0.25,
   churchTaxRate: 0,
   partialExemptionRate: 0.3,
@@ -105,6 +106,10 @@ function normalizeTaxConfig(taxConfig) {
   }
 
   return {
+    assumedBasiszinsPercentage: readNonNegativeNumber(
+      taxConfig.assumedBasiszinsPercentage,
+      DEFAULT_TAX_CONFIG.assumedBasiszinsPercentage
+    ),
     capitalGainsTaxRate: readNonNegativeNumber(
       taxConfig.capitalGainsTaxRate,
       DEFAULT_TAX_CONFIG.capitalGainsTaxRate

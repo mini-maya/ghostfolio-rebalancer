@@ -203,6 +203,7 @@ describe('TaxPage', () => {
     tick(300);
 
     expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
+      assumedBasiszinsPercentage: 2.5,
       capitalGainsTaxRate: 0.3,
       churchTaxRate: 0,
       partialExemptionRate: 0.3,
@@ -223,6 +224,7 @@ describe('TaxPage', () => {
     tick(300);
 
     expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
+      assumedBasiszinsPercentage: 2.5,
       capitalGainsTaxRate: 0.305,
       churchTaxRate: 0,
       partialExemptionRate: 0.3,
@@ -244,6 +246,7 @@ describe('TaxPage', () => {
 
     expect(component.taxProfile().sparerPauschbetrag).toBe(2000);
     expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
+      assumedBasiszinsPercentage: 2.5,
       capitalGainsTaxRate: 0.25,
       churchTaxRate: 0,
       partialExemptionRate: 0.3,

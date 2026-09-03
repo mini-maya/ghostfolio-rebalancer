@@ -24,6 +24,7 @@ test('creates, loads and updates tax config records', async () => {
     const taxConfig = await reloadedTaxConfigStore.getTaxConfig('local-user');
 
     assert.deepEqual(taxConfig, {
+      assumedBasiszinsPercentage: 2.5,
       capitalGainsTaxRate: 0.25,
       churchTaxRate: 0.08,
       partialExemptionRate: 0.3,
@@ -42,6 +43,7 @@ test('creates, loads and updates tax config records', async () => {
     const updatedTaxConfig = await reloadedTaxConfigStore.getTaxConfig('local-user');
 
     assert.deepEqual(updatedTaxConfig, {
+      assumedBasiszinsPercentage: 2.5,
       capitalGainsTaxRate: 0.2,
       churchTaxRate: 0.05,
       partialExemptionRate: 0.25,

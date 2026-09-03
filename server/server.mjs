@@ -421,7 +421,7 @@ app.get('/api/ghostfolio/direct-login-url', async (request, response, next) => {
 
 app.use(express.static(distDirectory, { index: false }));
 
-app.get('*', (request, response, next) => {
+app.get('/{*splat}', (request, response, next) => {
   if (request.path.startsWith('/api/')) {
     next(new HttpError(404, 'The requested API endpoint does not exist.'));
     return;
@@ -647,6 +647,7 @@ function readTaxConfig(value) {
   }
 
   return {
+    assumedBasiszinsPercentage: readNonNegativeNumber(value.assumedBasiszinsPercentage, 2.5),
     capitalGainsTaxRate: readNonNegativeNumber(value.capitalGainsTaxRate, 0.25),
     churchTaxRate: readNonNegativeNumber(value.churchTaxRate, 0),
     partialExemptionRate: readNonNegativeNumber(value.partialExemptionRate, 0.3),

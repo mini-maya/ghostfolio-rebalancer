@@ -278,6 +278,14 @@ export class RetirePage implements OnInit {
   protected readonly chartGroupBy = computed<GroupBy>(() => {
     return this.currentCalculationSnapshot().frequency === 'yearly' ? 'year' : 'month';
   });
+  /**
+   * When the chart groups by year (see chartGroupBy), the tooltip title only shows the year,
+   * hiding which specific month the underlying data point actually falls on. This adds that
+   * month back as a tooltip footer, mirroring the "Steuerjahr" footer on the VAP cash-need chart.
+   */
+  protected readonly projectionChartTooltipFooterFormatter = (date: Date): string => {
+    return `Month: ${format(date, 'MMMM yyyy')}`;
+  };
   protected readonly withdrawalStartLabel = computed(() => {
     return format(this.displayWithdrawalStartDate(), 'MMMM yyyy');
   });
@@ -543,14 +551,17 @@ export class RetirePage implements OnInit {
     return this.projection().annualVapCashNeedSchedule;
   });
   protected readonly vapChartBarItems = computed<InvestmentItem[]>(() => {
+    // `year` is already the *due* year (01.01 of that year is when the tax is due - see
+    // AnnualTaxSummary.year), so the data point must be dated 01.01, not 12.31 (which would be
+    // almost a full year later and visually snap to the *next* year's January axis tick).
     return this.annualVapCashNeedRows().map(({ year, taxableVapBeforeAllowance }) => ({
-      date: `${year}-12-31`,
+      date: `${year}-01-01`,
       investment: taxableVapBeforeAllowance
     }));
   });
   protected readonly vapChartLineItems = computed<LineChartItem[]>(() => {
     return this.annualVapCashNeedRows().map(({ year, sparerPauschbetragAvailable }) => ({
-      date: `${year}-12-31`,
+      date: `${year}-01-01`,
       value: sparerPauschbetragAvailable
     }));
   });
@@ -561,7 +572,7 @@ export class RetirePage implements OnInit {
    * tooltip footer to avoid confusion when comparing the two views.
    */
   protected readonly vapChartTooltipFooterFormatter = (date: Date): string => {
-    return `Steuerjahr: ${date.getFullYear() - 1}`;
+    return `Tax year: ${date.getFullYear() - 1}`;
   };
   protected readonly withdrawalScheduleRows = computed(() => {
     const snapshot = this.currentCalculationSnapshot();
