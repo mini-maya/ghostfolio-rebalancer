@@ -392,7 +392,7 @@ export function calculateFutureWithdrawalTaxEstimates({
 }
 
 export interface AnnualVapCashNeedEntry {
-  /** Calendar year the VAP became tax-relevant in (i.e. Jan 1 of the following year is due). */
+  /** Calendar year the VAP tax becomes due in (01.01 of this year) - one year after the accrual/tax year (see AnnualTaxSummary.year). */
   year: number;
   /**
    * VAP-only tax still owed for this year after the annual Sparer-Pauschbetrag has been applied

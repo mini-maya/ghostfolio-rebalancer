@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const DEFAULT_TAX_CONFIG = Object.freeze({
+  assumedBasiszinsRate: 0.025,
   capitalGainsTaxRate: 0.25,
   churchTaxRate: 0,
   partialExemptionRate: 0.3,
@@ -105,6 +106,10 @@ function normalizeTaxConfig(taxConfig) {
   }
 
   return {
+    assumedBasiszinsRate: readBasiszinsRate(
+      taxConfig.assumedBasiszinsRate,
+      DEFAULT_TAX_CONFIG.assumedBasiszinsRate
+    ),
     capitalGainsTaxRate: readNonNegativeNumber(
       taxConfig.capitalGainsTaxRate,
       DEFAULT_TAX_CONFIG.capitalGainsTaxRate
@@ -129,6 +134,19 @@ function readNonNegativeNumber(value, fallback) {
   const numberValue = Number(value);
 
   return Number.isFinite(numberValue) && numberValue >= 0 ? numberValue : fallback;
+}
+
+// A negative Basiszins is legally floored to 0% for the Basisertrag calculation
+// (§18 Abs. 4 InvStG), unlike other tax fields where a negative value is invalid
+// and falls back to the configured default.
+function readBasiszinsRate(value, fallback) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return fallback;
+  }
+
+  return Math.max(0, numberValue);
 }
 
 function readRequiredString(value, message) {
