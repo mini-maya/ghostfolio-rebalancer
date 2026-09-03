@@ -36,7 +36,6 @@ table {
 th,
 td {
   border-bottom: 1px solid var(--app-border);
-  font-size: 0.95rem;
   padding: 0.85rem 0.75rem;
   text-align: left;
   white-space: nowrap;
@@ -92,8 +91,16 @@ tbody tr:last-child td {
 .table-inline-highlight {
   background: var(--app-surface-soft);
   border-radius: 0.4rem;
+  box-sizing: border-box;
   display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 0.1rem 0.35rem;
+}
+
+.per-unit-value {
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .name-secondary,
@@ -105,9 +112,12 @@ tbody tr:last-child td {
   align-items: center;
   width: fit-content;
   border-radius: 0.4rem;
+  box-sizing: border-box;
   display: inline-flex;
   gap: 0.35rem;
   line-height: 1;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 0.2rem 0.4rem;
 }
 

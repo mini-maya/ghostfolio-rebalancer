@@ -190,8 +190,8 @@
                       <span class="table-inline-highlight">
                         {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
                         x
-                      </span><br />
-                      {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(symbolGroup.metrics.currency) }}
+                      </span>
+                      <span class="per-unit-value">{{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span>
                     </span>
                     <span class="metrics-cell numeric">
                       <span

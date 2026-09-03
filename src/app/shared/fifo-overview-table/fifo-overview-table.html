@@ -16,8 +16,8 @@
       <span class="table-primary-value">{{ row.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span><br />
       <span class="table-inline-highlight">
         {{ row.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} x
-      </span><br />
-      {{ row.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}
+      </span>
+      <span class="per-unit-value">{{ row.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}</span>
     </span>
 
     <span class="metrics-cell numeric">

@@ -108,7 +108,6 @@ h4 {
 .metrics-header-cell {
   border-bottom: 1px solid var(--app-border);
   display: flex;
-  font-size: 0.9rem;
   justify-content: flex-start;
   padding: 0.85rem 0.75rem;
   white-space: nowrap;
@@ -155,7 +154,6 @@ h4 {
 .metrics-cell {
   border-bottom: 1px solid var(--app-border);
   display: block;
-  font-size: 0.95rem;
   overflow-wrap: anywhere;
   padding: 0.85rem 0.75rem;
 }
