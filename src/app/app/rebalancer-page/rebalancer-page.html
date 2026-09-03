@@ -105,22 +105,22 @@
                   <span class="name-secondary">{{ row.name }}</span>
                 </td>
                 <td class="numeric"><span class="table-inline-highlight">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span></td>
-                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(row.currency) }}</td>
+                <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
                   <span class="table-primary-value">{{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span><br />
-                  <span class="secondary-value">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
+                  <span class="secondary-value">{{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}</span>
                 </td>
                 <td class="numeric">
                    <span class="table-primary-value">{{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</span>
                 </td>
-                <td class="numeric">{{ row.targetGap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</td>
+                <td class="numeric">{{ row.targetGap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}</td>
                 <td class="numeric">
-                  <span class="strong-cell">{{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span><br />
-                  <span class="secondary-value">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
+                  <span class="strong-cell">{{ row.buyRoundedAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}</span><br />
+                  <span class="secondary-value">{{ row.buyAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}</span>
                 </td>
                 <td class="numeric">
                   {{ row.newAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%<br />
-                  <span class="secondary-value">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(row.currency) }}</span>
+                  <span class="secondary-value">{{ row.newValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}</span>
                 </td>
               </tr>
             }

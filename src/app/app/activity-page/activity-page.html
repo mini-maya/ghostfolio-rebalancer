@@ -36,21 +36,21 @@
             <div class="portfolio-summary-inner-grid">
               <div class="summary-grid-cell">
                 <span class="cell-label">Initial Value</span>
-                <strong>{{ maxRangePortfolioSummary().initialValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                <strong>{{ maxRangePortfolioSummary().initialValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
               </div>
               <div class="summary-grid-cell">
                 <span class="cell-label">Current Value</span>
-                <strong>{{ maxRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                <strong>{{ maxRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
               </div>
               <div class="summary-grid-cell">
                 <span class="cell-label">Investment</span>
-                <strong>{{ maxRangePortfolioSummary().investment | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                <strong>{{ maxRangePortfolioSummary().investment | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
               </div>
               <div class="summary-grid-cell">
                 <span class="cell-label">Gain</span>
                 <strong
                   class="value-bold"
-                >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                >{{ maxRangePortfolioSummary().gainAmount > 0 ? '+' : maxRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(maxRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
                 @if (maxRangePortfolioSummary().gainPercentage !== 0) {
                   <span
                     class="value-with-arrow"
@@ -75,21 +75,21 @@
             <div class="portfolio-summary-inner-grid">
               <div class="summary-grid-cell">
                 <span class="cell-label">Initial Value</span>
-                <strong>{{ selectedRangePortfolioSummary().initialValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                <strong>{{ selectedRangePortfolioSummary().initialValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
               </div>
               <div class="summary-grid-cell">
                 <span class="cell-label">Current Value</span>
-                <strong>{{ selectedRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                <strong>{{ selectedRangePortfolioSummary().currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
               </div>
               <div class="summary-grid-cell">
                 <span class="cell-label">Investment</span>
-                <strong>{{ selectedRangePortfolioSummary().investment | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                <strong>{{ selectedRangePortfolioSummary().investment | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
               </div>
               <div class="summary-grid-cell">
                 <span class="cell-label">Gain</span>
                 <strong
                   class="value-bold"
-                >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(portfolioChartCurrency()) }}</strong>
+                >{{ selectedRangePortfolioSummary().gainAmount > 0 ? '+' : selectedRangePortfolioSummary().gainAmount < 0 ? '-' : '' }}{{ absolute(selectedRangePortfolioSummary().gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(portfolioChartCurrency()) }}</strong>
                 @if (selectedRangePortfolioSummary().gainPercentage !== 0) {
                   <span
                     class="value-with-arrow"
@@ -182,26 +182,21 @@
                       <span>{{ symbolGroup.name }}</span>
                     </span>
                     <span class="metrics-cell numeric">
-                      <span class="table-primary-value">{{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
-                      {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
-                      {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
-                      {{ currencySymbol(symbolGroup.metrics.currency) }}
+                      <span class="table-primary-value">{{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                      {{ symbolGroup.metrics.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(symbolGroup.metrics.currency) }}
                     </span>
                     <span class="metrics-cell numeric">
-                      <span class="table-primary-value">{{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>
-                      {{ currencySymbol(symbolGroup.metrics.currency) }}<br />
+                      <span class="table-primary-value">{{ symbolGroup.metrics.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                       <span class="table-inline-highlight">
                         {{ symbolGroup.metrics.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
                         x
-                      </span>
-                      {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
-                      {{ currencySymbol(symbolGroup.metrics.currency) }}
+                      </span><br />
+                      {{ symbolGroup.metrics.positionPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(symbolGroup.metrics.currency) }}
                     </span>
                     <span class="metrics-cell numeric">
                       <span
                         class="table-primary-value"
-                      >{{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                      {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                      >{{ symbolGroup.metrics.gainAmount > 0 ? '+' : symbolGroup.metrics.gainAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                       @if (symbolGroup.metrics.gainPercentage !== 0) {
                         <span
                           class="value-with-arrow"
@@ -222,8 +217,7 @@
                     <span class="metrics-cell numeric">
                       <span
                         class="table-primary-value"
-                      >{{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                      {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                      >{{ symbolGroup.metrics.realizedAmount > 0 ? '+' : symbolGroup.metrics.realizedAmount < 0 ? '-' : '' }}{{ absolute(symbolGroup.metrics.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                       @if (symbolGroup.metrics.realizedPercentage !== 0) {
                         <span
                           class="value-with-arrow"
@@ -291,21 +285,21 @@
                                 <span class="table-inline-highlight">-</span>
                               }
                             </td>
-                            <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
-                            <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
-                            <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                            <td class="numeric">{{ entry.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                            <td class="numeric">{{ entry.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                            <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                             <td
                               class="numeric strong-cell"
                               [class.activity-type-buy]="entry.type === 'BUY'"
                               [class.activity-type-sell]="entry.type === 'SELL'"
                             >
-                              {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}
+                              {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}
                             </td>
                             <td class="numeric">
                               @if (entry.gainAmount !== null && entry.gainPercentage !== null) {
                                 <span
                                   class="table-primary-value"
-                                >{{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                                >{{ entry.gainAmount > 0 ? '+' : entry.gainAmount < 0 ? '-' : '' }}{{ absolute(entry.gainAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                                 @if (entry.gainPercentage !== 0) {
                                   <span
                                     class="value-with-arrow"
@@ -351,12 +345,12 @@
                                           }
                                         </td>
                                         <td class="numeric">{{ sell.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}</td>
-                                        <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
-                                        <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                                        <td class="numeric">{{ sell.unitPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</td>
+                                        <td class="numeric strong-cell">{{ sell.totalValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                                         <td class="numeric">
                                           <span
                                             class="table-primary-value"
-                                          >{{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }} {{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
+                                          >{{ sell.realizedAmount > 0 ? '+' : sell.realizedAmount < 0 ? '-' : '' }}{{ absolute(sell.realizedAmount) | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
                                           @if (sell.realizedPercentage !== 0) {
                                           <span
                                             class="value-with-arrow"

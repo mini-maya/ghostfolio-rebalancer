@@ -186,7 +186,7 @@
                       </span>
                     </td>
                     <td class="numeric">
-                      <strong>{{ row.totalAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</strong>{{ currencySymbol() }}<br />
+                      <strong>{{ row.totalAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</strong><br />
                       <span class="table-inline-highlight">
                         {{ row.totalAmountAfterTeilfreistellung | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                       </span>

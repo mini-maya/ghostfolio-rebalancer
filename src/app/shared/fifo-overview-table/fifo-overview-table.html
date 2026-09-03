@@ -8,12 +8,12 @@
     </span>
 
     <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
+      <span class="table-primary-value">{{ row.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span><br />
       {{ row.entryPricePerUnit | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol() }}
     </span>
 
     <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
+      <span class="table-primary-value">{{ row.positionPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span><br />
       <span class="table-inline-highlight">
         {{ row.positionQuantity | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }} x
       </span><br />
@@ -74,7 +74,7 @@
     </span>
 
     <span class="metrics-cell numeric">
-      <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
+      <span class="table-primary-value">{{ row.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span><br />
       <span class="table-inline-highlight">
         {{ row.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
       </span>
@@ -219,7 +219,7 @@
                     </td>
                     <td class="numeric">
                       @if (activity.type === 'BUY') {
-                        <span class="table-primary-value">{{ activity.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}</span>{{ currencySymbol() }}<br />
+                        <span class="table-primary-value">{{ activity.totalVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}</span><br />
                         <span class="table-inline-highlight">
                           {{ activity.totalTaxableVap | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }}
                         </span>

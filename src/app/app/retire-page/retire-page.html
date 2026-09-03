@@ -201,8 +201,7 @@
     <article class="card stat">
       <span>Portfolio value</span>
       <strong>
-        {{ startCapital() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ startCapital() | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>@if (lastLoadedUrl()) { Loaded from {{ lastLoadedUrl() }} }</small>
     </article>
@@ -210,8 +209,7 @@
     <article class="card stat">
       <span>Capital at withdrawal start</span>
       <strong>
-        {{ projection().capitalAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().capitalAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>Starts in {{ frozenWithdrawalStartLabel() }}</small>
     </article>
@@ -219,8 +217,7 @@
     <article class="card stat">
       <span>Projected ending capital</span>
       <strong>
-        {{ projection().endingCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().endingCapital | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>
         {{ capitalPreservationPercentage() }}% of capital at withdrawal start
@@ -230,8 +227,7 @@
     <article class="card stat">
       <span>Initial withdrawal</span>
       <strong>
-        {{ projection().firstWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().firstWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>Starts in {{ frozenWithdrawalStartLabel() }}</small>
     </article>
@@ -239,8 +235,7 @@
     <article class="card stat">
       <span>Final withdrawal</span>
       <strong>
-        {{ projection().lastWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().lastWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>Projected in {{ projectionEndLabel() | date: 'MMMM yyyy' }}</small>
     </article>
@@ -248,8 +243,7 @@
     <article class="card stat">
       <span>Total withdrawals</span>
       <strong>
-        {{ projection().totalWithdrawals | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().totalWithdrawals | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>Across {{ withdrawalDisplayYears() | localeNumber: {minFractionDigits: 0, maxFractionDigits: 2} }} years</small>
     </article>
@@ -257,8 +251,7 @@
     <article class="card stat">
       <span>Projected portfolio growth</span>
       <strong>
-        {{ projection().totalGrowth | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().totalGrowth | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>Expected cumulative returns</small>
     </article>
@@ -266,52 +259,44 @@
     <article class="card stat">
       <span>Open tax</span>
       <strong>
-        {{ projection().openTaxAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().openTaxAtWithdrawalStart | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>
         After Sparer-Pauschbetrag:
-        {{ projection().openTaxAtWithdrawalStartAfterAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().openTaxAtWithdrawalStartAfterAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </small>
     </article>
 
     <article class="card stat">
       <span>Total VAP</span>
       <strong>
-        {{ projection().projectedVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().projectedVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>
         Total taxable VAP:
-        {{ projection().taxableVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().taxableVapTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </small>
     </article>
 
     <article class="card stat">
       <span>Sparer-Pauschbetrag used</span>
       <strong>
-        {{ projection().sparerPauschbetragUsedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().sparerPauschbetragUsedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>
         Unused (expired):
-        {{ projection().sparerPauschbetragUnusedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().sparerPauschbetragUnusedTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </small>
     </article>
 
     <article class="card stat">
       <span>Sold tax</span>
       <strong>
-        {{ projection().soldTaxTotalBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().soldTaxTotalBeforeAllowance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </strong>
       <small>
         After Sparer-Pauschbetrag:
-        {{ projection().soldTaxTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-        {{ currencySymbol(currency()) }}
+        {{ projection().soldTaxTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
       </small>
     </article>
   </section>
@@ -394,15 +379,13 @@
         <article class="card stat">
           <span>Requested withdrawal</span>
           <strong>
-            {{ nextWithdrawalSellPlan().requestedSellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-            {{ currencySymbol(currency()) }}
+            {{ nextWithdrawalSellPlan().requestedSellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
           </strong>
         </article>
         <article class="card stat">
           <span>Planned symbol sales</span>
           <strong>
-            {{ nextWithdrawalSellPlan().totalPlannedSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-            {{ currencySymbol(currency()) }}
+            {{ nextWithdrawalSellPlan().totalPlannedSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
           </strong>
         </article>
       </section>
@@ -471,23 +454,20 @@
                   <span class="name-secondary">{{ row.name }}</span>
                 </td>
                 <td class="numeric">
-                  {{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol(row.currency) }}
+                  {{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}
                 </td>
                 <td class="numeric">
                   {{ row.targetAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                 </td>
                 <td class="numeric">
                   <span class="sell-plan-primary">
-                    {{ row.sellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ currencySymbol(row.currency) }}
+                    {{ row.sellAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}
                   </span><br />
                   <span class="table-inline-highlight">
                     {{ row.sharesToSell | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x
                   </span>
                   <span class="sell-plan-unit-price">
-                    {{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}
-                    {{ currencySymbol(row.currency) }}
+                    {{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(row.currency) }}
                   </span>
                 </td>
                 <td class="numeric">
@@ -495,8 +475,7 @@
                     {{ row.remainingAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%
                   </span><br />
                   <span class="sell-plan-secondary">
-                    {{ row.remainingValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                    {{ currencySymbol(row.currency) }}
+                    {{ row.remainingValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}
                   </span>
                 </td>
               </tr>
@@ -568,24 +547,19 @@
                 </td>
                 <td>{{ row.dateLabel }}</td>
                 <td class="numeric">
-                  {{ row.withdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol(currency()) }}
+                  {{ row.withdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
                 </td>
                 <td class="numeric">
-                  {{ row.gain | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol(currency()) }}
+                  {{ row.gain | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
                 </td>
                 <td class="numeric">
-                  {{ row.tax | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol(currency()) }}
+                  {{ row.tax | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
                 </td>
                 <td class="numeric">
-                  {{ row.netWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol(currency()) }}
+                  {{ row.netWithdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
                 </td>
                 <td class="numeric">
-                  {{ row.endingBalance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}
-                  {{ currencySymbol(currency()) }}
+                  {{ row.endingBalance | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}
                 </td>
               </tr>
             }

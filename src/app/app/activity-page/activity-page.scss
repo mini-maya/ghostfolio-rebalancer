@@ -244,14 +244,6 @@ h4 {
     padding-top: 1.5rem;
   }
 
-  .portfolio-summary-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .portfolio-summary-inner-grid {
-    grid-template-columns: 1fr;
-  }
-
   .activity-type-group {
     overflow: visible;
   }
@@ -345,5 +337,15 @@ h4 {
   .metrics-header-cell,
   .metrics-cell {
     padding: 0.5rem 0.35rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .portfolio-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-summary-inner-grid {
+    grid-template-columns: 1fr;
   }
 }
