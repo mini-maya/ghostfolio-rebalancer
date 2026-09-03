@@ -133,7 +133,7 @@ h2, h3, h4 {
 .metrics-header-cell {
   border-bottom: 1px solid var(--app-border);
   display: flex;
-  font-size: clamp(0.78rem, 0.68rem + 0.3vw, 0.9rem);
+  font-size: 0.9rem;
   justify-content: flex-start;
   padding: .85rem .75rem;
   white-space: nowrap;
@@ -180,7 +180,7 @@ h2, h3, h4 {
 .metrics-cell {
   border-bottom: 1px solid var(--app-border);
   display: block;
-  font-size: clamp(0.8rem, 0.72rem + 0.3vw, 0.95rem);
+  font-size: 0.95rem;
   overflow-wrap: anywhere;
   padding: .85rem .75rem
 }
@@ -270,7 +270,7 @@ h2, h3, h4 {
 
 .sell-details-table th, .sell-details-table td {
   border-bottom-color: var(--app-border);
-  font-size: clamp(0.76rem, 0.68rem + 0.3vw, 0.9rem);
+  font-size: 0.9rem;
   padding: .5rem .75rem;
   text-align: left
 }
