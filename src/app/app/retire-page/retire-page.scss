@@ -168,6 +168,8 @@ h2 {
 
 input,
 select {
+  -webkit-appearance: none;
+  appearance: none;
   background: var(--app-input-bg);
   border: 1px solid var(--app-border-strong);
   border-radius: 0.75rem;
