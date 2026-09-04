@@ -54,7 +54,7 @@
             </label>
 
             <label class="field tax-profile-field">
-              <span>Sparer-Pauschbetrag (€ / Jahr)</span>
+              <span>Sparer-Pauschbetrag (€ / Year)</span>
               <input
                 type="text"
                 min="0"
@@ -65,7 +65,7 @@
             </label>
 
             <label class="field tax-profile-field">
-              <span>Angenommener Basiszins (% / Jahr, für Prognosejahre)</span>
+              <span>Assumed Basiszins (% per annum, for forecast years)</span>
               <input
                 type="text"
                 min="0"
@@ -275,7 +275,7 @@
               </label>
 
               <label class="field">
-                <span>Steuerjahr</span>
+                <span>Tax year</span>
                 <select [value]="dialogTaxYear()" (change)="updateDialogTaxYear($event)">
                   @for (year of taxYearOptions(); track year) {
                     <option [value]="year">{{ formatYearOption(year) }}</option>
@@ -298,7 +298,7 @@
               </article>
 
               <article class="card dialog-summary-card">
-                <span>Steuerjahr</span>
+                <span>Tax year</span>
                 <strong>{{ dialogTaxYear() }}</strong>
               </article>
             </div>

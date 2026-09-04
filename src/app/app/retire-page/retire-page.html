@@ -637,6 +637,14 @@
           </fieldset>
           <fieldset class="fifo-month-shortcuts">
             <legend class="fifo-month-navigation-legend">Simulation month shortcuts</legend>
+            <button
+              class="fifo-nav-button"
+              type="button"
+              [disabled]="!earliestActivityDate()"
+              (click)="jumpSelectedFifoMonthToFirstActivity()"
+            >
+              Start
+            </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToToday()">
               Today
             </button>
@@ -650,13 +658,13 @@
               +6M
             </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(12)">
-              +1J
+              +1Y
             </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(36)">
-              +3J
+              +3Y
             </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthByOffset(60)">
-              +5J
+              +5Y
             </button>
             <button class="fifo-nav-button" type="button" (click)="jumpSelectedFifoMonthToYtd()">
               YTD

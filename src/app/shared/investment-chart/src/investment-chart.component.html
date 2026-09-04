@@ -18,15 +18,15 @@
     @for (option of timeRangeOptions; track option.value) {
       <div class="radio">
         <input
-          [id]="'time-range-' + option.value"
-          name="time-range"
+          [id]="instanceId + '-time-range-' + option.value"
+          [name]="instanceId + '-time-range'"
           type="radio"
           [value]="option.value"
           [checked]="selectedTimeRange() === option.value"
           [disabled]="isLoading"
           (change)="selectTimeRange(option.value)"
         />
-        <label [for]="'time-range-' + option.value">
+        <label [for]="instanceId + '-time-range-' + option.value">
           {{ option.label }}
         </label>
       </div>

@@ -370,11 +370,11 @@ function getCutoffDate(range: TimeRange): Date | null {
       return sub(now, { months: 3 });
     case '6M':
       return sub(now, { months: 6 });
-    case '1J':
+    case '1Y':
       return sub(now, { years: 1 });
-    case '3J':
+    case '3Y':
       return sub(now, { years: 3 });
-    case '5J':
+    case '5Y':
       return sub(now, { years: 5 });
     case 'YTD':
       return startOfYear(now);

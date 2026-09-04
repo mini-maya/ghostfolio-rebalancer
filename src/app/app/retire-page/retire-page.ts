@@ -355,6 +355,17 @@ export class RetirePage implements OnInit {
   protected readonly selectedFifoMonthValue = computed(() => {
     return format(this.selectedFifoMonthDate(), MONTH_INPUT_FORMAT);
   });
+  protected readonly earliestActivityDate = computed<Date | null>(() => {
+    const activityDates = this.activities()
+      .map(({ date }) => date)
+      .filter((date): date is Date => date instanceof Date);
+
+    if (!activityDates.length) {
+      return null;
+    }
+
+    return activityDates.reduce((earliest, current) => (current < earliest ? current : earliest));
+  });
   protected readonly selectedFifoMonthMinimum = computed(() => {
     return format(this.fifoMonthBounds().minimumMonth, MONTH_INPUT_FORMAT);
   });
@@ -869,6 +880,16 @@ export class RetirePage implements OnInit {
     this.stepSelectedFifoMonth(delta * 12);
   }
 
+  protected jumpSelectedFifoMonthToFirstActivity(): void {
+    const firstActivityDate = this.earliestActivityDate();
+
+    if (!firstActivityDate) {
+      return;
+    }
+
+    this.setSelectedFifoMonth(startOfMonth(firstActivityDate));
+  }
+
   protected jumpSelectedFifoMonthToToday(): void {
     this.setSelectedFifoMonth(startOfMonth(this.currentDate()));
   }
@@ -1107,7 +1128,7 @@ function createWithdrawalYearSummaryRow(
     isYearSummary: true,
     netWithdrawal: roundToTwo(periodNetWithdrawal),
     periodIndex: periodIndex + 1,
-    periodLabel: `Jahr ${start.getFullYear()}`,
+    periodLabel: `Year ${start.getFullYear()}`,
     tax: roundToTwo(periodTax),
     trackKey: `year-${periodIndex + 1}`,
     withdrawal: roundToTwo(periodWithdrawalAmount)
@@ -1138,7 +1159,7 @@ function createWithdrawalMonthSummaryRow(
     isYearSummary: true,
     netWithdrawal: roundToTwo(yearNetWithdrawal),
     periodIndex: firstPoint.periodIndex + 1,
-    periodLabel: `Jahr ${year}`,
+    periodLabel: `Year ${year}`,
     tax: roundToTwo(yearTax),
     trackKey: `year-${year}`,
     withdrawal: roundToTwo(periodWithdrawalAmount)

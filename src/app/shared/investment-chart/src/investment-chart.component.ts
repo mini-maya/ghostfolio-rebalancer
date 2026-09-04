@@ -79,6 +79,10 @@ interface AxisAssignment {
   templateUrl: './investment-chart.component.html'
 })
 export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
+  private static nextInstanceId = 0;
+
+  readonly instanceId = `gf-investment-chart-${GfInvestmentChartComponent.nextInstanceId++}`;
+
   @Input() benchmarkDataItems: InvestmentItem[] = [];
   @Input() benchmarkDataLabel = '';
   @Input() benchmarkDisplayType: 'bar' | 'line' = 'line';
@@ -105,9 +109,9 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
     { label: '1M', value: '1M' },
     { label: '3M', value: '3M' },
     { label: '6M', value: '6M' },
-    { label: '1J', value: '1J' },
-    { label: '3J', value: '3J' },
-    { label: '5J', value: '5J' },
+    { label: '1Y', value: '1Y' },
+    { label: '3Y', value: '3Y' },
+    { label: '5Y', value: '5Y' },
     { label: 'YTD', value: 'YTD' },
     { label: 'MAX', value: 'MAX' }
   ];
@@ -171,15 +175,15 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
         return this.timeRangeMode === 'leading'
           ? addMonths(anchorDate, 6)
           : sub(anchorDate, { months: 6 });
-      case '1J':
+      case '1Y':
         return this.timeRangeMode === 'leading'
           ? addYears(anchorDate, 1)
           : sub(anchorDate, { years: 1 });
-      case '3J':
+      case '3Y':
         return this.timeRangeMode === 'leading'
           ? addYears(anchorDate, 3)
           : sub(anchorDate, { years: 3 });
-      case '5J':
+      case '5Y':
         return this.timeRangeMode === 'leading'
           ? addYears(anchorDate, 5)
           : sub(anchorDate, { years: 5 });
