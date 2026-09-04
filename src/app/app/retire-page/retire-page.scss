@@ -66,9 +66,11 @@ h2 {
 }
 
 .projection-years-row {
-  align-items: end;
+  align-items: stretch;
+  align-self: start;
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .withdrawal-start-date-field {
@@ -84,7 +86,6 @@ h2 {
 .projection-years-end {
   color: var(--app-muted-text);
   font-weight: 600;
-  padding-bottom: 0.85rem;
   white-space: nowrap;
 }
 
@@ -451,10 +452,6 @@ select {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .projection-years-row {
-    flex-wrap: wrap;
-  }
-
   .withdrawal-start-date-field,
   .projection-years-field {
     flex-basis: min(420px, 100%);
@@ -482,15 +479,6 @@ select {
   .withdrawal-start-date-field {
     flex: 1 1 100%;
     min-width: 0;
-  }
-
-  .projection-years-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .projection-years-end {
-    padding-bottom: 0;
   }
 
   .retire-phase-sections,
