@@ -686,7 +686,9 @@ describe('RetirePage', () => {
 
     const rows = component.withdrawalScheduleRows();
 
-    expect(rows.every((row: any) => row.isYearSummary)).toBeTrue();
+    // Only fully completed (past) periods get the bold "summary" styling, so the table
+    // looks the same as the monthly schedule regardless of the selected payout frequency.
+    expect(rows.every((row: any) => !row.isYearSummary)).toBeTrue();
     expect(rows[0].dateLabel).toBe('June 2050');
     expect(rows[1].dateLabel).toBe('June 2051');
     expect(component.nextWithdrawalLabel()).toBe('June 2050');

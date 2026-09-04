@@ -277,7 +277,10 @@ export class RetirePage implements OnInit {
     }));
   });
   protected readonly chartGroupBy = computed<GroupBy>(() => {
-    return this.currentCalculationSnapshot().frequency === 'yearly' ? 'year' : 'month';
+    // The underlying projection data is always monthly (see the "Projection" section
+    // description), so the x-axis should always show year labels, regardless of the
+    // selected payout frequency.
+    return 'year';
   });
   /**
    * When the chart groups by year (see chartGroupBy), the tooltip title only shows the year,
@@ -1126,7 +1129,10 @@ function createWithdrawalYearSummaryRow(
     gain: roundToTwo(periodGain),
     isCompleted: current >= end,
     isCurrent: current >= start && current < end,
-    isYearSummary: true,
+    // Mirror the monthly schedule's styling: only fully completed periods get the bold
+    // "summary" look. Current/future periods render like regular rows so the table looks
+    // the same regardless of the selected payout frequency.
+    isYearSummary: current >= end,
     netWithdrawal: roundToTwo(periodNetWithdrawal),
     periodIndex: periodIndex + 1,
     periodLabel: `Year ${start.getFullYear()}`,
