@@ -8,6 +8,16 @@
   white-space: normal
 }
 
+.symbol-cell {
+  align-items: center;
+  display: flex;
+  gap: .5rem
+}
+
+.symbol-cell-text {
+  min-width: 0
+}
+
 .tax-year-group[open] .tax-year-summary-toggle {
   transform: rotate(90deg)
 }

@@ -189,25 +189,41 @@ h4 {
   transform: rotate(90deg);
 }
 
-.metrics-name-cell > span {
+.metrics-name-cell .symbol-cell-text > span {
   color: var(--app-muted-text);
 }
 
+.symbol-cell {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.symbol-cell-text {
+  min-width: 0;
+}
+
 .activity-type-buy {
-  color: var(--app-primary-text);
+  color: var(--app-secondary);
+  font-weight: 700;
+}
+
+.activity-type-buy-closed {
+  color: var(--app-muted-text);
   font-weight: 700;
 }
 
 .activity-type-sell {
-  color: var(--app-error-text);
+  color: var(--app-sell-accent);
   font-weight: 700;
 }
 
 .sell-details-row {
-  background: var(--app-surface-soft);
+  background: color-mix(in srgb, var(--app-secondary) 5%, var(--app-surface));
 }
 
 .sell-details-cell {
+  border-left: 0.15rem solid var(--app-secondary);
   padding: 0;
 }
 
@@ -232,7 +248,39 @@ h4 {
 }
 
 .buy-row-expandable:hover td {
-  background: var(--app-surface-soft);
+  background: color-mix(in srgb, var(--app-text) 8%, var(--app-surface));
+}
+
+.activity-row-buy.buy-row-expandable:hover td {
+  background: color-mix(in srgb, var(--app-secondary) 14%, var(--app-surface));
+}
+
+.activity-row-buy-closed.buy-row-expandable:hover td {
+  background: color-mix(in srgb, var(--app-muted-text) 14%, var(--app-surface));
+}
+
+.activity-row-buy td:first-child {
+  border-left: 0.12rem solid var(--app-secondary);
+}
+
+.activity-row-buy-closed td:first-child {
+  border-left: 0.12rem solid var(--app-muted-text);
+}
+
+.activity-row-sell td:first-child {
+  border-left: 0.12rem solid var(--app-sell-accent);
+}
+
+.activity-row-buy td {
+  background: color-mix(in srgb, var(--app-secondary) 8%, var(--app-surface));
+}
+
+.activity-row-buy-closed td {
+  background: color-mix(in srgb, var(--app-muted-text) 8%, var(--app-surface));
+}
+
+.activity-row-sell td {
+  background: color-mix(in srgb, var(--app-sell-accent) 8%, var(--app-surface));
 }
 
 .buy-row-expand-icon {
@@ -243,6 +291,139 @@ h4 {
 
 .buy-row-expand-icon-open {
   transform: rotate(90deg);
+}
+
+.month-group-header-row {
+  cursor: pointer;
+}
+
+.month-group-header-row:hover .month-group-header-cell {
+  background: color-mix(in srgb, var(--app-text) 8%, var(--app-surface));
+}
+
+.month-group-header-cell {
+  background: color-mix(in srgb, var(--app-text) 4%, var(--app-surface));
+  border-bottom-color: var(--app-border);
+  border-left: 0.2rem solid var(--app-border-strong);
+  font-weight: 700;
+  padding: 0.6rem 0.75rem;
+}
+
+.month-group-header-content {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.month-group-title {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 12rem;
+  padding-left: 1.25rem;
+}
+
+.month-group-expand-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  margin-right: 0.4rem;
+  text-align: center;
+  transition: transform 120ms ease;
+  width: 0.75rem;
+}
+
+.month-group-expand-icon-open {
+  transform: rotate(90deg);
+}
+
+.month-group-label {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.month-group-summary {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.75rem;
+}
+
+.month-group-summary-item {
+  color: var(--app-muted-text);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.month-group-summary-item + .month-group-summary-item::before {
+  content: '·';
+  margin-right: 0.75rem;
+}
+
+.year-group-header-row {
+  cursor: pointer;
+}
+
+.year-group-header-row:hover .year-group-header-cell {
+  background: color-mix(in srgb, var(--app-text) 15%, var(--app-surface));
+}
+
+.year-group-header-cell {
+  background: color-mix(in srgb, var(--app-text) 10%, var(--app-surface));
+  border-bottom-color: var(--app-border-strong);
+  border-left: 0.2rem solid var(--app-primary);
+  font-weight: 700;
+  padding: 0.75rem;
+}
+
+.year-group-header-content {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.year-group-title {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 7rem;
+}
+
+.year-group-expand-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  margin-right: 0.4rem;
+  text-align: center;
+  transition: transform 120ms ease;
+  width: 0.75rem;
+}
+
+.year-group-expand-icon-open {
+  transform: rotate(90deg);
+}
+
+.year-group-label {
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.year-group-summary {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.75rem;
+}
+
+.year-group-summary-item {
+  color: var(--app-muted-text);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.year-group-summary-item + .year-group-summary-item::before {
+  content: '·';
+  margin-right: 0.75rem;
 }
 
 @media (max-width: 1180px) {

@@ -173,8 +173,13 @@
                       <strong>{{ accountLabel(row.accountId) }}</strong>
                     </td>
                     <td class="wrap-cell">
-                      <strong>{{ row.symbolId }}</strong><br />
-                      <span class="secondary-value">{{ symbolLabel(row.symbolId) }}</span>
+                      <span class="symbol-cell">
+                        <app-etf-provider-logo [name]="symbolLabel(row.symbolId)" />
+                        <span class="symbol-cell-text">
+                          <strong>{{ row.symbolId }}</strong><br />
+                          <span class="secondary-value">{{ symbolLabel(row.symbolId) }}</span>
+                        </span>
+                      </span>
                     </td>
                     <td class="numeric">
                       {{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }}

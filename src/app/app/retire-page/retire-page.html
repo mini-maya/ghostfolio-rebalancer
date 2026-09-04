@@ -450,8 +450,13 @@
             @for (row of sortedNextWithdrawalSellPlanRows(); track row.symbol) {
               <tr>
                 <td>
-                  <strong>{{ row.symbol }}</strong><br />
-                  <span class="name-secondary">{{ row.name }}</span>
+                  <span class="symbol-cell">
+                    <app-etf-provider-logo [name]="row.name" />
+                    <span class="symbol-cell-text">
+                      <strong>{{ row.symbol }}</strong><br />
+                      <span class="name-secondary">{{ row.name }}</span>
+                    </span>
+                  </span>
                 </td>
                 <td class="numeric">
                   {{ row.currentValue | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(row.currency) }}
@@ -525,6 +530,7 @@
         <table class="withdrawal-schedule-table">
           <thead>
           <tr>
+            <th class="row-status-header"></th>
             <th>Period</th>
             <th>Withdrawal date</th>
             <th class="numeric">Withdrawal</th>
@@ -536,15 +542,15 @@
           </thead>
           <tbody>
             @for (row of withdrawalScheduleRows(); track row.trackKey) {
-              <tr [class.is-completed]="row.isCompleted" [class.is-year-summary]="row.isYearSummary">
-                <td>
+              <tr [class.is-completed]="row.isCompleted" [class.is-current]="row.isCurrent" [class.is-year-summary]="row.isYearSummary">
+                <td class="row-status-cell">
                   @if (row.isCurrent) {
                     <span class="row-status" aria-hidden="true">➡️</span>
                   } @else if (row.isCompleted) {
                     <span class="row-status" aria-hidden="true">✅</span>
                   }
-                  <span>{{ row.periodLabel }}</span>
                 </td>
+                <td>{{ row.periodLabel }}</td>
                 <td>{{ row.dateLabel }}</td>
                 <td class="numeric">
                   {{ row.withdrawal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(currency()) }}

@@ -11,6 +11,18 @@
         Ghostfolio portfolio.
       </p>
     } @else {
+      @if (allocationChartItems().length) {
+        <div class="allocation-chart-wrapper">
+          <app-allocation-donut-chart
+            [colorScheme]="allocationChartColorScheme()"
+            [currency]="allocationChartCurrency()"
+            [items]="allocationChartItems()"
+            totalLabel="Total"
+            [totalValue]="portfolioTotal()"
+          />
+        </div>
+      }
+
       <div class="table-wrapper">
         <table>
           <thead>
@@ -99,10 +111,19 @@
           </thead>
           <tbody>
             @for (row of rows(); track row.symbol) {
-              <tr>
+              <tr
+                class="row-selectable"
+                [class.row-selected]="isRowSelected(row.symbol)"
+                (click)="toggleRowSelection(row.symbol)"
+              >
                 <td class="col-sticky-1">
-                  <strong>{{ row.symbol }}</strong><br />
-                  <span class="name-secondary">{{ row.name }}</span>
+                  <span class="symbol-cell">
+                    <app-etf-provider-logo [name]="row.name" />
+                    <span class="symbol-cell-text">
+                      <strong>{{ row.symbol }}</strong><br />
+                      <span class="name-secondary">{{ row.name }}</span>
+                    </span>
+                  </span>
                 </td>
                 <td class="numeric"><span class="table-inline-highlight">{{ row.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span></td>
                 <td class="numeric">{{ row.marketPrice | localeNumber: {minFractionDigits: 3, maxFractionDigits: 3} }}{{ currencySymbol(row.currency) }}</td>
@@ -126,6 +147,38 @@
             }
           </tbody>
         </table>
+      </div>
+
+      <div class="breakdown-charts">
+        <div class="breakdown-chart">
+          <h3>Holdings{{ selectedSymbol() ? ' – ' + activeBreakdownLabel() : '' }}</h3>
+          @if (activeHoldingsBreakdownItems().length) {
+            <app-allocation-donut-chart
+              [colorScheme]="allocationChartColorScheme()"
+              [currency]="allocationChartCurrency()"
+              [items]="activeHoldingsBreakdownItems()"
+              [totalLabel]="activeBreakdownLabel()"
+              [totalValue]="activeBreakdownTotalValue()"
+            />
+          } @else {
+            <p class="empty-state">No holdings breakdown available.</p>
+          }
+        </div>
+
+        <div class="breakdown-chart">
+          <h3>Sectors{{ selectedSymbol() ? ' – ' + activeBreakdownLabel() : '' }}</h3>
+          @if (activeSectorsBreakdownItems().length) {
+            <app-allocation-donut-chart
+              [colorScheme]="allocationChartColorScheme()"
+              [currency]="allocationChartCurrency()"
+              [items]="activeSectorsBreakdownItems()"
+              [totalLabel]="activeBreakdownLabel()"
+              [totalValue]="activeBreakdownTotalValue()"
+            />
+          } @else {
+            <p class="empty-state">No sector breakdown available.</p>
+          }
+        </div>
       </div>
     }
 
@@ -267,8 +320,13 @@
               @for (row of allocationDialogRows(); track row.symbol) {
                 <tr>
                   <td>
-                    <strong>{{ row.symbol }}</strong><br />
-                    <span class="name-secondary">{{ row.name }}</span>
+                    <span class="symbol-cell">
+                      <app-etf-provider-logo [name]="row.name" />
+                      <span class="symbol-cell-text">
+                        <strong>{{ row.symbol }}</strong><br />
+                        <span class="name-secondary">{{ row.name }}</span>
+                      </span>
+                    </span>
                   </td>
                   <td class="numeric">{{ row.currentAllocationPercentage | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}%</td>
                   <td class="numeric">

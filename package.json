@@ -1,6 +1,6 @@
 {
   "name": "ghostfolio-rebalancer",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
@@ -30,6 +30,7 @@
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-plugin-annotation": "^3.1.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "date-fns": "^4.4.0",
     "express": "^5.2.1",
     "ngx-skeleton-loader": "^13.0.0",

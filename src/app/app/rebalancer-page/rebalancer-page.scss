@@ -23,6 +23,50 @@ h3 {
   margin: 0;
 }
 
+.allocation-chart-wrapper {
+  margin: 0 auto 1.5rem;
+  max-width: 480px;
+}
+
+.breakdown-charts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.breakdown-chart {
+  flex: 1 1 320px;
+  max-width: 420px;
+}
+
+.breakdown-chart h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.row-selectable {
+  cursor: pointer;
+}
+
+.row-selectable:hover {
+  background: var(--app-primary-soft);
+}
+
+.row-selectable:hover .col-sticky-1 {
+  background: var(--app-primary-soft);
+}
+
+.row-selectable.row-selected {
+  background: var(--app-primary-soft);
+}
+
+.row-selectable.row-selected .col-sticky-1 {
+  background: var(--app-primary-soft);
+}
+
 .quick-actions {
   align-items: end;
   display: grid;
@@ -183,6 +227,16 @@ textarea {
   position: sticky;
   white-space: normal;
   z-index: 1;
+}
+
+.symbol-cell {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.symbol-cell-text {
+  min-width: 0;
 }
 
 thead .col-sticky-1 {

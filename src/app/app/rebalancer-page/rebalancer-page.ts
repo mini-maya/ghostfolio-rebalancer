@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 
 import { AuthService } from '../auth/auth.service';
@@ -7,6 +7,10 @@ import { RuntimeConfigService } from '../runtime-config';
 import { parseAllocationsText, type AllocationState } from '../services/allocations';
 import type { Holding } from '../services/ghostfolio-api';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
+import { AllocationDonutChartComponent } from '../../shared/allocation-donut-chart/allocation-donut-chart.component';
+import { EtfProviderLogo } from '../../shared/etf-provider-logo/etf-provider-logo';
+import type { AllocationChartItem } from '../../shared/allocation-donut-chart/allocation-donut-chart.types';
+import type { ColorScheme } from '../../shared/investment-chart/src/investment-chart.types';
 
 interface AllocationDialogRow {
   currentAllocationPercentage: number;
@@ -49,17 +53,21 @@ type SortDirection = 'asc' | 'desc';
 
 @Component({
   selector: 'app-rebalancer-page',
-  imports: [CommonModule, LocaleNumberPipe],
+  imports: [AllocationDonutChartComponent, CommonModule, EtfProviderLogo, LocaleNumberPipe],
   templateUrl: './rebalancer-page.html',
   styleUrl: './rebalancer-page.scss'
 })
 export class RebalancerPage {
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
   private readonly portfolioDataStore = inject(PortfolioDataStore);
   private readonly runtimeConfigService = inject(RuntimeConfigService);
   private readonly runtimeConfig = this.runtimeConfigService.config;
   protected readonly allocationsText = signal(this.getInitialAllocationsText());
+  protected readonly allocationChartColorScheme = signal<ColorScheme>(
+    readChartColorScheme(this.document)
+  );
   protected readonly errorMessage = this.portfolioDataStore.errorMessage;
   protected readonly holdings = this.portfolioDataStore.holdings;
   protected readonly infoMessage = this.portfolioDataStore.infoMessage;
@@ -76,7 +84,18 @@ export class RebalancerPage {
   private rebalancerSettingsSaveTimeout: number | null = null;
 
   constructor() {
+    const themeObserver = new MutationObserver(() => {
+      this.allocationChartColorScheme.set(readChartColorScheme(this.document));
+    });
+
+    themeObserver.observe(this.document.documentElement, {
+      attributeFilter: ['data-theme'],
+      attributes: true
+    });
+
     this.destroyRef.onDestroy(() => {
+      themeObserver.disconnect();
+
       if (this.allocationsSaveTimeout !== null) {
         window.clearTimeout(this.allocationsSaveTimeout);
       }
@@ -127,11 +146,73 @@ export class RebalancerPage {
   protected readonly allocationDialogTotalIsValid = computed(() => {
     return Math.abs(this.allocationDialogTotal() - 100) <= 0.001;
   });
+  protected readonly allocationChartCurrency = computed(() => {
+    return this.holdings()[0]?.currency ?? '???';
+  });
+  protected readonly allocationChartItems = computed<AllocationChartItem[]>(() => {
+    const currentTotal = this.portfolioTotal();
+
+    return this.holdings()
+      .filter((holding) => holding.valueInBaseCurrency > 0)
+      .map((holding) => ({
+        currency: holding.currency,
+        name: holding.name,
+        percentage:
+          currentTotal > 0
+            ? roundToTwo((holding.valueInBaseCurrency / currentTotal) * 100)
+            : 0,
+        symbol: holding.symbol,
+        value: roundToTwo(holding.valueInBaseCurrency)
+      }))
+      .sort((left, right) => right.value - left.value);
+  });
+
+  protected readonly holdingsBySymbol = computed(() => {
+    return new Map(this.holdings().map((holding) => [holding.symbol, holding] as const));
+  });
+  protected readonly selectedSymbol = signal<string | null>(null);
+  protected readonly selectedHolding = computed(() => {
+    const symbol = this.selectedSymbol();
+
+    return symbol ? this.holdingsBySymbol().get(symbol) ?? null : null;
+  });
+  protected readonly portfolioHoldingsBreakdownItems = computed<AllocationChartItem[]>(() => {
+    return this.buildHoldingsBreakdownItems(this.holdings());
+  });
+  protected readonly portfolioSectorsBreakdownItems = computed<AllocationChartItem[]>(() => {
+    return this.buildSectorsBreakdownItems(this.holdings());
+  });
+  protected readonly selectedHoldingsBreakdownItems = computed<AllocationChartItem[]>(() => {
+    const holding = this.selectedHolding();
+
+    return holding ? this.buildHoldingsBreakdownItems([holding]) : [];
+  });
+  protected readonly selectedSectorsBreakdownItems = computed<AllocationChartItem[]>(() => {
+    const holding = this.selectedHolding();
+
+    return holding ? this.buildSectorsBreakdownItems([holding]) : [];
+  });
+  protected readonly activeHoldingsBreakdownItems = computed<AllocationChartItem[]>(() => {
+    return this.selectedSymbol()
+      ? this.selectedHoldingsBreakdownItems()
+      : this.portfolioHoldingsBreakdownItems();
+  });
+  protected readonly activeSectorsBreakdownItems = computed<AllocationChartItem[]>(() => {
+    return this.selectedSymbol()
+      ? this.selectedSectorsBreakdownItems()
+      : this.portfolioSectorsBreakdownItems();
+  });
+  protected readonly activeBreakdownTotalValue = computed(() => {
+    const holding = this.selectedHolding();
+
+    return holding ? roundToTwo(holding.valueInBaseCurrency) : this.portfolioTotal();
+  });
+  protected readonly activeBreakdownLabel = computed(() => {
+    return this.selectedHolding()?.name ?? 'Portfolio';
+  });
 
   protected readonly rows = computed<RebalancingRow[]>(() => {
-    const holdingsBySymbol = new Map(
-      this.holdings().map((holding) => [holding.symbol, holding] as const)
-    );
+    const holdingsBySymbol = this.holdingsBySymbol();
     const currentTotal = this.portfolioTotal();
     const monthlyRate = this.savingsRate();
     const nextTotal = currentTotal + monthlyRate;
@@ -294,6 +375,14 @@ export class RebalancerPage {
     return this.sortDirection() === 'asc' ? '▲' : '▼';
   }
 
+  protected toggleRowSelection(symbol: string) {
+    this.selectedSymbol.update((current) => (current === symbol ? null : symbol));
+  }
+
+  protected isRowSelected(symbol: string): boolean {
+    return this.selectedSymbol() === symbol;
+  }
+
   protected currencySymbol(currency: string): string {
     const symbols: Record<string, string> = {
       CHF: 'CHF',
@@ -378,6 +467,106 @@ export class RebalancerPage {
     }
   }
 
+  private buildHoldingsBreakdownItems(holdings: Holding[]): AllocationChartItem[] {
+    const entries: { name: string; value: number }[] = [];
+    let otherValue = 0;
+
+    for (const holding of holdings) {
+      const holdingsBreakdown = holding.holdingsBreakdown ?? [];
+
+      if (holdingsBreakdown.length) {
+        const breakdownTotal = holdingsBreakdown.reduce(
+          (sum, entry) => sum + entry.valueInBaseCurrency,
+          0
+        );
+
+        for (const entry of holdingsBreakdown) {
+          entries.push({ name: entry.name, value: entry.valueInBaseCurrency });
+        }
+
+        otherValue += Math.max(holding.valueInBaseCurrency - breakdownTotal, 0);
+      } else {
+        otherValue += holding.valueInBaseCurrency;
+      }
+    }
+
+    return this.buildBreakdownChartItems(entries, otherValue);
+  }
+
+  private buildSectorsBreakdownItems(holdings: Holding[]): AllocationChartItem[] {
+    const entries: { name: string; value: number }[] = [];
+    let otherValue = 0;
+
+    for (const holding of holdings) {
+      const sectorsBreakdown = holding.sectorsBreakdown ?? [];
+
+      if (sectorsBreakdown.length) {
+        const weightTotal = sectorsBreakdown.reduce((sum, entry) => sum + entry.weight, 0);
+
+        for (const entry of sectorsBreakdown) {
+          entries.push({ name: entry.name, value: entry.weight * holding.valueInBaseCurrency });
+        }
+
+        otherValue += Math.max(1 - weightTotal, 0) * holding.valueInBaseCurrency;
+      } else {
+        otherValue += holding.valueInBaseCurrency;
+      }
+    }
+
+    return this.buildBreakdownChartItems(entries, otherValue);
+  }
+
+  private buildBreakdownChartItems(
+    entries: { name: string; value: number }[],
+    otherValue: number
+  ): AllocationChartItem[] {
+    const currency = this.allocationChartCurrency();
+    const grouped = new Map<string, number>();
+
+    for (const entry of entries) {
+      grouped.set(entry.name, (grouped.get(entry.name) ?? 0) + entry.value);
+    }
+
+    const namedTotal = [...grouped.values()].reduce((sum, value) => sum + value, 0);
+    const totalValue = namedTotal + Math.max(otherValue, 0);
+
+    if (totalValue <= 0) {
+      return [];
+    }
+
+    const items: AllocationChartItem[] = [...grouped.entries()]
+      .map(([name, value]) => ({
+        currency,
+        name,
+        percentage: roundToTwo((value / totalValue) * 100),
+        symbol: name,
+        value: roundToTwo(value)
+      }))
+      .filter((item) => item.percentage > MIN_DISPLAY_PERCENT)
+      .sort((left, right) => right.value - left.value);
+
+    const otherPercentage = (Math.max(otherValue, 0) / totalValue) * 100;
+    // Only ever show "Other" if it doesn't dominate the ring: omit it
+    // entirely when it exceeds the cap and named categories exist (if
+    // there are no named categories, showing nothing would leave an empty
+    // chart, so it's kept in that case).
+    const shouldShowOther =
+      otherPercentage > OTHER_EPSILON_PERCENT &&
+      (namedTotal <= 0 || otherPercentage <= OTHER_MAX_PERCENT);
+
+    if (shouldShowOther) {
+      items.push({
+        currency,
+        name: OTHER_LABEL,
+        percentage: roundToTwo(otherPercentage),
+        symbol: OTHER_LABEL,
+        value: roundToTwo(otherValue)
+      });
+    }
+
+    return items;
+  }
+
   private async saveRebalancerSettings() {
     try {
       await this.authService.updateAccountRebalancerSettings({
@@ -394,6 +583,15 @@ export class RebalancerPage {
 function readInputValue(event: Event): string {
   return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
 }
+
+function readChartColorScheme(document: Document): ColorScheme {
+  return document.documentElement.dataset["theme"] === 'dark' ? 'DARK' : 'LIGHT';
+}
+
+const OTHER_LABEL = 'Other';
+const OTHER_EPSILON_PERCENT = 0.5;
+const OTHER_MAX_PERCENT = 33;
+const MIN_DISPLAY_PERCENT = 0.05;
 
 function roundToTwo(value: number): number {
   return Math.round(value * 100) / 100;

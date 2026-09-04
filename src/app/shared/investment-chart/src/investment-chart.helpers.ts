@@ -143,7 +143,7 @@ function getBackgroundColor(colorScheme: ColorScheme) {
   );
 }
 
-function getTextColor(colorScheme: ColorScheme) {
+export function getTextColor(colorScheme: ColorScheme) {
   return getCssVariable(
     colorScheme === 'DARK' ? '--light-primary-text' : '--dark-primary-text',
     colorScheme === 'DARK' ? '#f8fafc' : '#111827'
@@ -191,13 +191,45 @@ export function getTimeAxisOptions({
   borderWidth = 1,
   colorScheme,
   display = true,
+  groupBy,
   locale = getLocale()
 }: {
   borderWidth?: number;
   colorScheme: ColorScheme;
   display?: boolean;
+  groupBy?: GroupBy;
   locale?: string;
 }): ScaleOptions<'time'> {
+  const dateFnsLocale = getDateFnsLocale(locale);
+
+  if (groupBy === 'year') {
+    return {
+      border: {
+        color: getChartBorderColor(colorScheme),
+        width: borderWidth
+      },
+      display,
+      grid: {
+        display: false
+      },
+      ticks: {
+        autoSkip: true,
+        callback: (value) => format(new Date(value as number), 'yyyy', { locale: dateFnsLocale }),
+        maxRotation: 0,
+        maxTicksLimit: 12,
+        minRotation: 0
+      },
+      time: {
+        displayFormats: {
+          year: 'yyyy'
+        },
+        tooltipFormat: getDateFormatString(locale),
+        unit: 'year'
+      },
+      type: 'time'
+    };
+  }
+
   return {
     border: {
       color: getChartBorderColor(colorScheme),
@@ -213,10 +245,10 @@ export function getTimeAxisOptions({
         const isJanuary = date.getMonth() === 0;
 
         if (isJanuary) {
-          return format(date, 'MMM yyyy', { locale: getDateFnsLocale(locale) });
+          return format(date, 'MMM yyyy', { locale: dateFnsLocale });
         }
 
-        return format(date, 'MMM', { locale: getDateFnsLocale(locale) });
+        return format(date, 'MMM', { locale: dateFnsLocale });
       }
     },
     time: {
@@ -295,13 +327,33 @@ export function getTooltipOptions<T extends ChartType>({
           }
         : {})
     } as any,
+    bodyFont: {
+      size: 12
+    },
+    bodySpacing: 4,
+    boxPadding: 4,
     caretSize: 0,
-    cornerRadius: 2,
+    cornerRadius: 6,
     footerColor: getTextColor(colorScheme),
+    footerFont: {
+      size: 11,
+      weight: 'normal'
+    },
     itemSort: (a: TooltipItem<T>, b: TooltipItem<T>) => {
       return b.datasetIndex - a.datasetIndex;
     },
+    padding: {
+      bottom: 8,
+      left: 12,
+      right: 12,
+      top: 8
+    },
     titleColor: getTextColor(colorScheme),
+    titleFont: {
+      size: 13,
+      weight: '600'
+    },
+    titleMarginBottom: 6,
     usePointStyle: true
   } as unknown as Partial<TooltipOptions<T>>;
 }
@@ -398,6 +450,27 @@ export function getZeroLineAnnotation(
     scaleID,
     type: 'line',
     value: 0
+  };
+}
+
+export function getTodayLineAnnotation(colorScheme: ColorScheme): AnnotationOptions<'line'> {
+  return {
+    borderColor: getChartBorderColor(colorScheme),
+    borderDash: [4, 4],
+    borderWidth: 1,
+    label: {
+      backgroundColor: 'transparent',
+      color: getTextColor(colorScheme),
+      content: 'Today',
+      display: true,
+      font: { size: 10, weight: 'normal' },
+      position: 'end',
+      rotation: 90,
+      yAdjust: 8
+    },
+    scaleID: 'x',
+    type: 'line',
+    value: Date.now()
   };
 }
 

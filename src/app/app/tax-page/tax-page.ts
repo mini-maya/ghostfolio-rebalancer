@@ -6,6 +6,7 @@ import { AuthService } from '../auth/auth.service';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
 import { FifoOverviewTable } from '../../shared/fifo-overview-table/fifo-overview-table';
+import { EtfProviderLogo } from '../../shared/etf-provider-logo/etf-provider-logo';
 import {
   calculatePotentialTax,
   calculateTaxForSale,
@@ -48,7 +49,7 @@ type DialogMode = 'create' | 'edit';
 
 @Component({
   selector: 'app-tax-page',
-  imports: [CommonModule, LocaleNumberPipe, FifoOverviewTable],
+  imports: [CommonModule, EtfProviderLogo, LocaleNumberPipe, FifoOverviewTable],
   templateUrl: './tax-page.html',
   styleUrl: './tax-page.scss'
 })

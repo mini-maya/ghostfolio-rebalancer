@@ -3,8 +3,13 @@
 } @else {
   <ng-template #summaryRow let-row>
     <span class="metrics-cell metrics-name-cell">
-      <strong>{{ row.symbol }}</strong><br />
-      <span>{{ row.name }}</span>
+      <span class="symbol-cell">
+        <app-etf-provider-logo [name]="row.name" />
+        <span class="symbol-cell-text">
+          <strong>{{ row.symbol }}</strong><br />
+          <span>{{ row.name }}</span>
+        </span>
+      </span>
     </span>
 
     <span class="metrics-cell numeric">
@@ -144,31 +149,95 @@
 
           <div class="table-wrapper">
             <table>
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th class="numeric">Quantity /<br />Sold Quantity</th>
-                  <th class="numeric">Unit price</th>
-                  <th class="numeric">Total value</th>
-                  <th class="numeric">Gain %</th>
-                  <th class="numeric">VAP (remain.)<br />taxable VAP</th>
-                  <th class="numeric">Open tax</th>
-                </tr>
-              </thead>
               <tbody>
-                @for (activity of row.activities; track $index) {
+                @for (yearGroup of row.yearGroups; track yearGroup.key) {
                   <tr
-                    [class.buy-row-expandable]="hasSellDetails(activity)"
-                    [class.buy-row-expanded]="hasSellDetails(activity) && isActivityExpanded(row, $index)"
-                    (click)="hasSellDetails(activity) && toggleActivity(row, $index)"
+                    class="year-group-header-row"
+                    (click)="toggleYearGroup(row.trackKey + '::' + yearGroup.key)"
                   >
-                    <td
-                      [class.activity-type-buy]="activity.type === 'BUY'"
-                      [class.activity-type-sell]="activity.type === 'SELL'"
-                    >
-                      @if (hasSellDetails(activity)) {
-                        <span class="buy-row-expand-icon" [class.buy-row-expand-icon-open]="isActivityExpanded(row, $index)">▸</span>
+                    <td colspan="8" class="year-group-header-cell">
+                      <div class="year-group-header-content">
+                        <span class="year-group-title">
+                          <span class="year-group-expand-icon" [class.year-group-expand-icon-open]="isYearGroupExpanded(row.trackKey + '::' + yearGroup.key)">▸</span>
+                          <strong class="year-group-label">{{ yearGroup.label }}</strong>
+                        </span>
+                        <span class="year-group-summary">
+                          <span class="year-group-summary-item">
+                            {{ yearGroup.buyCount + yearGroup.sellCount }} {{ yearGroup.buyCount + yearGroup.sellCount === 1 ? 'activity' : 'activities' }}
+                          </span>
+                          @if (yearGroup.buyCount > 0) {
+                            <span class="year-group-summary-item">
+                              {{ yearGroup.buyTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }} bought
+                            </span>
+                          }
+                          @if (yearGroup.sellCount > 0) {
+                            <span class="year-group-summary-item">
+                              {{ yearGroup.sellTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }} sold
+                            </span>
+                          }
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  @if (isYearGroupExpanded(row.trackKey + '::' + yearGroup.key)) {
+                    <tr class="column-header-row">
+                      <th>Type</th>
+                      <th>Date</th>
+                      <th class="numeric">Quantity /<br />Sold Quantity</th>
+                      <th class="numeric">Unit price</th>
+                      <th class="numeric">Total value</th>
+                      <th class="numeric">Gain %</th>
+                      <th class="numeric">VAP (remain.)<br />taxable VAP</th>
+                      <th class="numeric">Open tax</th>
+                    </tr>
+                    @for (monthGroup of yearGroup.monthGroups; track monthGroup.key) {
+                      <tr
+                        class="month-group-header-row"
+                        (click)="toggleMonthGroup(row.trackKey + '::' + monthGroup.key)"
+                      >
+                        <td colspan="8" class="month-group-header-cell">
+                          <div class="month-group-header-content">
+                            <span class="month-group-title">
+                              <span class="month-group-expand-icon" [class.month-group-expand-icon-open]="isMonthGroupExpanded(row.trackKey + '::' + monthGroup.key)">▸</span>
+                              <strong class="month-group-label">{{ monthGroup.label }}</strong>
+                            </span>
+                            <span class="month-group-summary">
+                              <span class="month-group-summary-item">
+                                {{ monthGroup.buyCount + monthGroup.sellCount }} {{ monthGroup.buyCount + monthGroup.sellCount === 1 ? 'activity' : 'activities' }}
+                              </span>
+                              @if (monthGroup.buyCount > 0) {
+                                <span class="month-group-summary-item">
+                                  {{ monthGroup.buyTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }} bought
+                                </span>
+                              }
+                              @if (monthGroup.sellCount > 0) {
+                                <span class="month-group-summary-item">
+                                  {{ monthGroup.sellTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol() }} sold
+                                </span>
+                              }
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      @if (isMonthGroupExpanded(row.trackKey + '::' + monthGroup.key)) {
+                        @for (entry of monthGroup.entries; track entry.index) {
+                          @let activity = entry.activity;
+                      <tr
+                        [class.buy-row-expandable]="hasSellDetails(activity)"
+                        [class.buy-row-expanded]="hasSellDetails(activity) && isActivityExpanded(row, entry.index)"
+                        [class.activity-row-buy]="activity.type === 'BUY' && !isFullySoldBuy(activity)"
+                        [class.activity-row-buy-closed]="isFullySoldBuy(activity)"
+                        [class.activity-row-sell]="activity.type === 'SELL'"
+                        (click)="hasSellDetails(activity) && toggleActivity(row, entry.index)"
+                      >
+                        <td
+                          [class.activity-type-buy]="activity.type === 'BUY' && !isFullySoldBuy(activity)"
+                          [class.activity-type-buy-closed]="isFullySoldBuy(activity)"
+                          [class.activity-type-sell]="activity.type === 'SELL'"
+                        >
+                          @if (hasSellDetails(activity)) {
+
+                        <span class="buy-row-expand-icon" [class.buy-row-expand-icon-open]="isActivityExpanded(row, entry.index)">▸</span>
                       }
                       {{ activity.type }}
                     </td>
@@ -239,7 +308,7 @@
                     </td>
                   </tr>
 
-                  @if (hasSellDetails(activity) && isActivityExpanded(row, $index)) {
+                  @if (hasSellDetails(activity) && isActivityExpanded(row, entry.index)) {
                     <tr class="sell-details-row">
                       <td colspan="8" class="sell-details-cell">
                         <table class="sell-details-table">
@@ -310,6 +379,10 @@
                         </table>
                       </td>
                     </tr>
+                  }
+                }
+                  }
+                    }
                   }
                 }
               </tbody>

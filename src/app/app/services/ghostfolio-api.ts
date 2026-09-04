@@ -46,11 +46,24 @@ export interface PortfolioPerformanceChartItem {
   value: number;
 }
 
+interface RemoteHoldingBreakdownEntry {
+  allocationInPercentage?: number;
+  name?: string;
+  valueInBaseCurrency?: number;
+}
+
+interface RemoteSectorBreakdownEntry {
+  name?: string;
+  weight?: number;
+}
+
 interface RemoteHolding {
   allocationInPercentage?: number;
   assetProfile?: {
     currency?: string;
+    holdings?: RemoteHoldingBreakdownEntry[];
     name?: string;
+    sectors?: RemoteSectorBreakdownEntry[];
     symbol?: string;
   };
   marketPrice?: number;
@@ -84,12 +97,25 @@ interface RemoteActivity extends Record<string, unknown> {
   valueInBaseCurrency?: number;
 }
 
+export interface HoldingBreakdownEntry {
+  allocationInPercentage: number;
+  name: string;
+  valueInBaseCurrency: number;
+}
+
+export interface SectorBreakdownEntry {
+  name: string;
+  weight: number;
+}
+
 export interface Holding {
   allocationInPercentage: number;
   currency: string;
+  holdingsBreakdown?: HoldingBreakdownEntry[];
   marketPrice: number;
   name: string;
   quantity: number;
+  sectorsBreakdown?: SectorBreakdownEntry[];
   symbol: string;
   valueInBaseCurrency: number;
 }
@@ -127,17 +153,31 @@ export class GhostfolioApi {
               return {
                 allocationInPercentage: holding.allocationInPercentage ?? 0,
                 currency: holding.assetProfile?.currency ?? '???',
+                holdingsBreakdown: (holding.assetProfile?.holdings ?? [])
+                  .filter((entry) => Boolean(entry.name))
+                  .map((entry) => ({
+                    allocationInPercentage: entry.allocationInPercentage ?? 0,
+                    name: entry.name as string,
+                    valueInBaseCurrency: entry.valueInBaseCurrency ?? 0
+                  })),
                 marketPrice:
                   holding.marketPrice ??
                   getFallbackMarketPrice({
                     quantity: holding.quantity,
                     valueInBaseCurrency: holding.valueInBaseCurrency
                   }),
-                name:
+                name: truncateEtfName(
                   holding.assetProfile?.name ??
-                  holding.assetProfile?.symbol ??
-                  'Unknown',
+                    holding.assetProfile?.symbol ??
+                    'Unknown'
+                ),
                 quantity: holding.quantity ?? 0,
+                sectorsBreakdown: (holding.assetProfile?.sectors ?? [])
+                  .filter((entry) => Boolean(entry.name))
+                  .map((entry) => ({
+                    name: entry.name as string,
+                    weight: entry.weight ?? 0
+                  })),
                 symbol: holding.assetProfile?.symbol ?? '',
                 valueInBaseCurrency: holding.valueInBaseCurrency ?? 0
               };
@@ -158,7 +198,7 @@ export class GhostfolioApi {
             getStringValue(activity.assetProfile?.symbol);
           const assetClass = getStringValue(activity.assetProfile?.assetClass) || 'UNKNOWN';
           const assetSubClass = getStringValue(activity.assetProfile?.assetSubClass) || 'UNKNOWN';
-          const name = getStringValue(activity.assetProfile?.name) || symbol;
+          const name = truncateEtfName(getStringValue(activity.assetProfile?.name) || symbol);
           const accountId = getStringValue(activity.account?.id);
           const accountName = getStringValue(activity.account?.name);
 
@@ -222,6 +262,16 @@ export class GhostfolioApi {
 
     return activities ?? [];
   }
+}
+
+function truncateEtfName(name: string): string {
+  const ucitsIndex = name.indexOf('UCITS');
+
+  if (ucitsIndex === -1) {
+    return name;
+  }
+
+  return name.slice(0, ucitsIndex).replace(/[\s,\-–]+$/, '').trim();
 }
 
 function getFallbackMarketPrice({

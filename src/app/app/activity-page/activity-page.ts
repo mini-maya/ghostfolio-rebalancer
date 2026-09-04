@@ -3,6 +3,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { startOfYear, sub } from 'date-fns';
 
 import { GfInvestmentChartComponent } from '../../shared/investment-chart/public-api';
+import { EtfProviderLogo } from '../../shared/etf-provider-logo/etf-provider-logo';
 import type { InvestmentItem, LineChartItem } from '../../shared/investment-chart/src/investment-chart.interfaces';
 import type { ColorScheme, TimeRange } from '../../shared/investment-chart/src/investment-chart.types';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
@@ -46,11 +47,34 @@ interface ActivitySymbolMetrics {
   realizedPercentage: number;
 }
 
+interface ActivityMonthGroup {
+  buyCount: number;
+  buyTotal: number;
+  entries: ActivityDetailRow[];
+  isDefaultExpanded: boolean;
+  key: string;
+  label: string;
+  sellCount: number;
+  sellTotal: number;
+}
+
+interface ActivityYearGroup {
+  buyCount: number;
+  buyTotal: number;
+  isDefaultExpanded: boolean;
+  key: string;
+  label: string;
+  monthGroups: ActivityMonthGroup[];
+  sellCount: number;
+  sellTotal: number;
+}
+
 interface ActivitySymbolGroup {
   entries: ActivityDetailRow[];
   metrics: ActivitySymbolMetrics;
   name: string;
   symbol: string;
+  yearGroups: ActivityYearGroup[];
 }
 
 interface ActivitySubClassGroup {
@@ -83,7 +107,7 @@ type MetricsSortColumn =
 
 @Component({
   selector: 'app-activity-page',
-  imports: [CommonModule, GfInvestmentChartComponent, LocaleNumberPipe],
+  imports: [CommonModule, EtfProviderLogo, GfInvestmentChartComponent, LocaleNumberPipe],
   templateUrl: './activity-page.html',
   styleUrl: './activity-page.scss'
 })
@@ -100,6 +124,8 @@ export class ActivityPage implements OnInit {
   protected readonly metricsSortColumn = signal<MetricsSortColumn>('name');
   protected readonly metricsSortDirection = signal<SortDirection>('asc');
   private readonly expandedEntrySet = signal(new Set<ActivityDetailRow>());
+  private readonly monthGroupOverrides = signal(new Map<string, boolean>());
+  private readonly yearGroupOverrides = signal(new Map<string, boolean>());
   protected readonly portfolioTotal = computed(() => {
     return roundToTwo(
       this.holdings().reduce((sum, holding) => {
@@ -216,7 +242,8 @@ export class ActivityPage implements OnInit {
                   entries,
                   metrics,
                   name,
-                  symbol
+                  symbol,
+                  yearGroups: buildActivityYearGroups(entries)
                 };
               })
               .sort((left, right) => {
@@ -331,6 +358,50 @@ export class ActivityPage implements OnInit {
 
   protected isEntryExpanded(entry: ActivityDetailRow): boolean {
     return this.expandedEntrySet().has(entry);
+  }
+
+  protected isFullySoldBuy(entry: ActivityDetailRow): boolean {
+    return entry.type === 'BUY' && entry.soldQuantity !== null && entry.soldQuantity >= entry.quantity - QUANTITY_EPSILON;
+  }
+
+  protected isMonthGroupExpanded(group: ActivityMonthGroup, groupId: string): boolean {
+    const overrides = this.monthGroupOverrides();
+
+    if (overrides.has(groupId)) {
+      return overrides.get(groupId)!;
+    }
+
+    return group.isDefaultExpanded;
+  }
+
+  protected toggleMonthGroup(group: ActivityMonthGroup, groupId: string) {
+    const currentlyExpanded = this.isMonthGroupExpanded(group, groupId);
+
+    this.monthGroupOverrides.update((overrides) => {
+      const next = new Map(overrides);
+      next.set(groupId, !currentlyExpanded);
+      return next;
+    });
+  }
+
+  protected isYearGroupExpanded(group: ActivityYearGroup, groupId: string): boolean {
+    const overrides = this.yearGroupOverrides();
+
+    if (overrides.has(groupId)) {
+      return overrides.get(groupId)!;
+    }
+
+    return group.isDefaultExpanded;
+  }
+
+  protected toggleYearGroup(group: ActivityYearGroup, groupId: string) {
+    const currentlyExpanded = this.isYearGroupExpanded(group, groupId);
+
+    this.yearGroupOverrides.update((overrides) => {
+      const next = new Map(overrides);
+      next.set(groupId, !currentlyExpanded);
+      return next;
+    });
   }
 
   protected absolute(value: number): number {
@@ -645,4 +716,190 @@ function getActivityTimestamp(date: Date | null): number {
   }
 
   return date.getTime();
+}
+
+const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric'
+});
+
+function getMonthKey(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(date: Date | null): string {
+  if (!date) {
+    return 'No date';
+  }
+
+  return MONTH_LABEL_FORMATTER.format(date);
+}
+
+function buildActivityYearGroups(entries: ActivityDetailRow[]): ActivityYearGroup[] {
+  const currentYear = new Date().getFullYear();
+  const entriesByYear = new Map<string, ActivityDetailRow[]>();
+  const unknownEntries: ActivityDetailRow[] = [];
+
+  for (const entry of entries) {
+    if (!entry.date) {
+      unknownEntries.push(entry);
+      continue;
+    }
+
+    const year = String(entry.date.getFullYear());
+    const yearEntries = entriesByYear.get(year) ?? [];
+
+    yearEntries.push(entry);
+    entriesByYear.set(year, yearEntries);
+  }
+
+  const groups = [...entriesByYear.entries()]
+    .map(([year, yearEntries]) => {
+      return buildYearGroup({
+        entries: yearEntries,
+        isDefaultExpanded: Number(year) === currentYear,
+        key: year,
+        label: year
+      });
+    })
+    .sort((left, right) => right.key.localeCompare(left.key));
+
+  if (unknownEntries.length) {
+    groups.push(
+      buildYearGroup({
+        entries: unknownEntries,
+        isDefaultExpanded: false,
+        key: 'unknown',
+        label: 'No date'
+      })
+    );
+  }
+
+  return groups;
+}
+
+function buildYearGroup({
+  entries,
+  isDefaultExpanded,
+  key,
+  label
+}: {
+  entries: ActivityDetailRow[];
+  isDefaultExpanded: boolean;
+  key: string;
+  label: string;
+}): ActivityYearGroup {
+  let buyCount = 0;
+  let buyTotal = 0;
+  let sellCount = 0;
+  let sellTotal = 0;
+
+  for (const entry of entries) {
+    if (entry.type === 'BUY') {
+      buyCount++;
+      buyTotal += entry.totalValue;
+    } else if (entry.type === 'SELL') {
+      sellCount++;
+      sellTotal += entry.totalValue;
+    }
+  }
+
+  return {
+    buyCount,
+    buyTotal,
+    isDefaultExpanded,
+    key,
+    label,
+    monthGroups: buildActivityMonthGroups(entries),
+    sellCount,
+    sellTotal
+  };
+}
+
+function buildActivityMonthGroups(entries: ActivityDetailRow[]): ActivityMonthGroup[] {
+  const now = new Date();
+  const currentMonthKey = getMonthKey(now.getFullYear(), now.getMonth());
+  const previousMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousMonthKey = getMonthKey(previousMonthDate.getFullYear(), previousMonthDate.getMonth());
+  const entriesByKey = new Map<string, ActivityDetailRow[]>();
+  const unknownEntries: ActivityDetailRow[] = [];
+
+  for (const entry of entries) {
+    if (!entry.date) {
+      unknownEntries.push(entry);
+      continue;
+    }
+
+    const key = getMonthKey(entry.date.getFullYear(), entry.date.getMonth());
+    const groupEntries = entriesByKey.get(key) ?? [];
+
+    groupEntries.push(entry);
+    entriesByKey.set(key, groupEntries);
+  }
+
+  const groups = [...entriesByKey.entries()]
+    .map(([key, groupEntries]) => {
+      const sortedEntries = [...groupEntries].sort((left, right) => {
+        return getActivityTimestamp(right.date) - getActivityTimestamp(left.date);
+      });
+
+      return buildMonthGroup({
+        entries: sortedEntries,
+        isDefaultExpanded: key === currentMonthKey || key === previousMonthKey,
+        key,
+        label: formatMonthLabel(sortedEntries[0].date)
+      });
+    })
+    .sort((left, right) => right.key.localeCompare(left.key));
+
+  if (unknownEntries.length) {
+    groups.push(
+      buildMonthGroup({
+        entries: unknownEntries,
+        isDefaultExpanded: false,
+        key: 'unknown',
+        label: 'No date'
+      })
+    );
+  }
+
+  return groups;
+}
+
+function buildMonthGroup({
+  entries,
+  isDefaultExpanded,
+  key,
+  label
+}: {
+  entries: ActivityDetailRow[];
+  isDefaultExpanded: boolean;
+  key: string;
+  label: string;
+}): ActivityMonthGroup {
+  let buyCount = 0;
+  let buyTotal = 0;
+  let sellCount = 0;
+  let sellTotal = 0;
+
+  for (const entry of entries) {
+    if (entry.type === 'BUY') {
+      buyCount++;
+      buyTotal += entry.totalValue;
+    } else if (entry.type === 'SELL') {
+      sellCount++;
+      sellTotal += entry.totalValue;
+    }
+  }
+
+  return {
+    buyCount,
+    buyTotal,
+    entries,
+    isDefaultExpanded,
+    key,
+    label,
+    sellCount,
+    sellTotal
+  };
 }

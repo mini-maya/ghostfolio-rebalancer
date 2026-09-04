@@ -146,11 +146,104 @@ describe('FifoOverviewTable', () => {
     details.dispatchEvent(new Event('toggle'));
     fixture.detectChanges();
 
+    const yearGroupHeaderRow = fixture.nativeElement.querySelector('tr.year-group-header-row') as HTMLTableRowElement;
+    yearGroupHeaderRow.click();
+    fixture.detectChanges();
+
+    const monthGroupHeaderRow = fixture.nativeElement.querySelector('tr.month-group-header-row') as HTMLTableRowElement;
+    monthGroupHeaderRow.click();
+    fixture.detectChanges();
+
     const buyRow = fixture.nativeElement.querySelector('tbody tr.buy-row-expandable') as HTMLTableRowElement;
     buyRow.click();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.sell-details-row')).not.toBeNull();
+  });
+
+  it('groups activities by year and month, starting fully collapsed with a buy/sell summary in each header', () => {
+    fixture.componentRef.setInput('rows', [
+      {
+        activities: [
+          {
+            date: new Date('2024-01-05T00:00:00.000Z'),
+            gainAmount: 10,
+            gainPercentage: 10,
+            potentialTaxes: 2,
+            quantity: 5,
+            sellDetails: [],
+            soldQuantity: 0,
+            totalTaxableVap: 0.7,
+            totalVap: 1,
+            totalValue: 100,
+            type: 'BUY',
+            unitPrice: 20
+          },
+          {
+            date: new Date('2024-01-20T00:00:00.000Z'),
+            gainAmount: null,
+            gainPercentage: null,
+            potentialTaxes: 0,
+            quantity: 1,
+            sellDetails: [],
+            soldQuantity: 1,
+            totalTaxableVap: 0,
+            totalVap: 0,
+            totalValue: 24,
+            type: 'SELL',
+            unitPrice: 24
+          }
+        ],
+        currency: 'EUR',
+        entryPriceAmount: 100,
+        entryPricePerUnit: 20,
+        gainAmount: 10,
+        gainPercentage: 10,
+        name: 'ETF A',
+        positionPriceAmount: 110,
+        positionPricePerUnit: 22,
+        positionQuantity: 5,
+        potentialTaxes: 2,
+        realizedAmount: 4,
+        realizedPercentage: 20,
+        symbol: 'AAA',
+        taxForSelling: 1,
+        totalTaxableVap: 0.7,
+        totalVap: 1,
+        trackKey: 'AAA',
+        usedSparerPauschbetragForSelling: 0,
+        usedTaxableVapForSelling: 0.7,
+        usedVapForSelling: 1
+      }
+    ]);
+    fixture.detectChanges();
+
+    const details = fixture.nativeElement.querySelector('details') as HTMLDetailsElement;
+    details.open = true;
+    details.dispatchEvent(new Event('toggle'));
+    fixture.detectChanges();
+
+    const yearGroupHeaderRow = fixture.nativeElement.querySelector('tr.year-group-header-row') as HTMLTableRowElement;
+    expect(yearGroupHeaderRow.textContent).toContain('2024');
+    expect(yearGroupHeaderRow.textContent).toContain('2 activities');
+    expect(yearGroupHeaderRow.textContent).toContain('100,00€ bought');
+    expect(yearGroupHeaderRow.textContent).toContain('24,00€ sold');
+    expect(fixture.nativeElement.querySelector('tr.month-group-header-row')).toBeNull();
+
+    yearGroupHeaderRow.click();
+    fixture.detectChanges();
+
+    const monthGroupHeaderRow = fixture.nativeElement.querySelector('tr.month-group-header-row') as HTMLTableRowElement;
+    expect(monthGroupHeaderRow.textContent).toContain('January 2024');
+    expect(monthGroupHeaderRow.textContent).toContain('2 activities');
+    expect(monthGroupHeaderRow.textContent).toContain('100,00€ bought');
+    expect(monthGroupHeaderRow.textContent).toContain('24,00€ sold');
+    expect(fixture.nativeElement.querySelectorAll('tbody td.activity-type-buy, tbody td.activity-type-sell').length).toBe(0);
+
+    monthGroupHeaderRow.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('tbody td.activity-type-buy, tbody td.activity-type-sell').length).toBe(2);
   });
 
   it('sorts rows by name ascending by default', () => {
@@ -202,7 +295,7 @@ describe('FifoOverviewTable', () => {
 });
 
 function extractRenderedNames(root: HTMLElement): string[] {
-  return Array.from(root.querySelectorAll('.metrics-name-cell > span')).map((nameCell) => {
+  return Array.from(root.querySelectorAll('.metrics-name-cell .symbol-cell-text > span')).map((nameCell) => {
     return nameCell.textContent?.trim() ?? '';
   });
 }

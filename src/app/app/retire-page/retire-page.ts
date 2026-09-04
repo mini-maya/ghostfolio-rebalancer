@@ -15,6 +15,7 @@ import { GfInvestmentChartComponent } from '../../shared/investment-chart/public
 import type { InvestmentItem, LineChartItem } from '../../shared/investment-chart/src/investment-chart.interfaces';
 import type { ColorScheme, GroupBy, TimeRange } from '../../shared/investment-chart/src/investment-chart.types';
 import { FifoOverviewTable } from '../../shared/fifo-overview-table/fifo-overview-table';
+import { EtfProviderLogo } from '../../shared/etf-provider-logo/etf-provider-logo';
 import { AuthService } from '../auth/auth.service';
 import { LocaleNumberPipe } from '../pipes/locale-number.pipe';
 import { RuntimeConfigService } from '../runtime-config';
@@ -114,7 +115,7 @@ interface RetireCalculationSnapshot {
 
 @Component({
   selector: 'app-retire-page',
-  imports: [CommonModule, GfInvestmentChartComponent, LocaleNumberPipe, FifoOverviewTable],
+  imports: [CommonModule, EtfProviderLogo, GfInvestmentChartComponent, LocaleNumberPipe, FifoOverviewTable],
   templateUrl: './retire-page.html',
   styleUrl: './retire-page.scss',
 })

@@ -30,6 +30,7 @@ import {
   Chart,
   ChartData,
   type ChartDataset,
+  Filler,
   LinearScale,
   LineController,
   LineElement,
@@ -49,6 +50,7 @@ import {
   getChartElementsOptions,
   getTimeAxisOptions,
   getTimeSeriesTooltipOptions,
+  getTodayLineAnnotation,
   getValueAxisOptions,
   getVerticalHoverLinePlugin,
   getZeroLineAnnotation,
@@ -127,6 +129,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
     Chart.register(
       BarController,
       BarElement,
+      Filler,
       LinearScale,
       LineController,
       LineElement,
@@ -244,6 +247,11 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
     this.investments = filteredBenchmarkItems.map((item) => ({...item}));
     this.values = filteredHistoricalItems.map((item) => ({...item}));
 
+    const showTodayAnnotation = this.shouldShowTodayAnnotation([
+      ...filteredBenchmarkItems,
+      ...filteredHistoricalItems
+    ]);
+
     const chartData: ChartData<'bar' | 'line'> = {
       labels: filteredHistoricalItems.map(({ date }) => {
         return parseDate(date);
@@ -253,10 +261,12 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
           type: this.benchmarkDisplayType,
           backgroundColor:
             this.benchmarkDisplayType === 'bar'
-              ? `rgba(${secondaryColorRgb.r}, ${secondaryColorRgb.g}, ${secondaryColorRgb.b}, 0.35)`
+              ? `rgba(${secondaryColorRgb.r}, ${secondaryColorRgb.g}, ${secondaryColorRgb.b}, 0.4)`
               : `rgb(${secondaryColorRgb.r}, ${secondaryColorRgb.g}, ${secondaryColorRgb.b})`,
           borderColor: `rgb(${secondaryColorRgb.r}, ${secondaryColorRgb.g}, ${secondaryColorRgb.b})`,
-          borderWidth: this.benchmarkDisplayType === 'bar' ? 0 : 1,
+          borderRadius: this.benchmarkDisplayType === 'bar' ? 3 : undefined,
+          borderSkipped: this.benchmarkDisplayType === 'bar' ? false : undefined,
+          borderWidth: this.benchmarkDisplayType === 'bar' ? 0 : 1.5,
           data: this.investments.map(({ date, investment }) => {
             return {
               x: parseDate(date)?.getTime() ?? null,
@@ -284,8 +294,10 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
           backgroundColor:
             this.historicalDisplayType === 'bar'
               ? `rgba(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b}, 0.35)`
-              : undefined,
+              : `rgba(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b}, 0.12)`,
           borderColor: `rgb(${primaryColorRgb.r}, ${primaryColorRgb.g}, ${primaryColorRgb.b})`,
+          borderRadius: this.historicalDisplayType === 'bar' ? 3 : undefined,
+          borderSkipped: this.historicalDisplayType === 'bar' ? false : undefined,
           borderWidth: this.historicalDisplayType === 'bar' ? 0 : 2,
           data: this.values.map(({ date, value }) => {
             return {
@@ -293,7 +305,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
               y: this.isInPercentage ? value * 100 : value
             };
           }),
-          fill: false,
+          fill: this.historicalDisplayType === 'line' ? 'origin' : false,
           label: this.historicalDataLabel,
           pointRadius: this.historicalDisplayType === 'bar' ? 0 : 0,
           yAxisID: axisAssignment.historicalAxisId,
@@ -323,10 +335,15 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
         this.chart.options.plugins.tooltip = this.getTooltipPluginConfiguration();
 
         const annotations = this.chart.options.plugins?.annotation
-          ?.annotations as Record<string, AnnotationOptions<'line'>> | undefined;
+          ?.annotations as Record<string, AnnotationOptions<'line'> | undefined> | undefined;
         if (this.savingsRate && annotations?.['savingsRate']) {
           annotations['savingsRate'].scaleID = axisAssignment.benchmarkAxisId;
           annotations['savingsRate'].value = this.savingsRate;
+        }
+        if (annotations) {
+          annotations['today'] = showTodayAnnotation
+            ? getTodayLineAnnotation(this.colorScheme)
+            : undefined;
         }
 
         this.chart.update();
@@ -363,7 +380,8 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
                         value: this.savingsRate
                       }
                     : undefined,
-                  yAxis: getZeroLineAnnotation(this.colorScheme, axisAssignment.historicalAxisId)
+                  yAxis: getZeroLineAnnotation(this.colorScheme, axisAssignment.historicalAxisId),
+                  today: showTodayAnnotation ? getTodayLineAnnotation(this.colorScheme) : undefined
                 }
               },
               legend: {
@@ -396,6 +414,7 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
       x: getTimeAxisOptions({
         borderWidth: this.groupBy ? 0 : 1,
         colorScheme: this.colorScheme,
+        groupBy: this.groupBy,
         locale: this.locale
       }),
       yPrimary: getValueAxisOptions({
@@ -423,6 +442,24 @@ export class GfInvestmentChartComponent implements OnChanges, OnDestroy {
       locale: this.isInPercentage ? undefined : this.locale,
       unit: this.isInPercentage ? '%' : undefined
     });
+  }
+
+  private shouldShowTodayAnnotation(items: { date: string }[]): boolean {
+    const dates = items
+      .map(({ date }) => parseDate(date))
+      .filter((itemDate): itemDate is Date => Boolean(itemDate));
+
+    if (!dates.length) {
+      return false;
+    }
+
+    const minDate = dates.reduce((earliest, current) => (current < earliest ? current : earliest));
+    const maxDate = dates.reduce((latest, current) => (current > latest ? current : latest));
+    const now = new Date();
+
+    // Only draw the "Today" marker when it actually separates historical data from
+    // a forecasted portion within the currently plotted range.
+    return now >= minDate && now <= maxDate && isFuture(maxDate);
   }
 
   private isInFuture<T>(ctx: ScriptableLineSegmentContext, value: T): T | undefined {

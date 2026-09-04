@@ -178,8 +178,13 @@
                 <details class="activity-details">
                   <summary class="metrics-grid metrics-grid-row">
                     <span class="metrics-cell metrics-name-cell">
-                      <strong>{{ symbolGroup.symbol }}</strong><br />
-                      <span>{{ symbolGroup.name }}</span>
+                      <span class="symbol-cell">
+                        <app-etf-provider-logo [name]="symbolGroup.name" />
+                        <span class="symbol-cell-text">
+                          <strong>{{ symbolGroup.symbol }}</strong><br />
+                          <span>{{ symbolGroup.name }}</span>
+                        </span>
+                      </span>
                     </span>
                     <span class="metrics-cell numeric">
                       <span class="table-primary-value">{{ symbolGroup.metrics.entryPriceAmount | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</span><br />
@@ -241,28 +246,90 @@
                   </summary>
                   <div class="table-wrapper">
                     <table>
-                      <thead>
-                        <tr>
-                          <th>Type</th>
-                          <th>Date</th>
-                          <th class="numeric">Quantity</th>
-                          <th class="numeric">Sold Quantity</th>
-                          <th class="numeric">Unit price</th>
-                          <th class="numeric">Total value</th>
-                          <th class="numeric">Fee</th>
-                          <th class="numeric">Total with fee</th>
-                          <th class="numeric">Gain %</th>
-                        </tr>
-                      </thead>
                       <tbody>
-                        @for (entry of symbolGroup.entries; track $index) {
+                        @for (yearGroup of symbolGroup.yearGroups; track yearGroup.key) {
                           <tr
-                            [class.buy-row-expandable]="entry.type === 'BUY' && entry.sellDetails.length > 0"
-                            [class.buy-row-expanded]="entry.type === 'BUY' && isEntryExpanded(entry)"
-                            (click)="entry.type === 'BUY' && entry.sellDetails.length > 0 && toggleEntry(entry)"
+                            class="year-group-header-row"
+                            (click)="toggleYearGroup(yearGroup, symbolGroup.symbol + '::' + yearGroup.key)"
                           >
+                            <td colspan="9" class="year-group-header-cell">
+                              <div class="year-group-header-content">
+                                <span class="year-group-title">
+                                  <span class="year-group-expand-icon" [class.year-group-expand-icon-open]="isYearGroupExpanded(yearGroup, symbolGroup.symbol + '::' + yearGroup.key)">▸</span>
+                                  <strong class="year-group-label">{{ yearGroup.label }}</strong>
+                                </span>
+                                <span class="year-group-summary">
+                                  <span class="year-group-summary-item">
+                                    {{ yearGroup.buyCount + yearGroup.sellCount }} {{ yearGroup.buyCount + yearGroup.sellCount === 1 ? 'activity' : 'activities' }}
+                                  </span>
+                                  @if (yearGroup.buyCount > 0) {
+                                    <span class="year-group-summary-item">
+                                      {{ yearGroup.buyTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }} bought
+                                    </span>
+                                  }
+                                  @if (yearGroup.sellCount > 0) {
+                                    <span class="year-group-summary-item">
+                                      {{ yearGroup.sellTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }} sold
+                                    </span>
+                                  }
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          @if (isYearGroupExpanded(yearGroup, symbolGroup.symbol + '::' + yearGroup.key)) {
+                            <tr class="column-header-row">
+                              <th>Type</th>
+                              <th>Date</th>
+                              <th class="numeric">Quantity</th>
+                              <th class="numeric">Sold Quantity</th>
+                              <th class="numeric">Unit price</th>
+                              <th class="numeric">Total value</th>
+                              <th class="numeric">Fee</th>
+                              <th class="numeric">Total with fee</th>
+                              <th class="numeric">Gain %</th>
+                            </tr>
+                            @for (monthGroup of yearGroup.monthGroups; track monthGroup.key) {
+                              <tr
+                                class="month-group-header-row"
+                                (click)="toggleMonthGroup(monthGroup, symbolGroup.symbol + '::' + monthGroup.key)"
+                              >
+                                <td colspan="9" class="month-group-header-cell">
+                                  <div class="month-group-header-content">
+                                    <span class="month-group-title">
+                                      <span class="month-group-expand-icon" [class.month-group-expand-icon-open]="isMonthGroupExpanded(monthGroup, symbolGroup.symbol + '::' + monthGroup.key)">▸</span>
+                                      <strong class="month-group-label">{{ monthGroup.label }}</strong>
+                                    </span>
+                                    <span class="month-group-summary">
+                                      <span class="month-group-summary-item">
+                                        {{ monthGroup.buyCount + monthGroup.sellCount }} {{ monthGroup.buyCount + monthGroup.sellCount === 1 ? 'activity' : 'activities' }}
+                                      </span>
+                                      @if (monthGroup.buyCount > 0) {
+                                        <span class="month-group-summary-item">
+                                          {{ monthGroup.buyTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }} bought
+                                        </span>
+                                      }
+                                      @if (monthGroup.sellCount > 0) {
+                                        <span class="month-group-summary-item">
+                                          {{ monthGroup.sellTotal | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }} sold
+                                        </span>
+                                      }
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                              @if (isMonthGroupExpanded(monthGroup, symbolGroup.symbol + '::' + monthGroup.key)) {
+                                @for (entry of monthGroup.entries; track $index) {
+                              <tr
+                                [class.buy-row-expandable]="entry.type === 'BUY' && entry.sellDetails.length > 0"
+                                [class.buy-row-expanded]="entry.type === 'BUY' && isEntryExpanded(entry)"
+                                [class.activity-row-buy]="entry.type === 'BUY' && !isFullySoldBuy(entry)"
+                                [class.activity-row-buy-closed]="isFullySoldBuy(entry)"
+                                [class.activity-row-sell]="entry.type === 'SELL'"
+                                (click)="entry.type === 'BUY' && entry.sellDetails.length > 0 && toggleEntry(entry)"
+                              >
                             <td
-                              [class.activity-type-buy]="entry.type === 'BUY'"
+                              [class.activity-type-buy]="entry.type === 'BUY' && !isFullySoldBuy(entry)"
+                              [class.activity-type-buy-closed]="isFullySoldBuy(entry)"
                               [class.activity-type-sell]="entry.type === 'SELL'"
                             >
                               @if (entry.type === 'BUY' && entry.sellDetails.length > 0) {
@@ -277,9 +344,17 @@
                                 -
                               }
                             </td>
-                            <td class="numeric"><span class="table-inline-highlight">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span></td>
                             <td class="numeric">
-                              @if (entry.soldQuantity !== null && entry.soldQuantity !== 0) {
+                              @if (entry.type === 'SELL') {
+                                <span class="table-inline-highlight">-</span>
+                              } @else {
+                                <span class="table-inline-highlight">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span>
+                              }
+                            </td>
+                            <td class="numeric">
+                              @if (entry.type === 'SELL') {
+                                <span class="table-inline-highlight">{{ entry.quantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span>
+                              } @else if (entry.soldQuantity !== null && entry.soldQuantity !== 0) {
                                 <span class="table-inline-highlight">{{ entry.soldQuantity | localeNumber: {minFractionDigits: 2, maxFractionDigits: 5} }} x</span>
                               } @else {
                                 <span class="table-inline-highlight">-</span>
@@ -290,7 +365,8 @@
                             <td class="numeric">{{ entry.fee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}</td>
                             <td
                               class="numeric strong-cell"
-                              [class.activity-type-buy]="entry.type === 'BUY'"
+                              [class.activity-type-buy]="entry.type === 'BUY' && !isFullySoldBuy(entry)"
+                              [class.activity-type-buy-closed]="isFullySoldBuy(entry)"
                               [class.activity-type-sell]="entry.type === 'SELL'"
                             >
                               {{ entry.totalWithFee | localeNumber: {minFractionDigits: 2, maxFractionDigits: 2} }}{{ currencySymbol(symbolGroup.metrics.currency) }}
@@ -374,6 +450,10 @@
                                 </table>
                               </td>
                             </tr>
+                          }
+                        }
+                          }
+                            }
                           }
                         }
                       </tbody>

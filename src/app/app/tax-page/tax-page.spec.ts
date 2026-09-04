@@ -532,6 +532,14 @@ describe('TaxPage', () => {
     details.dispatchEvent(new Event('toggle'));
     fixture.detectChanges();
 
+    const yearGroupHeaderRows = fixture.nativeElement.querySelectorAll('tr.year-group-header-row') as NodeListOf<HTMLTableRowElement>;
+    yearGroupHeaderRows.forEach((row) => row.click());
+    fixture.detectChanges();
+
+    const monthGroupHeaderRows = fixture.nativeElement.querySelectorAll('tr.month-group-header-row') as NodeListOf<HTMLTableRowElement>;
+    monthGroupHeaderRows.forEach((row) => row.click());
+    fixture.detectChanges();
+
     const buyRow = fixture.nativeElement.querySelector('tbody tr.buy-row-expandable') as HTMLTableRowElement;
     buyRow.click();
     fixture.detectChanges();

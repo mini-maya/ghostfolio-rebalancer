@@ -14,6 +14,11 @@ What if your next contribution could automatically tell you what to buy?
   <source media="(prefers-color-scheme: light)" srcset="screenshot_rebalancer_light.png">
   <img alt="Screenshot" src="screenshot_rebalancer_light.png">
 </picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_rebalancer2_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_rebalancer2_light.png">
+  <img alt="Screenshot" src="screenshot_rebalancer2_light.png">
+</picture>
 
 ## Activity View
 ### Investment chart
@@ -30,6 +35,13 @@ What if your next contribution could automatically tell you what to buy?
   <img alt="Screenshot" src="screenshot_activity2_light.png">
 </picture>
 
+## Tax View
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_tax_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_tax_light.png">
+  <img alt="Screenshot" src="screenshot_tax_light.png">
+</picture>
+
 ## Retirement View
 ### Set up retire plan
 <picture>
@@ -43,6 +55,16 @@ What if your next contribution could automatically tell you what to buy?
   <source media="(prefers-color-scheme: dark)" srcset="screenshot_retire2_dark.png">
   <source media="(prefers-color-scheme: light)" srcset="screenshot_retire2_light.png">
   <img alt="Screenshot" src="screenshot_retire2_light.png">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_retire3_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_retire3_light.png">
+  <img alt="Screenshot" src="screenshot_retire3_light.png">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_retire4_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_retire4_light.png">
+  <img alt="Screenshot" src="screenshot_retire4_light.png">
 </picture>
 
 ## Optional login screen
