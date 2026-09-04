@@ -571,7 +571,7 @@ describe('RetirePage', () => {
     const rows = component.withdrawalScheduleRows();
 
     expect(rows[0].isYearSummary).toBeTrue();
-    expect(rows[0].periodLabel).toBe('Jahr 2048');
+    expect(rows[0].periodLabel).toBe('Year 2048');
     expect(rows[0].dateLabel).toBe('January 2048 – December 2048');
     expect(rows[0].isCompleted).toBeTrue();
     expect(rows[1].isYearSummary).toBeTrue();
