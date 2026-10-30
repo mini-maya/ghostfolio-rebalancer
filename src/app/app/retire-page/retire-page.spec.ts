@@ -1,12 +1,28 @@
 import { addMonths, addYears, format, startOfMonth } from 'date-fns';
 import { signal } from '@angular/core';
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { AuthService } from '../auth/auth.service';
 import { RuntimeConfigService } from '../runtime-config';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
 import { TaxEventsService } from '../services/tax-events';
 import { RetirePage } from './retire-page';
+
+function withFakeTimers(testBody: () => void): () => void {
+  return () => {
+    vi.useFakeTimers();
+    try {
+      testBody();
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+}
+
+function tick(milliseconds: number): void {
+  vi.advanceTimersByTime(milliseconds);
+}
 
 describe('RetirePage', () => {
   const authServiceMock = {
@@ -25,7 +41,7 @@ describe('RetirePage', () => {
     }),
     sessionMode: () => 'account',
     taxConfig: () => ({}),
-    updateAccountRetireConfig: jasmine.createSpy('updateAccountRetireConfig').and.resolveTo()
+    updateAccountRetireConfig: vi.fn().mockResolvedValue(undefined)
   };
 
   const portfolioDataStoreMock = {
@@ -35,7 +51,7 @@ describe('RetirePage', () => {
     infoMessage: signal(''),
     isLoading: signal(false),
     lastLoadedUrl: signal(''),
-    loadPortfolioData: jasmine.createSpy('loadPortfolioData').and.resolveTo()
+    loadPortfolioData: vi.fn().mockResolvedValue(undefined)
   };
 
   const runtimeConfigServiceMock = {
@@ -45,7 +61,7 @@ describe('RetirePage', () => {
     })
   };
   const taxEventsServiceMock = {
-    loadTaxEvents: jasmine.createSpy('loadTaxEvents').and.resolveTo([])
+    loadTaxEvents: vi.fn().mockResolvedValue([])
   };
 
   beforeEach(async () => {
@@ -69,7 +85,7 @@ describe('RetirePage', () => {
     portfolioDataStoreMock.errorMessage.set('');
     portfolioDataStoreMock.infoMessage.set('');
     portfolioDataStoreMock.lastLoadedUrl.set('');
-    taxEventsServiceMock.loadTaxEvents.and.resolveTo([]);
+    taxEventsServiceMock.loadTaxEvents.mockResolvedValue([]);
     expect(authServiceMock.sessionMode()).toBe('account');
   });
 
@@ -113,13 +129,13 @@ describe('RetirePage', () => {
     tick(34);
   }
 
-  it('hides the stats, next withdrawal and projection sections until the first calculation completes', fakeAsync(() => {
+  it('hides the stats, next withdrawal and projection sections until the first calculation completes', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
     fixture.detectChanges();
 
-    expect(component.hasCalculated()).toBeFalse();
+    expect(component.hasCalculated()).toBe(false);
     expect(fixture.nativeElement.querySelector('section.stats')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Next withdrawal by symbol');
     expect(fixture.nativeElement.textContent).not.toContain('Projection');
@@ -127,11 +143,11 @@ describe('RetirePage', () => {
     runCalculation(component);
     fixture.detectChanges();
 
-    expect(component.hasCalculated()).toBeTrue();
+    expect(component.hasCalculated()).toBe(true);
     expect(fixture.nativeElement.querySelector('section.stats')).not.toBeNull();
   }));
 
-  it('shows the Sparer-Pauschbetrag usage tiles once a calculation completes', fakeAsync(() => {
+  it('shows the Sparer-Pauschbetrag usage tiles once a calculation completes', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
@@ -160,7 +176,7 @@ describe('RetirePage', () => {
     );
   }));
 
-  it('hides the below-fold sections again while a subsequent calculation is running', fakeAsync(() => {
+  it('hides the below-fold sections again while a subsequent calculation is running', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
@@ -174,18 +190,18 @@ describe('RetirePage', () => {
     component.calculate();
     fixture.detectChanges();
 
-    expect(component.isCalculating()).toBeTrue();
-    expect(component.hasCalculated()).toBeTrue();
+    expect(component.isCalculating()).toBe(true);
+    expect(component.hasCalculated()).toBe(true);
     expect(fixture.nativeElement.querySelector('section.stats')).toBeNull();
 
     tick(34);
     fixture.detectChanges();
 
-    expect(component.isCalculating()).toBeFalse();
+    expect(component.isCalculating()).toBe(false);
     expect(fixture.nativeElement.querySelector('section.stats')).not.toBeNull();
   }));
 
-  it('shows a spinner on the calculate button while calculating and hides it afterwards', fakeAsync(() => {
+  it('shows a spinner on the calculate button while calculating and hides it afterwards', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
@@ -194,23 +210,23 @@ describe('RetirePage', () => {
     component.calculate();
     fixture.detectChanges();
 
-    expect(component.isCalculating()).toBeTrue();
+    expect(component.isCalculating()).toBe(true);
     const button = fixture.nativeElement.querySelector('.retire-calculate-button');
     expect(button.textContent).toContain('Calculating');
     expect(button.querySelector('.spinner')).not.toBeNull();
-    expect(button.disabled).toBeTrue();
+    expect(button.disabled).toBe(true);
 
     tick(34);
     fixture.detectChanges();
 
-    expect(component.isCalculating()).toBeFalse();
+    expect(component.isCalculating()).toBe(false);
     expect(button.textContent).not.toContain('Calculating');
     // Nothing changed since this calculation finished, so the button goes
     // back to disabled until an input is changed again.
-    expect(button.disabled).toBeTrue();
+    expect(button.disabled).toBe(true);
   }));
 
-  it('re-enables the calculate button once an input changes after a calculation', fakeAsync(() => {
+  it('re-enables the calculate button once an input changes after a calculation', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
@@ -219,15 +235,15 @@ describe('RetirePage', () => {
     fixture.detectChanges();
 
     const button = fixture.nativeElement.querySelector('.retire-calculate-button');
-    expect(button.disabled).toBeTrue();
+    expect(button.disabled).toBe(true);
 
     component.monthlySavingsRate.set(5000);
     fixture.detectChanges();
 
-    expect(button.disabled).toBeFalse();
+    expect(button.disabled).toBe(false);
   }));
 
-  it('does not change the gated results when inputs change after a calculation until Calculate is clicked again', fakeAsync(() => {
+  it('does not change the gated results when inputs change after a calculation until Calculate is clicked again', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
@@ -246,7 +262,7 @@ describe('RetirePage', () => {
     expect(component.projection()).not.toBe(projectionBefore);
   }));
 
-  it('keeps FIFO simulation month navigation live without needing another Calculate click', fakeAsync(() => {
+  it('keeps FIFO simulation month navigation live without needing another Calculate click', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     setSingleSymbolPortfolio(component);
@@ -257,7 +273,7 @@ describe('RetirePage', () => {
     component.shiftSelectedFifoYear(-1);
 
     expect(component.selectedFifoMonthInput()).not.toBe(monthBefore);
-    expect(component.hasCalculated()).toBeTrue();
+    expect(component.hasCalculated()).toBe(true);
   }));
 
   it('keeps the switch off when the withdrawal start month changes', () => {
@@ -269,7 +285,7 @@ describe('RetirePage', () => {
       target: { value: '2030-02' }
     } as unknown as Event);
 
-    expect(component.withdrawalStarted()).toBeFalse();
+    expect(component.withdrawalStarted()).toBe(false);
     expect(component.withdrawalStartMonth()).toBe('2030-02');
   });
 
@@ -277,19 +293,19 @@ describe('RetirePage', () => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
 
-    expect(component.sellWholeSharesOnly()).toBeFalse();
+    expect(component.sellWholeSharesOnly()).toBe(false);
 
     component.updateSellWholeSharesOnly({
       target: { checked: true }
     } as unknown as Event);
 
-    expect(component.sellWholeSharesOnly()).toBeTrue();
+    expect(component.sellWholeSharesOnly()).toBe(true);
 
     component.updateSellWholeSharesOnly({
       target: { checked: false }
     } as unknown as Event);
 
-    expect(component.sellWholeSharesOnly()).toBeFalse();
+    expect(component.sellWholeSharesOnly()).toBe(false);
   });
 
   it('keeps the withdrawal period editable when withdrawals start immediately', () => {
@@ -304,7 +320,7 @@ describe('RetirePage', () => {
     expect(component.projectionYears()).toBe(40);
   });
 
-  it('projects holdings up to the first withdrawal when withdrawals have not started yet', fakeAsync(() => {
+  it('projects holdings up to the first withdrawal when withdrawals have not started yet', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,50|BBB,50';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,50|BBB,50',
@@ -383,17 +399,17 @@ describe('RetirePage', () => {
       return sum + holding.valueInBaseCurrency;
     }, 0)).toBeGreaterThan(1500);
     expect(component.nextWithdrawalSellPlan().portfolioTotal).toBeGreaterThan(1500);
-    expect(component.simulatedFifoOverviewRows()).toHaveSize(2);
+    expect(component.simulatedFifoOverviewRows()).toHaveLength(2);
     expect(component.simulatedFifoOverviewRows()[0].positionPriceAmount).toBeGreaterThan(0);
     expect(component.simulatedFifoOverviewRows()[0].activities.length).toBeGreaterThan(0);
-    expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => activity.type === 'SELL')).toBeTrue();
+    expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => activity.type === 'SELL')).toBe(true);
     expect(fixture.nativeElement.querySelector('.sell-plan-table')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('app-fifo-overview-table')).not.toBeNull();
     // Withdrawals are scheduled for 2027-06, so projection should include withdrawal schedule
     expect(fixture.nativeElement.querySelector('.withdrawal-schedule-table')).not.toBeNull();
   }));
 
-  it('only plans whole-share sells when sellWholeSharesOnly is enabled', fakeAsync(() => {
+  it('only plans whole-share sells when sellWholeSharesOnly is enabled', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,50|BBB,50';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,50|BBB,50',
@@ -477,7 +493,7 @@ describe('RetirePage', () => {
     expect(sellPlan.totalPlannedSell).toBeLessThanOrEqual(sellPlan.requestedSellAmount);
 
     for (const row of sellPlan.rows) {
-      expect(Number.isInteger(row.sharesToSell)).toBeTrue();
+      expect(Number.isInteger(row.sharesToSell)).toBe(true);
     }
 
     const overviewRows = component.simulatedFifoOverviewRows();
@@ -488,11 +504,11 @@ describe('RetirePage', () => {
     expect(sellActivities.length).toBeGreaterThan(0);
 
     for (const activity of sellActivities) {
-      expect(Number.isInteger(activity.quantity)).toBeTrue();
+      expect(Number.isInteger(activity.quantity)).toBe(true);
     }
   }));
 
-  it('sets the withdrawal start month to the current month when withdrawals start immediately', fakeAsync(() => {
+  it('sets the withdrawal start month to the current month when withdrawals start immediately', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     const currentMonth = startOfMonth(new Date());
@@ -507,7 +523,7 @@ describe('RetirePage', () => {
     } as unknown as Event);
     runCalculation(component);
 
-    expect(component.withdrawalStarted()).toBeTrue();
+    expect(component.withdrawalStarted()).toBe(true);
     expect(component.withdrawalStartMonth()).toBe(format(currentMonth, 'yyyy-MM'));
     expect(component.capitalAtWithdrawalStart()).toBe(10000);
     expect(component.withdrawalStartLabel()).toBe(format(currentMonth, 'MMMM yyyy'));
@@ -526,7 +542,7 @@ describe('RetirePage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="developer-date-field"]')).not.toBeNull();
   });
 
-  it('uses the developer current date as the retire base date', fakeAsync(() => {
+  it('uses the developer current date as the retire base date', withFakeTimers(() => {
     runtimeConfigServiceMock.config.set({
       allocationsText: '',
       developerMode: true
@@ -550,7 +566,7 @@ describe('RetirePage', () => {
     expect(component.withdrawalScheduleRows()[0].dateLabel).toBe('April 2027');
   }));
 
-  it('collapses past years into yearly summary rows and prefixes completed rows with a checkmark', fakeAsync(() => {
+  it('collapses past years into yearly summary rows and prefixes completed rows with a checkmark', withFakeTimers(() => {
     runtimeConfigServiceMock.config.set({
       allocationsText: '',
       developerMode: true
@@ -570,15 +586,15 @@ describe('RetirePage', () => {
 
     const rows = component.withdrawalScheduleRows();
 
-    expect(rows[0].isYearSummary).toBeTrue();
+    expect(rows[0].isYearSummary).toBe(true);
     expect(rows[0].periodLabel).toBe('Year 2048');
     expect(rows[0].dateLabel).toBe('January 2048 – December 2048');
-    expect(rows[0].isCompleted).toBeTrue();
-    expect(rows[1].isYearSummary).toBeTrue();
-    expect(rows.some((row: any) => !row.isYearSummary && row.dateLabel === 'January 2050')).toBeTrue();
+    expect(rows[0].isCompleted).toBe(true);
+    expect(rows[1].isYearSummary).toBe(true);
+    expect(rows.some((row: any) => !row.isYearSummary && row.dateLabel === 'January 2050')).toBe(true);
   }));
 
-  it('keeps past withdrawal periods visible and marks them as completed', fakeAsync(() => {
+  it('keeps past withdrawal periods visible and marks them as completed', withFakeTimers(() => {
     runtimeConfigServiceMock.config.set({
       allocationsText: '',
       developerMode: true
@@ -598,12 +614,12 @@ describe('RetirePage', () => {
     const rows = component.withdrawalScheduleRows();
 
     expect(rows[0].dateLabel).toBe('June 2050');
-    expect(rows[0].isCompleted).toBeTrue();
+    expect(rows[0].isCompleted).toBe(true);
     expect(rows[3].dateLabel).toBe('September 2050');
-    expect(rows[3].isCompleted).toBeTrue();
+    expect(rows[3].isCompleted).toBe(true);
     expect(rows[4].dateLabel).toBe('October 2050');
-    expect(rows[4].isCompleted).toBeFalse();
-    expect(rows[4].isCurrent).toBeTrue();
+    expect(rows[4].isCompleted).toBe(false);
+    expect(rows[4].isCurrent).toBe(true);
     expect(rows[4].periodIndex).toBe(5);
     expect(component.nextWithdrawalLabel()).toBe('October 2050');
     expect(component.withdrawalDisplayYears()).toBe(25);
@@ -618,14 +634,14 @@ describe('RetirePage', () => {
     component.withdrawalStartMonth.set(format(pastMonth, 'yyyy-MM'));
     fixture.detectChanges();
 
-    expect(component.withdrawalStartMonthHasError()).toBeTrue();
+    expect(component.withdrawalStartMonthHasError()).toBe(true);
     expect(component.withdrawalStartMonthErrorMessage()).toBe(
       'Withdrawal start must be this month or later.'
     );
     expect(fixture.nativeElement.querySelector('[data-testid="withdrawal-start-error"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="withdrawal-start-field"] input').classList.contains('is-invalid')).toBeTrue();
-    expect(component.isCalculateDisabled()).toBeTrue();
-    expect(fixture.nativeElement.querySelector('.retire-calculate-button').disabled).toBeTrue();
+    expect(fixture.nativeElement.querySelector('[data-testid="withdrawal-start-field"] input').classList.contains('is-invalid')).toBe(true);
+    expect(component.isCalculateDisabled()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.retire-calculate-button').disabled).toBe(true);
   });
 
   it('stores zero capitalAtWithdrawalStart while withdrawals are off', () => {
@@ -649,7 +665,7 @@ describe('RetirePage', () => {
     expect(component.readRetireConfig().capitalAtWithdrawalStart).toBe(60000);
   });
 
-  it('numbers immediate withdrawal rows from 1 to the projection length', fakeAsync(() => {
+  it('numbers immediate withdrawal rows from 1 to the projection length', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     const currentMonth = startOfMonth(new Date());
@@ -663,14 +679,14 @@ describe('RetirePage', () => {
 
     const rows = component.withdrawalScheduleRows();
 
-    expect(rows).toHaveSize(300);
+    expect(rows).toHaveLength(300);
     expect(rows[0].periodIndex).toBe(1);
     expect(rows.at(-1)?.periodIndex).toBe(300);
     expect(rows[0].dateLabel).toBe(format(currentMonth, 'MMMM yyyy'));
     expect(rows.at(-1)?.dateLabel).toBe(format(addMonths(currentMonth, 299), 'MMMM yyyy'));
   }));
 
-  it('groups the withdrawal plan by year when the payout period is yearly', fakeAsync(() => {
+  it('groups the withdrawal plan by year when the payout period is yearly', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
 
@@ -688,7 +704,7 @@ describe('RetirePage', () => {
 
     // Only fully completed (past) periods get the bold "summary" styling, so the table
     // looks the same as the monthly schedule regardless of the selected payout frequency.
-    expect(rows.every((row: any) => !row.isYearSummary)).toBeTrue();
+    expect(rows.every((row: any) => !row.isYearSummary)).toBe(true);
     expect(rows[0].dateLabel).toBe('June 2050');
     expect(rows[1].dateLabel).toBe('June 2051');
     expect(component.nextWithdrawalLabel()).toBe('June 2050');
@@ -706,7 +722,7 @@ describe('RetirePage', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="accumulation-return-field"]')).toBeNull();
   });
 
-  it('shows the next withdrawal month in the sell plan section', fakeAsync(() => {
+  it('shows the next withdrawal month in the sell plan section', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     runCalculation(component);
@@ -714,7 +730,7 @@ describe('RetirePage', () => {
     expect(component.nextWithdrawalLabel()).not.toBe('n/a');
   }));
 
-  it('starts the withdrawal schedule at the current month when the start month is invalid', fakeAsync(() => {
+  it('starts the withdrawal schedule at the current month when the start month is invalid', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
 
@@ -728,7 +744,7 @@ describe('RetirePage', () => {
     expect(firstVisibleRow.periodIndex).toBe(1);
   }));
 
-  it('starts the visible withdrawal list at the stored month when it is in the future', fakeAsync(() => {
+  it('starts the visible withdrawal list at the stored month when it is in the future', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     const currentMonth = startOfMonth(new Date());
@@ -740,7 +756,7 @@ describe('RetirePage', () => {
     expect(component.withdrawalScheduleRows()[0].dateLabel).toBe(format(futureMonth, 'MMMM yyyy'));
   }));
 
-  it('derives the expected end from a future withdrawal start month', fakeAsync(() => {
+  it('derives the expected end from a future withdrawal start month', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     const currentMonth = startOfMonth(new Date());
@@ -753,7 +769,7 @@ describe('RetirePage', () => {
     expect(component.projectionEndLabel()).toBe(format(addYears(futureMonth, 25), 'yyyy-MM'));
   }));
 
-  it('anchors the projected end label to the current month when withdrawals start immediately', fakeAsync(() => {
+  it('anchors the projected end label to the current month when withdrawals start immediately', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     const currentMonth = startOfMonth(new Date());
@@ -769,7 +785,7 @@ describe('RetirePage', () => {
     expect(component.withdrawalStartLabel()).toBe(format(currentMonth, 'MMMM yyyy'));
   }));
 
-  it('caps the visible withdrawal list at the expected end month', fakeAsync(() => {
+  it('caps the visible withdrawal list at the expected end month', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     const currentMonth = startOfMonth(new Date());
@@ -785,7 +801,7 @@ describe('RetirePage', () => {
     expect(rows.at(-1)?.dateLabel).toBe(format(addMonths(futureMonth, 11), 'MMMM yyyy'));
   }));
 
-  it('initializes the FIFO simulation month at projection end', fakeAsync(() => {
+  it('initializes the FIFO simulation month at projection end', withFakeTimers(() => {
     const fixture = TestBed.createComponent(RetirePage);
     const component = fixture.componentInstance as any;
     runCalculation(component);
@@ -793,7 +809,7 @@ describe('RetirePage', () => {
     expect(component.selectedFifoMonthValue()).toBe(component.withdrawalEndLabel());
   }));
 
-  it('navigates and clamps the FIFO simulation month within the allowed range', fakeAsync(() => {
+  it('navigates and clamps the FIFO simulation month within the allowed range', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -847,14 +863,14 @@ describe('RetirePage', () => {
 
     component.shiftSelectedFifoYear(-10);
     expect(component.selectedFifoMonthValue()).toBe('2024-03');
-    expect(component.isSelectedFifoMonthAtMinimum()).toBeTrue();
+    expect(component.isSelectedFifoMonthAtMinimum()).toBe(true);
 
     component.shiftSelectedFifoYear(10);
     expect(component.selectedFifoMonthValue()).toBe('2027-08');
-    expect(component.isSelectedFifoMonthAtMaximum()).toBeTrue();
+    expect(component.isSelectedFifoMonthAtMaximum()).toBe(true);
   }));
 
-  it('jumps the FIFO simulation month with the shortcut buttons, relative to today, clamped to bounds', fakeAsync(() => {
+  it('jumps the FIFO simulation month with the shortcut buttons, relative to today, clamped to bounds', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -922,22 +938,22 @@ describe('RetirePage', () => {
 
     component.jumpSelectedFifoMonthByOffset(36);
     expect(component.selectedFifoMonthValue()).toBe('2027-08');
-    expect(component.isSelectedFifoMonthAtMaximum()).toBeTrue();
+    expect(component.isSelectedFifoMonthAtMaximum()).toBe(true);
 
     component.jumpSelectedFifoMonthToYtd();
     expect(component.selectedFifoMonthValue()).toBe('2026-12');
 
     component.jumpSelectedFifoMonthToEndOfWithdrawal();
     expect(component.selectedFifoMonthValue()).toBe('2027-08');
-    expect(component.isSelectedFifoMonthAtMaximum()).toBeTrue();
+    expect(component.isSelectedFifoMonthAtMaximum()).toBe(true);
 
     component.jumpSelectedFifoMonthByOffset(-60);
     expect(component.selectedFifoMonthValue()).toBe('2024-03');
-    expect(component.isSelectedFifoMonthAtMinimum()).toBeTrue();
+    expect(component.isSelectedFifoMonthAtMinimum()).toBe(true);
   }));
 
 
-  it('uses no due withdrawal before the withdrawal start month and applies one at start month', fakeAsync(() => {
+  it('uses no due withdrawal before the withdrawal start month and applies one at start month', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -988,17 +1004,17 @@ describe('RetirePage', () => {
       target: { value: '2026-07' }
     } as unknown as Event);
     expect(component.selectedFifoDuePointLabel()).toBe('No withdrawal due yet');
-    expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => activity.type === 'SELL')).toBeFalse();
+    expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => activity.type === 'SELL')).toBe(false);
 
     component.updateSelectedFifoMonth({
       target: { value: '2026-08' }
     } as unknown as Event);
     expect(component.selectedFifoDuePointLabel()).toBe('August 2026');
-    expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => activity.type === 'SELL')).toBeTrue();
+    expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => activity.type === 'SELL')).toBe(true);
   }));
 
 
-  it('renders historical SELL rows per due month up to the selected month', fakeAsync(() => {
+  it('renders historical SELL rows per due month up to the selected month', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1055,11 +1071,11 @@ describe('RetirePage', () => {
     expect(sellActivities.length).toBeGreaterThanOrEqual(3);
     expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => {
       return activity.type === 'BUY' && activity.sellDetails.length > 0;
-    })).toBeTrue();
+    })).toBe(true);
   }));
 
 
-  it('does not create additional BUY months after withdrawal start when browsing later months', fakeAsync(() => {
+  it('does not create additional BUY months after withdrawal start when browsing later months', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1147,7 +1163,7 @@ describe('RetirePage', () => {
     expect(sellCountAfterStart).toBeGreaterThan(0);
   }));
 
-  it('applies accent style class to FIFO month navigation buttons', fakeAsync(() => {
+  it('applies accent style class to FIFO month navigation buttons', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1175,7 +1191,7 @@ describe('RetirePage', () => {
     expect(navButtons.length).toBe(4);
   }));
 
-  it('filters source activities to the selected month (inclusive)', fakeAsync(() => {
+  it('filters source activities to the selected month (inclusive)', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1250,7 +1266,7 @@ describe('RetirePage', () => {
     expect(maxVisibleActivityTime).toBeLessThanOrEqual(new Date('2026-06-30T23:59:59.999Z').getTime());
   }));
 
-  it('shows real historical SELL activities before withdrawal start', fakeAsync(() => {
+  it('shows real historical SELL activities before withdrawal start', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1321,10 +1337,10 @@ describe('RetirePage', () => {
     });
 
     expect(sellRows.length).toBeGreaterThan(0);
-    expect(sellRows.some((activity: any) => new Date(activity.date).getTime() === new Date('2026-05-01T00:00:00.000Z').getTime())).toBeTrue();
+    expect(sellRows.some((activity: any) => new Date(activity.date).getTime() === new Date('2026-05-01T00:00:00.000Z').getTime())).toBe(true);
   }));
 
-  it('keeps the current month FIFO view purely historical', fakeAsync(() => {
+  it('keeps the current month FIFO view purely historical', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1350,12 +1366,12 @@ describe('RetirePage', () => {
 
     expect(overviewInput.syntheticActivities).toEqual([]);
     expect(overviewInput.combinedActivities).toEqual(component.activities());
-    expect(overviewInput.syntheticTaxEvents.every((taxEvent: any) => taxEvent.taxYear < 2026)).toBeTrue();
-    expect(component.simulatedFifoOverviewRows()).toHaveSize(1);
-    expect(component.simulatedFifoOverviewRows()[0].activities).toHaveSize(1);
+    expect(overviewInput.syntheticTaxEvents.every((taxEvent: any) => taxEvent.taxYear < 2026)).toBe(true);
+    expect(component.simulatedFifoOverviewRows()).toHaveLength(1);
+    expect(component.simulatedFifoOverviewRows()[0].activities).toHaveLength(1);
   }));
 
-  it('adds the first simulated BUY in the next month', fakeAsync(() => {
+  it('adds the first simulated BUY in the next month', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1379,15 +1395,15 @@ describe('RetirePage', () => {
 
     const syntheticActivities = component.selectedFifoTaxOverviewInput().syntheticActivities;
 
-    expect(syntheticActivities).toHaveSize(1);
+    expect(syntheticActivities).toHaveLength(1);
     expect(syntheticActivities[0].type).toBe('BUY');
     expect(format(syntheticActivities[0].date, 'yyyy-MM')).toBe('2026-07');
     expect(component.simulatedFifoOverviewRows()[0].activities.some((activity: any) => {
       return activity.type === 'BUY' && format(activity.date, 'yyyy-MM') === '2026-07';
-    })).toBeTrue();
+    })).toBe(true);
   }));
 
-  it('uses synthetic activities and tax events for future years', fakeAsync(() => {
+  it('uses synthetic activities and tax events for future years', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1415,13 +1431,13 @@ describe('RetirePage', () => {
     const overviewInput = component.selectedFifoTaxOverviewInput();
     const rows = component.simulatedFifoOverviewRows();
 
-    expect(overviewInput.syntheticActivities.some((activity: any) => activity.type === 'SELL')).toBeTrue();
+    expect(overviewInput.syntheticActivities.some((activity: any) => activity.type === 'SELL')).toBe(true);
     expect(overviewInput.syntheticTaxEvents.length).toBeGreaterThan(0);
-    expect(rows[0].activities.some((activity: any) => activity.type === 'SELL')).toBeTrue();
+    expect(rows[0].activities.some((activity: any) => activity.type === 'SELL')).toBe(true);
     expect(rows[0].totalVap).toBeGreaterThan(0);
   }));
 
-  it('rolls simulated VAP in on the following 01.01, not before', fakeAsync(() => {
+  it('rolls simulated VAP in on the following 01.01, not before', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1452,12 +1468,12 @@ describe('RetirePage', () => {
     const januaryRows = component.simulatedFifoOverviewRows();
     const januarySyntheticTaxEvents = component.selectedFifoTaxOverviewInput().syntheticTaxEvents;
 
-    expect(decemberSyntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2026)).toBeFalse();
-    expect(januarySyntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2026)).toBeTrue();
+    expect(decemberSyntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2026)).toBe(false);
+    expect(januarySyntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2026)).toBe(true);
     expect(januaryRows[0].totalVap).toBeGreaterThan(decemberRows[0].totalVap);
   }));
 
-  it('keeps a real tax event instead of creating a synthetic replacement', fakeAsync(() => {
+  it('keeps a real tax event instead of creating a synthetic replacement', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1493,14 +1509,14 @@ describe('RetirePage', () => {
     const overviewInput = component.selectedFifoTaxOverviewInput();
     const rows = component.simulatedFifoOverviewRows();
 
-    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2026)).toBeFalse();
+    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2026)).toBe(false);
     expect(
       overviewInput.combinedTaxEvents.find((taxEvent: any) => taxEvent.taxYear === 2026)?.vorabpauschalePerShare
     ).toBe(3);
     expect(rows[0].totalVap).toBeGreaterThanOrEqual(30);
   }));
 
-  it('synthesizes a missing TaxEvent for a year that ended long ago, outside January', fakeAsync(() => {
+  it('synthesizes a missing TaxEvent for a year that ended long ago, outside January', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1528,12 +1544,12 @@ describe('RetirePage', () => {
 
     expect(overviewInput.syntheticActivities).toEqual([]);
     expect(overviewInput.combinedActivities).toEqual(component.activities());
-    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2024)).toBeTrue();
-    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2025)).toBeTrue();
+    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2024)).toBe(true);
+    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2025)).toBe(true);
     expect(rows[0].totalVap).toBeGreaterThan(0);
   }));
 
-  it('does not overwrite a real TaxEvent for a past year with a synthetic one', fakeAsync(() => {
+  it('does not overwrite a real TaxEvent for a past year with a synthetic one', withFakeTimers(() => {
     authServiceMock.allocationsText = () => 'AAA,100';
     runtimeConfigServiceMock.config.set({
       allocationsText: 'AAA,100',
@@ -1567,12 +1583,11 @@ describe('RetirePage', () => {
 
     const overviewInput = component.selectedFifoTaxOverviewInput();
 
-    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2024)).toBeFalse();
-    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2025)).toBeTrue();
+    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2024)).toBe(false);
+    expect(overviewInput.syntheticTaxEvents.some((taxEvent: any) => taxEvent.taxYear === 2025)).toBe(true);
     expect(overviewInput.combinedTaxEvents.filter((taxEvent: any) => taxEvent.taxYear === 2024).length).toBe(1);
     expect(
       overviewInput.combinedTaxEvents.find((taxEvent: any) => taxEvent.taxYear === 2024)?.vorabpauschalePerShare
     ).toBe(3);
   }));
 });
-

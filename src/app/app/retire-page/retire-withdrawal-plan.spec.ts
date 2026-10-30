@@ -285,8 +285,8 @@ describe('calculateNextWithdrawalSellPlan', () => {
       const rowB = plan.rows.find((row) => row.symbol === 'BBB');
 
       expect(plan.totalPlannedSell).toBeLessThanOrEqual(plan.requestedSellAmount);
-      expect(Number.isInteger(rowA?.sharesToSell)).toBeTrue();
-      expect(Number.isInteger(rowB?.sharesToSell)).toBeTrue();
+      expect(Number.isInteger(rowA?.sharesToSell)).toBe(true);
+      expect(Number.isInteger(rowB?.sharesToSell)).toBe(true);
       expect(rowA?.remainingValue ?? 0).toBeGreaterThanOrEqual(60);
       expect(rowB?.remainingValue ?? 0).toBeGreaterThanOrEqual(60);
     });

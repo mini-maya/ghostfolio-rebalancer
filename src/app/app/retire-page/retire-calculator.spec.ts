@@ -20,7 +20,7 @@ describe('calculateRetirementProjection', () => {
   it('spreads withdrawals evenly without return, inflation or preservation target', () => {
     const result = calculateRetirementProjection(baseInput, new Date('2026-01-01T00:00:00.000Z'));
 
-    expect(result.points).toHaveSize(5);
+    expect(result.points).toHaveLength(5);
     expect(result.capitalAtWithdrawalStart).toBe(1000);
     expect(result.points[0].date).toBe('2026-01-01');
     expect(result.points.at(-1)?.date).toBe('2030-01-01');

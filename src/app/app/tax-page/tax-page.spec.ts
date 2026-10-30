@@ -1,11 +1,23 @@
 import { signal } from '@angular/core';
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { AuthService } from '../auth/auth.service';
 import { PortfolioDataStore } from '../services/portfolio-data.store';
 import { DEFAULT_TAX_PROFILE } from '../services/tax-calculator';
 import { TaxEventsService } from '../services/tax-events';
 import { TaxPage } from './tax-page';
+
+function withFakeTimers(testBody: () => void): () => void {
+  return () => {
+    vi.useFakeTimers();
+    try {
+      testBody();
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+}
 
 describe('TaxPage', () => {
   const portfolioDataStoreMock = {
@@ -41,18 +53,18 @@ describe('TaxPage', () => {
     infoMessage: signal(''),
     isLoading: signal(false),
     lastLoadedUrl: signal('https://ghostfolio.example'),
-    loadPortfolioData: jasmine.createSpy('loadPortfolioData').and.resolveTo()
+    loadPortfolioData: vi.fn().mockResolvedValue(undefined)
   };
 
-  const taxEventsServiceMock = jasmine.createSpyObj<TaxEventsService>('TaxEventsService', [
-    'createTaxEvent',
-    'deleteTaxEvent',
-    'loadTaxEvents',
-    'updateTaxEvent'
-  ]);
+  const taxEventsServiceMock = {
+    createTaxEvent: vi.fn(),
+    deleteTaxEvent: vi.fn(),
+    loadTaxEvents: vi.fn(),
+    updateTaxEvent: vi.fn()
+  };
   const authServiceMock = {
     taxConfig: signal({ ...DEFAULT_TAX_PROFILE }),
-    updateAccountTaxConfig: jasmine.createSpy('updateAccountTaxConfig').and.resolveTo(),
+    updateAccountTaxConfig: vi.fn().mockResolvedValue(undefined),
     user: signal('local-user')
   };
 
@@ -87,14 +99,14 @@ describe('TaxPage', () => {
       }
     ]);
 
-    taxEventsServiceMock.createTaxEvent.calls.reset();
-    taxEventsServiceMock.deleteTaxEvent.calls.reset();
-    taxEventsServiceMock.loadTaxEvents.calls.reset();
-    taxEventsServiceMock.updateTaxEvent.calls.reset();
-    authServiceMock.updateAccountTaxConfig.calls.reset();
+    taxEventsServiceMock.createTaxEvent.mockReset();
+    taxEventsServiceMock.deleteTaxEvent.mockReset();
+    taxEventsServiceMock.loadTaxEvents.mockReset();
+    taxEventsServiceMock.updateTaxEvent.mockReset();
+    authServiceMock.updateAccountTaxConfig.mockReset();
 
-    taxEventsServiceMock.loadTaxEvents.and.resolveTo([]);
-    taxEventsServiceMock.createTaxEvent.and.resolveTo({
+    taxEventsServiceMock.loadTaxEvents.mockResolvedValue([]);
+    taxEventsServiceMock.createTaxEvent.mockResolvedValue({
       accountId: 'acc-1',
       id: 'tax-1',
       quantity: 143.27,
@@ -103,7 +115,7 @@ describe('TaxPage', () => {
       vorabpauschalePerShare: 2.3,
       vorabpauschalePerShareAfterTeilfreistellung: 1.61
     });
-    taxEventsServiceMock.updateTaxEvent.and.resolveTo({
+    taxEventsServiceMock.updateTaxEvent.mockResolvedValue({
       accountId: 'acc-1',
       id: 'tax-1',
       quantity: 150,
@@ -112,7 +124,7 @@ describe('TaxPage', () => {
       vorabpauschalePerShare: 2.5,
       vorabpauschalePerShareAfterTeilfreistellung: 1.75
     });
-    taxEventsServiceMock.deleteTaxEvent.and.resolveTo();
+    taxEventsServiceMock.deleteTaxEvent.mockResolvedValue(undefined);
 
     await TestBed.configureTestingModule({
       imports: [TaxPage],
@@ -163,7 +175,7 @@ describe('TaxPage', () => {
     const component = fixture.componentInstance as any;
 
     component.openCreateDialog();
-    expect(component.isDialogOpen()).toBeTrue();
+    expect(component.isDialogOpen()).toBe(true);
 
     component.updateDialogQuantity({
       target: { value: '143.27' }
@@ -188,19 +200,19 @@ describe('TaxPage', () => {
     expect(component.taxEvents().length).toBe(1);
   });
 
-  it('loads and saves the tax profile for local users', fakeAsync(() => {
+  it('loads and saves the tax profile for local users', withFakeTimers(() => {
     const fixture = TestBed.createComponent(TaxPage);
     const component = fixture.componentInstance as any;
 
     fixture.detectChanges();
 
-    expect(component.canEditTaxProfile()).toBeTrue();
+    expect(component.canEditTaxProfile()).toBe(true);
     expect(component.taxProfile()).toEqual(DEFAULT_TAX_PROFILE);
 
     component.updateTaxProfileCapitalGainsTaxRate({
       target: { value: '30' }
     } as unknown as Event);
-    tick(300);
+    vi.advanceTimersByTime(300);
 
     expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
       assumedBasiszinsRate: 0.025,
@@ -212,7 +224,7 @@ describe('TaxPage', () => {
     });
   }));
 
-  it('accepts comma decimals in tax profile inputs', fakeAsync(() => {
+  it('accepts comma decimals in tax profile inputs', withFakeTimers(() => {
     const fixture = TestBed.createComponent(TaxPage);
     const component = fixture.componentInstance as any;
 
@@ -221,7 +233,7 @@ describe('TaxPage', () => {
     component.updateTaxProfileCapitalGainsTaxRate({
       target: { value: '30,5' }
     } as unknown as Event);
-    tick(300);
+    vi.advanceTimersByTime(300);
 
     expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
       assumedBasiszinsRate: 0.025,
@@ -233,7 +245,7 @@ describe('TaxPage', () => {
     });
   }));
 
-  it('updates and saves the Sparer-Pauschbetrag as a Euro amount, not a percentage', fakeAsync(() => {
+  it('updates and saves the Sparer-Pauschbetrag as a Euro amount, not a percentage', withFakeTimers(() => {
     const fixture = TestBed.createComponent(TaxPage);
     const component = fixture.componentInstance as any;
 
@@ -242,7 +254,7 @@ describe('TaxPage', () => {
     component.updateTaxProfileSparerPauschbetrag({
       target: { value: '2000' }
     } as unknown as Event);
-    tick(300);
+    vi.advanceTimersByTime(300);
 
     expect(component.taxProfile().sparerPauschbetrag).toBe(2000);
     expect(authServiceMock.updateAccountTaxConfig).toHaveBeenCalledWith({
@@ -585,7 +597,7 @@ describe('TaxPage', () => {
     });
     expect(component.taxEvents()[0].quantity).toBe(150);
 
-    spyOn(window, 'confirm').and.returnValue(true);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     await component.deleteTaxEvent(component.taxEvents()[0]);
 
     expect(taxEventsServiceMock.deleteTaxEvent).toHaveBeenCalledWith('tax-1');
